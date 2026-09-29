@@ -41,6 +41,7 @@ MVP completo en la rama `agent/builder` (PR abierto a `main`, pendiente de revis
 - `live/BertMarti.svg` solo existe tras el primer despliegue desde `main`; hasta entonces la imagen del README aparece rota y la web muestra un aviso.
 - La API de eventos solo da 90 días / 300 eventos: perfiles muy activos pueden ver su XP recortada a lo que cabe en esos 300 eventos.
 - La Action compila con `go run` en cada ejecución (unos segundos extra); aceptable para un cron diario.
+- El CI avisa de que `actions/checkout@v4` y `actions/setup-go@v5` usan Node.js 20 (obsoleto, se fuerzan a Node 24). No rompe nada; se mantuvieron las versiones pedidas. Valorar subir a checkout@v5 / setup-go@v6 (también en `action.yml` y el snippet del README y la galería).
 
 ## Registro de sesiones
 - 2026-09-29 lead (main): creación del repositorio y reparto del equipo.
