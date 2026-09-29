@@ -1,0 +1,4 @@
+out/
+/commitling
+*.exe
+.env
