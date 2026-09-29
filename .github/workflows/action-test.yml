@@ -1,0 +1,50 @@
+name: Action
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: action-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  action:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Action con el fixture (sin red)
+        id: fixture
+        uses: ./
+        with:
+          user: ""
+          fixture: testdata/events.json
+          out: out/fixture.svg
+
+      - name: Action con el usuario real
+        id: real
+        uses: ./
+        with:
+          out: out/real-dark.svg
+          theme: dark
+
+      - name: Comprobar los SVG
+        env:
+          FIXTURE_PATH: ${{ steps.fixture.outputs.path }}
+          REAL_PATH: ${{ steps.real.outputs.path }}
+        run: |
+          set -euo pipefail
+          for f in "$FIXTURE_PATH" "$REAL_PATH"; do
+            test -s "$f"
+            head -c 120 "$f"; echo
+            grep -q '</svg>' "$f"
+          done
+          grep -q '@octoexample' "$FIXTURE_PATH"
+          grep -q "@${{ github.repository_owner }}" "$REAL_PATH"
+          grep -q '#2b2724' "$REAL_PATH"
