@@ -190,7 +190,7 @@ go test ./...
 
 ## Cómo se ha hecho
 
-commitling se ha construido con un equipo de agentes de IA (Claude Code y OpenCode), cada uno en su rama y con todo entrando en `main` mediante pull request, supervisados por Alberto. Las reglas del equipo están en [AGENTS.md](AGENTS.md) y el estado del proyecto en [MEMORY.md](MEMORY.md).
+commitling se ha construido con un equipo de agentes de IA de Claude Code: builder (Opus), qa y docs (Sonnet), coordinados por un agente lead. Cada uno trabajó en su rama y todo entra en `main` mediante pull request, con la supervisión y la fusión de Alberto. OpenCode estaba previsto para la documentación, pero no pudo ejecutarse en modo autónomo. Las reglas del equipo están en [AGENTS.md](AGENTS.md) y el estado del proyecto en [MEMORY.md](MEMORY.md).
 
 ## Licencia
 
