@@ -20,6 +20,19 @@ import (
 // LiveUser is the user whose creature is shown live on the site.
 const LiveUser = "BertMarti"
 
+// SiteURL is where the site is published (GitHub Pages).
+const SiteURL = "https://bertmarti.github.io/commitling/"
+
+// OGImage is the preview image for social cards (Open Graph).
+const OGImage = SiteURL + "hero.svg"
+
+// Title and Description are used in <title>, the description meta tag and
+// Open Graph.
+const (
+	Title       = "commitling · una mascota pixel-art para tu perfil de GitHub"
+	Description = "Una mascota pixel-art original que vive en el README de tu perfil de GitHub y crece con tus commits."
+)
+
 // DemoUser is the fictitious user of the gallery cards.
 const DemoUser = "octoexample"
 
@@ -98,19 +111,23 @@ type row struct {
 type rule struct{ Name, When string }
 
 type page struct {
-	Version   string
-	LiveUser  string
-	Favicon   string
-	Hero      string
-	Rows      []row
-	Extras    []Figure
-	XP        []rule
-	Stages    []rule
-	Moods     []rule
-	Acc       []rule
-	Workflow  string
-	Readme    string
-	ReadmeDrk string
+	Version     string
+	Title       string
+	Description string
+	SiteURL     string
+	OGImage     string
+	LiveUser    string
+	Favicon     string
+	Hero        string
+	Rows        []row
+	Extras      []Figure
+	XP          []rule
+	Stages      []rule
+	Moods       []rule
+	Acc         []rule
+	Workflow    string
+	Readme      string
+	ReadmeDrk   string
 }
 
 // Build writes the site into dir and returns how many files it wrote.
@@ -138,10 +155,14 @@ func Build(dir, version string) (int, error) {
 	}
 
 	p := page{
-		Version:  version,
-		LiveUser: LiveUser,
-		Workflow: WorkflowSnippet,
-		Readme:   ReadmeSnippet,
+		Version:     version,
+		Title:       Title,
+		Description: Description,
+		SiteURL:     SiteURL,
+		OGImage:     OGImage,
+		LiveUser:    LiveUser,
+		Workflow:    WorkflowSnippet,
+		Readme:      ReadmeSnippet,
 		ReadmeDrk: `<picture>
   <source media="(prefers-color-scheme: dark)" srcset="./commitling-dark.svg">
   <img alt="commitling" src="./commitling.svg">
