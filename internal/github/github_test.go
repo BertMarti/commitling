@@ -234,3 +234,100 @@ func TestFetchEventsBadJSON(t *testing.T) {
 		t.Fatal("expected error for malformed JSON")
 	}
 }
+
+func TestFetchEventsSendsRequiredHeaders(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		for header, want := range map[string]string{
+			"User-Agent":           "commitling",
+			"X-GitHub-Api-Version": "2022-11-28",
+			"Accept":               "application/vnd.github+json",
+		} {
+			if got := r.Header.Get(header); got != want {
+				t.Errorf("%s = %q, want %q", header, got, want)
+			}
+		}
+		fmt.Fprint(w, eventsJSON(1, 0))
+	}))
+	defer srv.Close()
+
+	c := NewClient("")
+	c.BaseURL = srv.URL
+	if _, err := c.FetchEvents(context.Background(), "octoexample"); err != nil {
+		t.Fatal(err)
+	}
+	// A hand-built client without user agent or HTTP client still works.
+	bare := &Client{BaseURL: srv.URL}
+	if _, err := bare.FetchEvents(context.Background(), "octoexample"); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestNewClientHasTimeout(t *testing.T) {
+	c := NewClient("")
+	if c.HTTPClient == nil || c.HTTPClient.Timeout != 15*time.Second {
+		t.Fatalf("HTTPClient timeout = %v, want 15s", c.HTTPClient)
+	}
+	if c.UserAgent != "commitling" {
+		t.Errorf("UserAgent = %q", c.UserAgent)
+	}
+}
+
+func TestFetchEventsTimesOut(t *testing.T) {
+	release := make(chan struct{})
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case <-release:
+		case <-r.Context().Done():
+		}
+	}))
+	defer srv.Close()
+	defer close(release)
+
+	c := NewClient("")
+	c.BaseURL = srv.URL
+	c.HTTPClient.Timeout = 50 * time.Millisecond
+	start := time.Now()
+	_, err := c.FetchEvents(context.Background(), "octoexample")
+	if err == nil || !strings.Contains(err.Error(), "no se pudo contactar") {
+		t.Fatalf("err = %v, want a connection error", err)
+	}
+	if time.Since(start) > 5*time.Second {
+		t.Fatal("request did not time out")
+	}
+}
+
+func TestFetchEventsPaginationLimitAfterPageTwo(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Query().Get("page") {
+		case "1", "2":
+			fmt.Fprint(w, eventsJSON(100, 0))
+		default:
+			w.WriteHeader(http.StatusUnprocessableEntity)
+			fmt.Fprint(w, `{"message":"pagination is limited for this resource"}`)
+		}
+	}))
+	defer srv.Close()
+
+	c := NewClient("")
+	c.BaseURL = srv.URL
+	events, err := c.FetchEvents(context.Background(), "octoexample")
+	if err != nil {
+		t.Fatalf("a 422 past the last page is the end of the data, got %v", err)
+	}
+	if len(events) != 200 {
+		t.Fatalf("got %d events, want 200", len(events))
+	}
+}
+
+func TestFetchEvents422OnFirstPageIsAnError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		fmt.Fprint(w, `{"message":"Validation Failed"}`)
+	}))
+	defer srv.Close()
+	c := NewClient("")
+	c.BaseURL = srv.URL
+	if _, err := c.FetchEvents(context.Background(), "octoexample"); err == nil {
+		t.Fatal("422 on the first page must not be swallowed")
+	}
+}

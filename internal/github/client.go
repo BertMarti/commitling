@@ -17,6 +17,15 @@ import (
 const DefaultBaseURL = "https://api.github.com"
 
 const (
+	// DefaultUserAgent identifies the tool; GitHub requires a User-Agent.
+	DefaultUserAgent = "commitling"
+	// APIVersion is the pinned REST API version.
+	APIVersion = "2022-11-28"
+	// RequestTimeout bounds each HTTP request of the default client.
+	RequestTimeout = 15 * time.Second
+)
+
+const (
 	perPage = 100
 	// maxPages * perPage is the 300 events limit of the public events API.
 	maxPages = 3
@@ -40,8 +49,8 @@ func NewClient(token string) *Client {
 	return &Client{
 		BaseURL:    DefaultBaseURL,
 		Token:      token,
-		HTTPClient: &http.Client{Timeout: 20 * time.Second},
-		UserAgent:  "commitling (+https://github.com/BertMarti/commitling)",
+		HTTPClient: &http.Client{Timeout: RequestTimeout},
+		UserAgent:  DefaultUserAgent,
 	}
 }
 
@@ -95,15 +104,19 @@ func (c *Client) fetchPage(ctx context.Context, user string, page int) ([]Event,
 		return nil, err
 	}
 	req.Header.Set("Accept", "application/vnd.github+json")
-	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
-	req.Header.Set("User-Agent", c.UserAgent)
+	req.Header.Set("X-GitHub-Api-Version", APIVersion)
+	ua := c.UserAgent
+	if ua == "" {
+		ua = DefaultUserAgent
+	}
+	req.Header.Set("User-Agent", ua)
 	if c.Token != "" {
 		req.Header.Set("Authorization", "Bearer "+c.Token)
 	}
 
 	hc := c.HTTPClient
 	if hc == nil {
-		hc = http.DefaultClient
+		hc = &http.Client{Timeout: RequestTimeout}
 	}
 	resp, err := hc.Do(req)
 	if err != nil {
