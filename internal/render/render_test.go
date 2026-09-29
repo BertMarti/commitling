@@ -5,6 +5,7 @@ import (
 	"encoding/xml"
 	"html"
 	"io"
+	"math"
 	"regexp"
 	"strconv"
 	"strings"
@@ -281,5 +282,36 @@ func TestFontStackHasFallbacks(t *testing.T) {
 	want := `ui-monospace,SFMono-Regular,Menlo,Consolas,"DejaVu Sans Mono","Liberation Mono",monospace`
 	if !strings.Contains(svg, want) {
 		t.Errorf("font stack not found: %s", want)
+	}
+}
+
+func luminance(hex string) float64 {
+	v, _ := strconv.ParseUint(strings.TrimPrefix(hex, "#"), 16, 32)
+	lin := func(c uint64) float64 {
+		f := float64(c) / 255
+		if f <= 0.03928 {
+			return f / 12.92
+		}
+		return math.Pow((f+0.055)/1.055, 2.4)
+	}
+	return 0.2126*lin(v>>16&0xff) + 0.7152*lin(v>>8&0xff) + 0.0722*lin(v&0xff)
+}
+
+func contrast(a, b string) float64 {
+	la, lb := luminance(a), luminance(b)
+	if la < lb {
+		la, lb = lb, la
+	}
+	return (la + 0.05) / (lb + 0.05)
+}
+
+// The small grey text must be readable (WCAG AA, 4.5:1).
+func TestTextContrast(t *testing.T) {
+	for _, th := range []Theme{Light, Dark} {
+		for name, fg := range map[string]string{"ink": th.Ink, "muted": th.Muted} {
+			if got := contrast(fg, th.Bg); got < 4.5 {
+				t.Errorf("%s theme: %s on background has contrast %.2f, want at least 4.5", th.Name, name, got)
+			}
+		}
 	}
 }

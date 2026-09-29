@@ -94,7 +94,7 @@ type Theme struct {
 
 // Themes.
 var (
-	Light = Theme{Name: "light", Bg: "#f3efe6", Ink: "#2b2724", Muted: "#8a8178", Line: "#ddd5c6", Outline: creature.Ink}
+	Light = Theme{Name: "light", Bg: "#f3efe6", Ink: "#2b2724", Muted: "#6f675e", Line: "#ddd5c6", Outline: creature.Ink}
 	Dark  = Theme{Name: "dark", Bg: "#2b2724", Ink: "#f3efe6", Muted: "#a39a8e", Line: "#4a433d", Outline: creature.Paper}
 )
 
