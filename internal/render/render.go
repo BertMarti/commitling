@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/BertMarti/commitling/internal/creature"
 	"github.com/BertMarti/commitling/internal/stats"
@@ -37,6 +38,47 @@ const (
 	barGap    = 2
 	barHeight = 8
 )
+
+// glyphWidth is the width of one monospace character as a fraction of the
+// font size. The fonts in the stack range from 0.55 (Consolas) to 0.602
+// (Menlo, DejaVu Sans Mono), so 0.62 is a safe upper bound.
+const glyphWidth = 0.62
+
+// panelWidth is the horizontal room of the right-hand panel.
+const panelWidth = panelEnd - panelX
+
+// textWidth estimates the rendered width of s at the given font size.
+func textWidth(s string, size float64) float64 {
+	return float64(utf8.RuneCountInString(s)) * size * glyphWidth
+}
+
+// truncate cuts s so that it fits in maxW at the given size, ending in "…".
+func truncate(s string, size, maxW float64) string {
+	n := int(maxW / (size * glyphWidth))
+	r := []rune(s)
+	if len(r) <= n {
+		return s
+	}
+	if n < 1 {
+		return "…"
+	}
+	return string(r[:n-1]) + "…"
+}
+
+// fit picks the first candidate and size (largest first) whose estimated
+// width is at most maxW. If none fits, it truncates the last candidate at
+// the smallest size. It is deterministic: the same input gives the same text.
+func fit(candidates []string, sizes []float64, maxW float64) (string, float64) {
+	for _, c := range candidates {
+		for _, sz := range sizes {
+			if textWidth(c, sz) <= maxW {
+				return c, sz
+			}
+		}
+	}
+	sz := sizes[len(sizes)-1]
+	return truncate(candidates[len(candidates)-1], sz, maxW), sz
+}
 
 // Theme holds the card colours. The creature keeps its own palette.
 type Theme struct {
@@ -237,7 +279,7 @@ func bbox(g *creature.Grid) (minX, minY, maxX, maxY int, ok bool) {
 
 func writeStyle(b *strings.Builder, c Card, sp creature.Sprite) {
 	b.WriteString("<style>\n")
-	b.WriteString(`.t{font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}` + "\n")
+	b.WriteString(`.t{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"DejaVu Sans Mono","Liberation Mono",monospace}` + "\n")
 	b.WriteString(".b{font-weight:700}\n")
 
 	// Whole body: breathing or hopping, depending on the mood.
@@ -383,30 +425,52 @@ func text(b *strings.Builder, x, y int, size float64, fill, anchor, class, s str
 		class, x, y, strconv.FormatFloat(size, 'f', -1, 64), fill, a, Escape(s))
 }
 
+// fitted draws the first candidate that fits maxW, shrinking through sizes
+// and finally truncating with "…" (see fit).
+func fitted(b *strings.Builder, x, y int, maxW float64, sizes []float64, fill, anchor, class string, candidates ...string) {
+	s, size := fit(candidates, sizes, maxW)
+	text(b, x, y, size, fill, anchor, class, s)
+}
+
 func writePanel(b *strings.Builder, c Card, t Theme) {
 	cr := c.Creature
 	s := c.Stats
 
-	user := "commitling"
-	if c.User != "" {
-		user = "@" + c.User
-	}
-	text(b, panelX, 36, 11, t.Muted, "", "", user)
-	if c.User != "" {
-		text(b, panelEnd, 36, 11, t.Muted, "end", "", "commitling")
+	// Header: @user on the left and the project name on the right. A long
+	// login shrinks (at most it is truncated) and then takes the whole
+	// width, dropping the project name (the <title> still carries it).
+	const tag = "commitling"
+	if c.User == "" {
+		text(b, panelX, 36, 11, t.Muted, "", "", tag)
+	} else {
+		user := "@" + c.User
+		room := panelWidth - textWidth(tag, 11) - 12
+		if textWidth(user, 11) <= room {
+			text(b, panelX, 36, 11, t.Muted, "", "", user)
+			text(b, panelEnd, 36, 11, t.Muted, "end", "", tag)
+		} else {
+			fitted(b, panelX, 36, panelWidth, []float64{11, 10, 9}, t.Muted, "", "", user)
+		}
 	}
 
-	text(b, panelX, 64, 22, t.Ink, "", " b", cr.Stage.Name())
+	fitted(b, panelX, 64, panelWidth, []float64{22, 20, 18, 16}, t.Ink, "", " b", cr.Stage.Name())
 
 	fmt.Fprintf(b, "<rect x=\"%d\" y=\"78\" width=\"8\" height=\"8\" fill=\"%s\" shape-rendering=\"crispEdges\"/>\n", panelX, moodColor(cr.Mood, t))
 	text(b, panelX+14, 86, 12, t.Ink, "", "", cr.Mood.Name())
 	text(b, panelEnd, 86, 11, t.Muted, "end", "", fmt.Sprintf("fase %d de %d", int(cr.Stage)+1, len(creature.Stages)))
 
-	text(b, panelX, 110, 12, t.Ink, "", "", Thousands(s.XP)+" XP")
+	// XP row: the total goes first; the goal on the right gets what is left,
+	// with a shorter wording if needed.
+	xp, xpSize := fit([]string{Thousands(s.XP) + " XP"}, []float64{12, 11, 10, 9}, panelWidth*0.6)
+	text(b, panelX, 110, xpSize, t.Ink, "", "", xp)
+	goalRoom := panelWidth - textWidth(xp, xpSize) - 10
+	goalSizes := []float64{11, 10, 9}
 	if next, ok := cr.Stage.Next(); ok {
-		text(b, panelEnd, 110, 11, t.Muted, "end", "", fmt.Sprintf("%s: %s XP", strings.ToLower(next.Name()), Thousands(next.MinXP())))
+		fitted(b, panelEnd, 110, goalRoom, goalSizes, t.Muted, "end", "",
+			fmt.Sprintf("%s: %s XP", strings.ToLower(next.Name()), Thousands(next.MinXP())),
+			fmt.Sprintf("meta: %s XP", Thousands(next.MinXP())))
 	} else {
-		text(b, panelEnd, 110, 11, t.Muted, "end", "", "fase máxima")
+		fitted(b, panelEnd, 110, goalRoom, goalSizes, t.Muted, "end", "", "fase máxima", "máxima")
 	}
 
 	filled := int(creature.Progress(s.XP) * barCells)
@@ -433,21 +497,22 @@ func writePanel(b *strings.Builder, c Card, t Theme) {
 	b.WriteString("</g>\n")
 
 	cols := []struct {
-		x            int
+		x, w         int
 		label, value string
 	}{
-		{panelX, "racha", plural(s.Streak, "día", "días")},
-		{panelX + 86, "activo 30 d", fmt.Sprintf("%d/30", s.ActiveDays30)},
-		{panelX + 180, "repos", strconv.Itoa(s.Repos)},
+		{panelX, 86, "racha", plural(s.Streak, "día", "días")},
+		{panelX + 86, 94, "activo 30 d", fmt.Sprintf("%d/30", s.ActiveDays30)},
+		{panelX + 180, panelEnd - (panelX + 180), "repos", strconv.Itoa(s.Repos)},
 	}
 	for _, col := range cols {
-		text(b, col.x, 150, 10, t.Muted, "", "", col.label)
-		text(b, col.x, 168, 15, t.Ink, "", " b", col.value)
+		room := float64(col.w - 4)
+		fitted(b, col.x, 150, room, []float64{10, 9}, t.Muted, "", "", col.label)
+		fitted(b, col.x, 168, room, []float64{15, 13, 11, 9}, t.Ink, "", " b", col.value)
 	}
 
 	acc := "accesorios: aún ninguno"
 	if names := cr.Accessories.Names(); len(names) > 0 {
 		acc = "accesorios: " + strings.Join(names, " · ")
 	}
-	text(b, panelX, 188, 10, t.Muted, "", "", acc)
+	fitted(b, panelX, 188, panelWidth, []float64{10, 9, 8}, t.Muted, "", "", acc)
 }
