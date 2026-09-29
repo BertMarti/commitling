@@ -191,6 +191,34 @@ func SVG(c Card) []byte {
 	return []byte(b.String())
 }
 
+// SpriteSVG draws only the creature, still and cropped to its pixels. The
+// silhouette is ink, or paper when the viewer prefers a dark colour scheme.
+// It is used for icons and headers.
+func SpriteSVG(cr creature.Creature) []byte {
+	sp := creature.Draw(cr)
+	x0, y0, x1, y1 := creature.Size, creature.Size, -1, -1
+	for _, g := range []*creature.Grid{&sp.Outline, &sp.Body, &sp.Eyes} {
+		if a, b, c, d, ok := bbox(g); ok {
+			x0, y0, x1, y1 = min(x0, a), min(y0, b), max(x1, c), max(y1, d)
+		}
+	}
+	if x1 < 0 {
+		x0, y0, x1, y1 = 0, 0, creature.Size-1, creature.Size-1
+	}
+	w, h := (x1-x0+1)*pixel, (y1-y0+1)*pixel
+	side := max(w, h)
+	vx := originX + x0*pixel - (side-w)/2
+	vy := originY + y0*pixel - (side-h)/2
+	var b strings.Builder
+	fmt.Fprintf(&b, "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"%d %d %d %d\" shape-rendering=\"crispEdges\">\n", vx, vy, side, side)
+	fmt.Fprintf(&b, "<style>.o path{fill:%s}@media (prefers-color-scheme:dark){.o path{fill:%s}}</style>\n", creature.Ink, creature.Paper)
+	writeGrid(&b, &sp.Outline, "o", "")
+	writeGrid(&b, &sp.Body, "", "")
+	writeGrid(&b, &sp.Eyes, "", "")
+	b.WriteString("</svg>\n")
+	return []byte(b.String())
+}
+
 // bbox returns the bounding box (in pixels of the map) of a grid.
 func bbox(g *creature.Grid) (minX, minY, maxX, maxY int, ok bool) {
 	minX, minY = creature.Size, creature.Size
