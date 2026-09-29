@@ -1,0 +1,97 @@
+package main
+
+import (
+	"bytes"
+	"errors"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+)
+
+const fixture = "../../testdata/events.json"
+
+func TestRenderFixture(t *testing.T) {
+	out := filepath.Join(t.TempDir(), "sub", "c.svg")
+	var stdout, stderr bytes.Buffer
+	if err := run([]string{"render", "--fixture", fixture, "--out", out}, &stdout, &stderr); err != nil {
+		t.Fatalf("render: %v\n%s", err, stderr.String())
+	}
+	svg, err := os.ReadFile(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"@octoexample", "Retoño", "Radiante", "flor"} {
+		if !bytes.Contains(svg, []byte(want)) {
+			t.Errorf("SVG does not contain %q", want)
+		}
+	}
+}
+
+func TestRenderFixtureIsStable(t *testing.T) {
+	render := func(extra ...string) string {
+		var stdout, stderr bytes.Buffer
+		args := append([]string{"render", "--fixture", fixture, "--out", "-"}, extra...)
+		if err := run(args, &stdout, &stderr); err != nil {
+			t.Fatalf("render %v: %v", extra, err)
+		}
+		return stdout.String()
+	}
+	a, b := render(), render()
+	if a != b {
+		t.Fatal("two renders of the fixture differ")
+	}
+	if !strings.HasPrefix(a, "<svg") {
+		t.Fatalf("stdout does not start with <svg: %.40q", a)
+	}
+	// Looking at the fixture a month later, the creature is asleep.
+	late := render("--now", "2026-11-01T00:00:00Z")
+	if !strings.Contains(late, "Durmiendo") {
+		t.Error("with --now a month later the creature should sleep")
+	}
+	if dark := render("--theme", "dark", "--user", "someone"); !strings.Contains(dark, "@someone") || !strings.Contains(dark, "#2b2724") {
+		t.Error("--theme dark / --user not applied")
+	}
+}
+
+func TestUsageErrors(t *testing.T) {
+	cases := [][]string{
+		{},
+		{"nope"},
+		{"render"},
+		{"render", "--fixture", fixture, "--theme", "sepia"},
+		{"render", "--fixture", fixture, "--now", "ayer"},
+		{"render", "--user", "../../etc"},
+		{"render", "--fixture", fixture, "extra"},
+		{"gallery", "extra"},
+	}
+	for _, args := range cases {
+		var stdout, stderr bytes.Buffer
+		err := run(args, &stdout, &stderr)
+		var ue usageError
+		if !errors.As(err, &ue) {
+			t.Errorf("run(%q) = %v, want usage error", args, err)
+		}
+	}
+}
+
+func TestMissingFixture(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	if err := run([]string{"render", "--fixture", "no-existe.json", "--out", "-"}, &stdout, &stderr); err == nil {
+		t.Fatal("expected error for missing fixture")
+	}
+}
+
+func TestVersionAndGallery(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	if err := run([]string{"version"}, &stdout, &stderr); err != nil || !strings.HasPrefix(stdout.String(), "commitling ") {
+		t.Fatalf("version: %v %q", err, stdout.String())
+	}
+	dir := t.TempDir()
+	if err := run([]string{"gallery", "--out", dir}, &stdout, &stderr); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "index.html")); err != nil {
+		t.Fatal(err)
+	}
+}
