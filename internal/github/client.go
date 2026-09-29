@@ -93,7 +93,7 @@ func (c *Client) FetchEvents(ctx context.Context, user string) ([]Event, error) 
 			break
 		}
 	}
-	return all, nil
+	return Dedupe(all), nil
 }
 
 func (c *Client) fetchPage(ctx context.Context, user string, page int) ([]Event, error) {

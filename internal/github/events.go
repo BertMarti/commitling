@@ -72,7 +72,25 @@ func action(e Event) string {
 	return p.Action
 }
 
-// Activities converts events into stats activities.
+// Dedupe drops repeated events (same non-empty id), keeping the first one.
+// Pages of the events API can overlap when new events arrive while paging.
+func Dedupe(events []Event) []Event {
+	seen := make(map[string]bool, len(events))
+	out := make([]Event, 0, len(events))
+	for _, e := range events {
+		if e.ID != "" {
+			if seen[e.ID] {
+				continue
+			}
+			seen[e.ID] = true
+		}
+		out = append(out, e)
+	}
+	return out
+}
+
+// Activities converts events into stats activities. Repeated events (same
+// id) are counted once.
 //
 //   - PushEvent: one commit activity with Count = number of commits.
 //   - PullRequestEvent with action "opened" (or no action): a pull request.
@@ -80,6 +98,7 @@ func action(e Event) string {
 //   - Anything else (stars, forks, comments, reviews, other PR/issue
 //     actions...): "other" activity.
 func Activities(events []Event) []stats.Activity {
+	events = Dedupe(events)
 	acts := make([]stats.Activity, 0, len(events))
 	for _, e := range events {
 		a := stats.Activity{At: e.CreatedAt, Repo: e.Repo.Name, Kind: stats.KindOther, Count: 1}

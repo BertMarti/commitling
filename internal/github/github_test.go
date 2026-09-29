@@ -299,8 +299,10 @@ func TestFetchEventsTimesOut(t *testing.T) {
 func TestFetchEventsPaginationLimitAfterPageTwo(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Query().Get("page") {
-		case "1", "2":
+		case "1":
 			fmt.Fprint(w, eventsJSON(100, 0))
+		case "2":
+			fmt.Fprint(w, eventsJSON(100, 100))
 		default:
 			w.WriteHeader(http.StatusUnprocessableEntity)
 			fmt.Fprint(w, `{"message":"pagination is limited for this resource"}`)
@@ -329,5 +331,50 @@ func TestFetchEvents422OnFirstPageIsAnError(t *testing.T) {
 	c.BaseURL = srv.URL
 	if _, err := c.FetchEvents(context.Background(), "octoexample"); err == nil {
 		t.Fatal("422 on the first page must not be swallowed")
+	}
+}
+
+func TestDedupeAndActivitiesCountOnce(t *testing.T) {
+	push := json.RawMessage(`{"size": 2}`)
+	at := time.Date(2026, 9, 1, 10, 0, 0, 0, time.UTC)
+	events := []Event{
+		{ID: "1", Type: "PushEvent", CreatedAt: at, Payload: push},
+		{ID: "1", Type: "PushEvent", CreatedAt: at, Payload: push},
+		{ID: "2", Type: "WatchEvent", CreatedAt: at},
+		{ID: "", Type: "WatchEvent", CreatedAt: at}, // no id: never merged
+		{ID: "", Type: "WatchEvent", CreatedAt: at},
+	}
+	if got := Dedupe(events); len(got) != 4 {
+		t.Fatalf("Dedupe left %d events, want 4", len(got))
+	}
+	acts := Activities(events)
+	if len(acts) != 4 {
+		t.Fatalf("got %d activities, want 4", len(acts))
+	}
+	s := stats.Compute(acts, at.Add(time.Hour))
+	if s.Commits != 2 {
+		t.Fatalf("Commits = %d, want 2 (duplicate push counted twice)", s.Commits)
+	}
+}
+
+func TestFetchEventsDropsOverlapBetweenPages(t *testing.T) {
+	// A new event arrives between requests, so page 2 repeats the last
+	// event of page 1.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Query().Get("page") == "1" {
+			fmt.Fprint(w, eventsJSON(100, 0)) // ids 0..99
+			return
+		}
+		fmt.Fprint(w, eventsJSON(5, 99)) // ids 99..103
+	}))
+	defer srv.Close()
+	c := NewClient("")
+	c.BaseURL = srv.URL
+	events, err := c.FetchEvents(context.Background(), "octoexample")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(events) != 104 {
+		t.Fatalf("got %d events, want 104", len(events))
 	}
 }
