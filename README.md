@@ -183,6 +183,11 @@ go vet ./...
 go test ./...
 ```
 
+## Documentación
+
+- [Guía de uso](docs/USO.md): instalación paso a paso, tema oscuro, reglas con ejemplos, preguntas frecuentes y solución de problemas.
+- [Contribuir](CONTRIBUTING.md): requisitos, comandos, ramas, commits y cómo añadir un accesorio o una fase.
+
 ## Cómo se ha hecho
 
 commitling se ha construido con un equipo de agentes de IA (Claude Code y OpenCode), cada uno en su rama y con todo entrando en `main` mediante pull request, supervisados por Alberto. Las reglas del equipo están en [AGENTS.md](AGENTS.md) y el estado del proyecto en [MEMORY.md](MEMORY.md).
