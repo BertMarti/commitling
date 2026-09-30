@@ -147,6 +147,9 @@ go run ./cmd/commitling render --fixture testdata/events.json --theme dark --now
 # Web estática con todas las fases, ánimos y accesorios
 go run ./cmd/commitling gallery --out site/
 
+# Imagen PNG 1200x630 para las vistas previas en redes (Open Graph)
+go run ./cmd/commitling og --out out/og.png
+
 go run ./cmd/commitling version
 ```
 
@@ -165,12 +168,13 @@ commitling solo usa la API **pública** de eventos de GitHub: lo mismo que cualq
 ## Estructura
 
 ```
-cmd/commitling/      CLI (render, gallery, version)
+cmd/commitling/      CLI (render, gallery, og, version)
 internal/github/     cliente de la API de eventos públicos y parser
 internal/stats/      XP, racha, días activos y repos (puro, con «ahora» inyectable)
 internal/creature/   fases, ánimos, accesorios y mapas de píxeles
 internal/render/     generación del SVG
 internal/gallery/    web estática de la galería
+internal/og/         imagen PNG 1200x630 para Open Graph (solo biblioteca estándar)
 testdata/            eventos de ejemplo del usuario ficticio «octoexample»
 action.yml           la GitHub Action
 ```

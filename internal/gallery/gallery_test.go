@@ -3,6 +3,7 @@ package gallery
 import (
 	"bytes"
 	"encoding/xml"
+	"image/png"
 	"io"
 	"os"
 	"path/filepath"
@@ -32,8 +33,8 @@ func TestBuild(t *testing.T) {
 		t.Fatal(err)
 	}
 	// 20 stage×mood cards and 4 accessory cards, light and dark, plus
-	// favicon, hero and index.
-	if want := (20+4)*2 + 3; n != want {
+	// favicon, hero, og.png and index.
+	if want := (20+4)*2 + 4; n != want {
 		t.Fatalf("Build wrote %d files, want %d", n, want)
 	}
 
@@ -151,12 +152,15 @@ func TestPageHeadForSharing(t *testing.T) {
 		t.Errorf("meta description has %d characters: %q", len(desc), desc)
 	}
 	for key, want := range map[string]string{
-		"og:title":       title[1],
-		"og:description": desc,
-		"og:image":       "https://bertmarti.github.io/commitling/hero.svg",
-		"og:url":         "https://bertmarti.github.io/commitling/",
-		"og:type":        "website",
-		"twitter:card":   "summary",
+		"og:title":        title[1],
+		"og:description":  desc,
+		"og:image":        "https://bertmarti.github.io/commitling/og.png",
+		"og:image:type":   "image/png",
+		"og:image:width":  "1200",
+		"og:image:height": "630",
+		"og:url":          "https://bertmarti.github.io/commitling/",
+		"og:type":         "website",
+		"twitter:card":    "summary_large_image",
 	} {
 		if got := meta(page, key); got != want {
 			t.Errorf("%s = %q, want %q", key, got, want)
@@ -212,5 +216,27 @@ func TestPageImagesHaveAltAndSize(t *testing.T) {
 		if !strings.Contains(img, "width=") || !strings.Contains(img, "height=") {
 			t.Errorf("image without size (layout shift): %s", img)
 		}
+	}
+}
+
+func TestBuildWritesOpenGraphPNG(t *testing.T) {
+	dir := t.TempDir()
+	if _, err := Build(dir, "test"); err != nil {
+		t.Fatal(err)
+	}
+	f, err := os.Open(filepath.Join(dir, "og.png"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	cfg, err := png.DecodeConfig(f)
+	if err != nil {
+		t.Fatalf("og.png is not a valid PNG: %v", err)
+	}
+	if cfg.Width != 1200 || cfg.Height != 630 {
+		t.Fatalf("og.png is %dx%d, want 1200x630", cfg.Width, cfg.Height)
+	}
+	if !strings.HasSuffix(OGImage, "/og.png") {
+		t.Errorf("OGImage = %q, want the PNG", OGImage)
 	}
 }
