@@ -1,12 +1,15 @@
 # MEMORY.md · commitling
-Última actualización: 2026-09-30 por qa
+Última actualización: 2026-09-30 por docs
 
 ## Estado actual
-v0.1.0 está en `main` (MVP, revisión QA y guía de uso ya fusionados). Fase v0.2.0, guiada por issues (ver «Equipo de agentes y ramas» en AGENTS.md): el builder entrega un PR por issue, todos contra `main` y en este orden de fusión:
+v0.1.0 está en `main` (MVP, revisión QA y guía de uso ya fusionados). Fase v0.2.0, guiada por issues (ver «Equipo de agentes y ramas» en AGENTS.md): todo el trabajo está hecho y en PR abiertos contra `main` (ninguno fusionado aún), a fusionar en este orden:
 1. #4 `agent/builder/4-reintentos-5xx`: el cliente de la API reintenta (hecho, PR #10).
 2. #5 `agent/builder/5-og-png`: PNG 1200x630 para Open Graph (hecho, PR #11).
 3. #6 `agent/builder/6-nueva-especie`: segunda especie seleccionable (hecho, PR #12).
-4. #7 `agent/builder/7-action-v1`: Action lista para v1 y el Marketplace (hecho, PR abierto). Ojo: los ejemplos ya dicen `@v1`, que no existe hasta que Alberto cree la etiqueta; fusionar #7 y crear la etiqueta seguidos.
+4. #7 `agent/builder/7-action-v1`: Action lista para v1 y el Marketplace (hecho, PR #13). Ojo: los ejemplos ya dicen `@v1`, que no existe hasta que Alberto cree la etiqueta; fusionar #7 y crear la etiqueta seguidos.
+
+5. #8 `agent/qa/8-revision-v0.2`: revisión QA (hecho, PR #14).
+6. #9 `agent/docs/9-documentacion-v0.2`: documentación de v0.2.0 (hecho, PR #15, este).
 
 Cambios de #7: `action.yml` validado para el Marketplace (nombre `commitling`, descripción de 104 caracteres, `author`, `branding` `feather`/`green`), ejemplos del README, la galería y `docs/USO.md` con `@v1`, sección «GitHub Marketplace y versiones» en el README y tests que vigilan `action.yml`, sus entradas frente al README y que no quede `@main` en los ejemplos.
 
@@ -18,7 +21,9 @@ Cambios de #5: nuevo paquete `internal/og` (PNG 1200x630 con `image`, `image/col
 
 Cambios de #4: el cliente reintenta hasta 3 veces (esperas de 1, 2 y 4 s) ante 500, 502, 503 y 504 y ante límite de peticiones (429, o 403 con `Retry-After` o `X-RateLimit-Remaining: 0`), respeta `Retry-After` (segundos o fecha) y `X-RateLimit-Reset` y no reintenta 404, 422 ni otros 4xx.
 
-Revisión QA de v0.2.0 (#8, rama `agent/qa/8-revision-v0.2`, PR contra `main`, se fusiona después de #13): reintentos también ante errores de red, espera negativa por cabeceras enormes corregida, CLI `0.2.0`, galería con contraste AA del acento, enlace para saltar y salto entre especies, `og:image:alt` con las dos especies y tests nuevos de `action.yml` y de especie inválida. Detalle en «Decisiones».
+Revisión QA de v0.2.0 (#8, rama `agent/qa/8-revision-v0.2`, PR #14 contra `main`, se fusiona después de #13): reintentos también ante errores de red, espera negativa por cabeceras enormes corregida, CLI `0.2.0`, galería con contraste AA del acento, enlace para saltar y salto entre especies, `og:image:alt` con las dos especies y tests nuevos de `action.yml` y de especie inválida. Detalle en «Decisiones».
+
+Documentación de v0.2.0 (#9, PR #15, se fusiona después de #14): `CHANGELOG.md` nuevo (Keep a Changelog, en español, con `[0.2.0]` y `[0.1.0]`), `docs/USO.md` con especies (valores y alias), versiones de la Action y cómo actualizar desde `@main`, comando `og` y reintentos; README con capturas de la galería, reintentos, Marketplace y «Cómo se ha hecho» con el equipo real; `CONTRIBUTING.md` con el flujo por issues y la receta para añadir una especie.
 
 ## Decisiones (por qué)
 - 2026-09-29: Animación con CSS dentro del SVG porque GitHub no ejecuta JavaScript en los README.
@@ -66,12 +71,17 @@ Revisión QA de v0.2.0 (#8, rama `agent/qa/8-revision-v0.2`, PR contra `main`, s
 - 2026-09-30 (qa): revisados sin cambios: PNG (1200x630, determinista, paleta indexada, la fuente cubre todo lo que se dibuja y nada sale del marco), hongo (diseño propio, sin cara en el pie ni sombrero rojo con puntos; XML válido y determinista en las 2x5x4x2x2 combinaciones), `species` inválido (error de uso claro y antes de tocar la red) y `branding` de `action.yml` (`feather`/`green`).
 - 2026-09-30 (qa): `action.yml` vigilado además por test (escalares planos seguros para YAML, valores por defecto iguales a los de la CLI, entradas en `docs/USO.md`) y `action-test.yml` comprueba que `species: dragon` hace fallar la Action sin escribir el archivo.
 
+- 2026-09-30 (docs): el `CHANGELOG.md` sigue Keep a Changelog y cita PR e issues; las fechas de `[0.1.0]` y `[0.2.0]` son 2026-09-30 y quedan como plantilla: si la release se crea otro día, cambia la fecha de `[0.2.0]` y añade `[Sin publicar]`. El enlace de comparación `v0.1.0...v0.2.0` solo funciona cuando exista la etiqueta `v0.2.0`.
+- 2026-09-30 (docs): `docs/USO.md` y el README no pueden contener la cadena `commitling@main` (un test la prohíbe para que no queden ejemplos con la rama): se menciona la rama como `@main` a secas. `docs/USO.md` pasa a nueve secciones (nuevas: «Versiones de la Action y cómo actualizar» y «Desde la línea de órdenes y la imagen de vista previa»).
+- 2026-09-30 (docs): las capturas del README apuntan a los SVG de la galería desplegada (`svg/ancient-radiant.svg` y `svg/mushroom-ancient-radiant.svg`), así que se ven tras el primer despliegue de Pages, igual que la criatura en vivo.
+- 2026-09-30 (docs): «Cómo se ha hecho» describe el equipo real: lead y builder de v0.1 con Claude Opus; qa, docs y toda la v0.2 con Claude Sonnet; OpenCode previsto pero sin poder ejecutarse en modo autónomo; Alberto supervisa y fusiona.
+
 ## Siguiente paso
-1. Alberto: fusionar los PR del builder en orden (#10, #11, #12 y el de #7) y, tras cada uno, comprobar el CI.
-2. Alberto: justo después de fusionar el de #7, crear la etiqueta `v1` y publicar en el Marketplace (instrucciones exactas en el PR de #7); mientras no exista `v1`, los ejemplos con `@v1` fallan.
-3. Alberto: tras fusionar el PR de QA (#8) la CLI ya dice `0.2.0`; crear la release `v0.2.0` cuando todo esté fusionado y el CI en verde.
+1. Alberto: fusionar los PR en orden (#10, #11, #12, #13, #14 y #15) y, tras cada uno, comprobar el CI (todos van contra `main`).
+2. Alberto: justo después de fusionar #13 (o al terminar la serie), crear la etiqueta `v1` (y `v1.0.0`) y publicar en el Marketplace (instrucciones exactas en el PR #13); mientras no exista `v1`, los ejemplos con `@v1` fallan.
+3. Alberto: con todo fusionado y el CI de `main` en verde, crear la etiqueta y la release `v0.2.0` (la CLI ya dice `0.2.0`; las notas salen de `CHANGELOG.md`). Comprobar entonces que el enlace de comparación del changelog abre.
 4. qa (otra ronda): revisión visual real de la galería en navegador y del foco/orden de tabulación en móvil.
-5. Pendiente menor: la sección «Cómo se ha hecho» del README aún cita OpenCode como parte del equipo.
+5. Tras el primer despliegue de Pages, comprobar que se ven las capturas del README y `og.png`.
 
 ## Problemas conocidos
 - En el Windows local de Alberto, el Control de aplicaciones (Smart App Control) bloquea a veces los binarios que genera Go (`go test`, `go run`, `go build`). Solución: `GOTMPDIR="$PWD/out/gotmp"` y reintentar; en el CI no pasa.
@@ -94,3 +104,4 @@ Revisión QA de v0.2.0 (#8, rama `agent/qa/8-revision-v0.2`, PR contra `main`, s
 - 2026-09-30 builder · Claude Code Sonnet (agent/builder/6-nueva-especie): especie hongo (#6): sprites, `--species`, entrada `species`, galería con dos especies, Open Graph con ambas y tests.
 - 2026-09-30 builder · Claude Code Sonnet (agent/builder/7-action-v1): Action lista para v1 y el Marketplace (#7): `@v1` en los ejemplos, sección de Marketplace en el README y tests de `action.yml`.
 - 2026-09-30 qa · Claude Code Sonnet (agent/qa/8-revision-v0.2): revisión de v0.2.0 (#8): reintentos ante errores de red, espera negativa con cabeceras enormes, CLI 0.2.0, contraste AA y navegación de la galería, tests de `action.yml` y de especie inválida.
+- 2026-09-30 docs · Claude Code Sonnet (agent/docs/9-documentacion-v0.2): documentación de v0.2.0 (#9): `CHANGELOG.md`, `docs/USO.md` (especies, `og`, reintentos, `@v1`), README (capturas, «Cómo se ha hecho» real), `CONTRIBUTING.md` (flujo por issues, receta de especie) y este archivo.

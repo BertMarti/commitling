@@ -9,8 +9,10 @@ Esta guía es para ti si quieres tener tu propia criatura de commitling en el pe
 3. [Ponerla en tu perfil, paso a paso](#3-ponerla-en-tu-perfil-paso-a-paso)
 4. [Tema oscuro](#4-tema-oscuro)
 5. [Las reglas: XP, fases, ánimos y accesorios](#5-las-reglas-xp-fases-ánimos-y-accesorios)
-6. [Preguntas frecuentes](#6-preguntas-frecuentes)
-7. [Solución de problemas](#7-solución-de-problemas)
+6. [Versiones de la Action y cómo actualizar](#6-versiones-de-la-action-y-cómo-actualizar)
+7. [Desde la línea de órdenes y la imagen de vista previa](#7-desde-la-línea-de-órdenes-y-la-imagen-de-vista-previa)
+8. [Preguntas frecuentes](#8-preguntas-frecuentes)
+9. [Solución de problemas](#9-solución-de-problemas)
 
 ---
 
@@ -132,7 +134,7 @@ Dentro de `with:` puedes ajustar:
 
 ### Elegir la especie
 
-Por defecto tu criatura es un **brote de musgo**. Si prefieres el **hongo**, añade `species: mushroom` en `with:`:
+Hay dos especies, las dos de diseño propio y con las mismas reglas (XP, ánimos y accesorios). Por defecto tu criatura es un **brote de musgo** (`moss`). Si prefieres el **hongo** (`mushroom`), una seta pequeña de sombrero miel, añade `species: mushroom` en `with:`:
 
 ```yaml
       - uses: BertMarti/commitling@v1
@@ -141,7 +143,26 @@ Por defecto tu criatura es un **brote de musgo**. Si prefieres el **hongo**, añ
           species: mushroom
 ```
 
-Las reglas son las mismas; solo cambian el dibujo y el nombre de las fases (Espora, Botón, Seta, Seta grande y Corro de setas). Cualquier otro valor hace fallar el paso con un mensaje claro. Puedes verlas todas en la [galería](https://bertmarti.github.io/commitling/#galeria).
+Solo cambian el dibujo y el nombre de las fases:
+
+| Fase | Desde | Brote de musgo (`moss`) | Hongo (`mushroom`) |
+|---|---|---|---|
+| 1 | 0 XP | Semilla | Espora |
+| 2 | 100 XP | Brote | Botón |
+| 3 | 400 XP | Retoño | Seta |
+| 4 | 1.000 XP | Arbusto | Seta grande |
+| 5 | 2.500 XP | Árbol ancestral | Corro de setas |
+
+Valores que acepta `species` (sin distinguir mayúsculas ni espacios alrededor):
+
+| Especie | Valores válidos |
+|---|---|
+| Brote de musgo | `moss`, `musgo`, `brote de musgo` (y vacío, que es la predeterminada) |
+| Hongo | `mushroom`, `hongo`, `seta`, `setas` |
+
+Cualquier otro valor (por ejemplo `dragon`) hace fallar el paso a propósito, con el mensaje `especie no válida "dragon" (usa moss o mushroom)`, para que un error tipográfico no pase desapercibido, y no escribe ningún archivo. Puedes ver todas las fases de las dos especies en la [galería](https://bertmarti.github.io/commitling/#galeria).
+
+¿Las dos a la vez? Sí: usa la Action dos veces con `out` distinto (por ejemplo `commitling.svg` y `commitling-hongo.svg`, cada uno con su `species`), suma el segundo archivo al `git add` y enseña la imagen que quieras en el README.
 
 ## 4. Tema oscuro
 
@@ -253,10 +274,60 @@ Ejemplos (hoy es viernes):
 - «Repositorios distintos» solo cuenta repositorios en los que hiciste commits, abriste una pull request o una issue. Dar una estrella no cuenta. La tarjeta lo muestra como `repos`.
 - Los accesorios se pueden tener a la vez y se pierden si dejas de cumplir la condición.
 
-## 6. Preguntas frecuentes
+## 6. Versiones de la Action y cómo actualizar
+
+En el workflow, la línea `uses: BertMarti/commitling@...` decide qué versión de commitling se ejecuta:
+
+| Escribes | Qué significa | Cuándo usarla |
+|---|---|---|
+| `@v1` | La versión mayor 1: la etiqueta `v1` se mueve con cada versión 1.x compatible, así que recibes mejoras y correcciones sin tocar nada | Lo recomendado |
+| `@v1.0.0` | Una versión exacta, que nunca cambia | Si quieres controlar tú cuándo actualizas |
+| `@<sha>` (huella de un commit) | Una copia exacta del código, la opción más reproducible | Si te importa la máxima seguridad |
+| `@main` | La rama de desarrollo, que puede cambiar en cualquier momento (y romper tu workflow) | Solo para probar cambios |
+
+**Actualizar desde `@main` a `@v1`.** Si copiaste un workflow antiguo cuya línea `uses:` de commitling terminaba en `@main`:
+
+1. Abre `.github/workflows/commitling.yml` en tu repositorio de perfil y pulsa el lápiz.
+2. En esa línea `uses:`, cambia `@main` por `@v1` (en cada sitio donde aparezca: dos veces si tienes la variante con tema oscuro).
+3. Guarda con **Commit changes** y lanza el workflow a mano (**Actions → commitling → Run workflow**).
+
+No hay que tocar nada más: las entradas (`out`, `theme`, `user`, `token`) siguen igual, y `species` es opcional (sin ella, sigues con el brote de musgo).
+
+Si el workflow falla con «unable to find version `v1`» es que la etiqueta `v1` aún no existe (la crea el responsable del proyecto al publicar la versión 1). Mientras tanto usa `@main`.
+
+La Action aparece en el [GitHub Marketplace](https://github.com/marketplace?type=actions) buscando «commitling»; el uso es el mismo que el del ejemplo del paso 2.
+
+## 7. Desde la línea de órdenes y la imagen de vista previa
+
+Esto es para quien quiera probar commitling en su ordenador (hace falta Go 1.27, sin dependencias externas); no hace falta para usarlo en tu perfil. Desde una copia del repositorio:
+
+```sh
+# Tu criatura (GITHUB_TOKEN es opcional, pero sube el límite de peticiones)
+go run ./cmd/commitling render --user tu-usuario --out out/commitling.svg
+
+# El hongo en tema oscuro
+go run ./cmd/commitling render --user tu-usuario --species mushroom --theme dark --out out/hongo-dark.svg
+
+# Sin red, con datos de ejemplo de un usuario ficticio
+go run ./cmd/commitling render --fixture testdata/events.json --out out/commitling.svg
+
+# Todas las fases, ánimos y accesorios como web estática
+go run ./cmd/commitling gallery --out site/
+
+# La imagen de vista previa (PNG de 1200x630)
+go run ./cmd/commitling og --out out/og.png
+
+go run ./cmd/commitling version
+```
+
+`--species` acepta los mismos valores que `species` en la Action (sección 3) y `--out -` escribe en la salida estándar.
+
+**La imagen de vista previa (`og`).** Es el PNG de 1200×630 píxeles que muestran Slack, X, LinkedIn o Telegram cuando alguien pega el enlace de la web del proyecto (formato «Open Graph»). Enseña una criatura grande y las cinco fases de las dos especies, en la paleta de la criatura, sin suavizado y en unos 3 KB. `commitling og --out og.png` la dibuja donde le digas (con `--out -` va a la salida estándar); no necesita red ni usuario, y sale siempre igual. Solo te hace falta si mantienes tu propia web: `commitling gallery` ya la genera como `og.png` dentro de la carpeta de salida y las etiquetas `og:image` de la página apuntan a ella. Ten en cuenta que las redes sociales guardan las vistas previas en caché, así que un cambio puede tardar en verse.
+
+## 8. Preguntas frecuentes
 
 **¿Por qué no se actualiza?**
-La Action se ejecuta una vez al día (05:23 UTC) y solo guarda un archivo nuevo si la criatura ha cambiado, así que muchos días no verás ningún commit nuevo. Además, GitHub tarda un poco en publicar tus eventos y el navegador puede tener la imagen antigua en caché. Para forzar una actualización: pestaña **Actions → commitling → Run workflow** y recarga tu perfil con Ctrl+F5 (o Cmd+Mayús+R en Mac). Si el workflow acaba en verde, la imagen está al día. Más pistas en [Solución de problemas](#7-solución-de-problemas).
+La Action se ejecuta una vez al día (05:23 UTC) y solo guarda un archivo nuevo si la criatura ha cambiado, así que muchos días no verás ningún commit nuevo. Además, GitHub tarda un poco en publicar tus eventos y el navegador puede tener la imagen antigua en caché. Para forzar una actualización: pestaña **Actions → commitling → Run workflow** y recarga tu perfil con Ctrl+F5 (o Cmd+Mayús+R en Mac). Si el workflow acaba en verde, la imagen está al día. Más pistas en [Solución de problemas](#9-solución-de-problemas).
 
 **¿Usa mis repositorios privados?**
 No. commitling solo lee la API **pública** de eventos de GitHub, es decir, lo mismo que cualquiera puede ver de ti. Tu actividad en repositorios privados no cuenta, ni siquiera aunque tengas activada la opción de mostrar contribuciones privadas en tu perfil. No guarda nada fuera de tu propio repositorio y solo necesita el permiso `contents: write` del workflow.
@@ -273,6 +344,15 @@ El ánimo se recalcula en cada ejecución. Con la actividad de hoy pasas a «Con
 **¿Se puede dibujar a otra persona?**
 Sí. Añade `user: nombre-de-usuario` dentro del `with:` de la Action. Solo se usa su actividad pública.
 
+**¿Qué especie elijo?**
+La que más te guste: el dibujo cambia, pero la XP, los ánimos, los accesorios y los umbrales de fase son idénticos. Puedes cambiar de especie cuando quieras editando `species:` en el workflow; la criatura conserva la misma fase porque solo depende de tu actividad.
+
+**¿Qué pasa si GitHub falla justo cuando se ejecuta?**
+commitling repite la petición por su cuenta antes de fallar; el detalle está en [El workflow falla por el límite de la API](#el-workflow-falla-por-el-límite-de-la-api). Si aun así se rinde, el workflow queda en rojo, no se guarda nada y al día siguiente se vuelve a intentar.
+
+**¿Cómo pasó de `@main` a `@v1`?**
+Es solo cambiar una palabra en el workflow; los pasos están en la sección [Versiones de la Action y cómo actualizar](#6-versiones-de-la-action-y-cómo-actualizar).
+
 **¿Cómo la quito?**
 1. Borra la línea `![commitling](./commitling.svg)` (o el bloque `<picture>`) de tu README.
 2. Borra el archivo `.github/workflows/commitling.yml` (abre el archivo, menú `⋯`, **Delete file**).
@@ -280,7 +360,7 @@ Sí. Añade `user: nombre-de-usuario` dentro del `with:` de la Action. Solo se u
 
 Si solo quieres pausarlo sin borrar nada: **Actions → commitling → menú ⋯ → Disable workflow**.
 
-## 7. Solución de problemas
+## 9. Solución de problemas
 
 ### La imagen del README aparece rota
 
@@ -298,7 +378,13 @@ Verás algo como «Permission denied» o `403` en el paso «Guardar el SVG si ha
 
 ### El workflow falla por el límite de la API
 
-El mensaje dice que GitHub ha rechazado la petición (403 o 429) y que puede ser el límite de peticiones. En un workflow normal no debería pasar, porque la Action usa el token del propio workflow, que tiene más margen. commitling ya reintenta por su cuenta (hasta 3 veces, con esperas de 1, 2 y 4 segundos o las que indique GitHub en `Retry-After` y `X-RateLimit-Reset`, con un tope de 30 s); si aun así falla, es pasajero: espera y vuelve a ejecutarlo. Comprueba también que no has puesto un `token:` propio caducado. Si la usas fuera de GitHub Actions (en la línea de órdenes), define la variable `GITHUB_TOKEN` para subir el límite. Otros errores que puedes ver: «usuario no encontrado» (404: revisa el nombre en `user:`) y caídas puntuales de la API (500, 502, 503 o 504), que también se reintentan hasta 3 veces antes de fallar (igual que los errores de red: DNS, conexión rechazada o tiempo agotado, que dicen «no se pudo contactar con la API de GitHub»); si persisten, ejecuta de nuevo más tarde.
+El mensaje dice que GitHub ha rechazado la petición (403 o 429) y que puede ser el límite de peticiones, o que la API ha fallado (500, 502, 503 o 504) o no ha respondido. commitling ya reintenta por su cuenta antes de rendirse:
+
+- **Qué se reintenta:** los errores del servidor (500, 502, 503 y 504), el límite de peticiones (429, o 403 con `Retry-After` o `X-RateLimit-Remaining: 0`) y los errores de red (DNS, conexión rechazada o cortada, tiempo agotado; el mensaje dice «no se pudo contactar con la API de GitHub»). Solo se repite la página que falla, no todas.
+- **Cuántas veces:** hasta 3 reintentos (4 intentos en total), con esperas de 1, 2 y 4 segundos, o las que indique GitHub en `Retry-After` o `X-RateLimit-Reset`. En total, unos 7 segundos de espera como mucho.
+- **Cuándo se rinde:** al agotar los 3 reintentos (el error dice «tras 3 reintentos»), o de inmediato si GitHub pide esperar más de 30 segundos (por ejemplo, hasta que se reinicie la cuota dentro de media hora): esperar tanto colgaría el workflow. Tampoco reintenta lo que no tiene arreglo esperando: usuario no encontrado (404), 422 y un 403 sin cabeceras de límite (que es un problema de permisos).
+
+En un workflow normal no debería pasar, porque la Action usa el token del propio workflow, que tiene más margen. Si falla, es casi siempre pasajero: espera y vuelve a ejecutarlo (o deja que lo haga el cron del día siguiente). Comprueba también que no has puesto un `token:` propio caducado, y que el usuario de `user:` existe. Si la usas fuera de GitHub Actions (en la línea de órdenes), define la variable `GITHUB_TOKEN` para subir el límite.
 
 ### El workflow termina en verde pero no hace commit
 
