@@ -85,7 +85,7 @@ func TestMissingFixture(t *testing.T) {
 
 func TestVersionAndGallery(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	if err := run([]string{"version"}, &stdout, &stderr); err != nil || !strings.HasPrefix(stdout.String(), "commitling ") {
+	if err := run([]string{"version"}, &stdout, &stderr); err != nil || stdout.String() != "commitling 0.2.0\n" {
 		t.Fatalf("version: %v %q", err, stdout.String())
 	}
 	dir := t.TempDir()
@@ -166,5 +166,36 @@ func TestRenderSpecies(t *testing.T) {
 	var ue usageError
 	if _, err := render("--species", "dragon"); !errors.As(err, &ue) {
 		t.Errorf("unknown species: err = %v, want a usage error", err)
+	}
+}
+
+// An invalid species is rejected before anything is fetched or written, and
+// the message says which values are valid.
+func TestRenderInvalidSpeciesFailsEarlyAndClearly(t *testing.T) {
+	out := filepath.Join(t.TempDir(), "x.svg")
+	for _, bad := range []string{"dragon", "moss,mushroom", "hongos", "Hóngo", "../etc"} {
+		var stdout, stderr bytes.Buffer
+		// --user without a fixture would go to the network: it must not get there.
+		err := run([]string{"render", "--user", "octoexample", "--species", bad, "--out", out}, &stdout, &stderr)
+		var ue usageError
+		if !errors.As(err, &ue) {
+			t.Errorf("%q: err = %v, want a usage error", bad, err)
+			continue
+		}
+		for _, want := range []string{"especie no válida", bad, "moss", "mushroom"} {
+			if !strings.Contains(err.Error(), want) {
+				t.Errorf("%q: message %q should contain %q", bad, err, want)
+			}
+		}
+		if _, statErr := os.Stat(out); statErr == nil {
+			t.Errorf("%q: the output file was written", bad)
+		}
+	}
+	// Case, spaces and the empty value (an unset Action input) are fine.
+	for _, ok := range []string{"", "MUSHROOM", " Hongo ", "Seta", "MOSS", "Musgo"} {
+		var stdout, stderr bytes.Buffer
+		if err := run([]string{"render", "--fixture", fixture, "--species", ok, "--out", "-"}, &stdout, &stderr); err != nil {
+			t.Errorf("%q: %v", ok, err)
+		}
 	}
 }

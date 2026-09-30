@@ -5,9 +5,11 @@ import (
 	"encoding/xml"
 	"image/png"
 	"io"
+	"math"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -173,6 +175,10 @@ func TestPageHeadForSharing(t *testing.T) {
 	if meta(page, "og:image:alt") == "" {
 		t.Error("og:image needs an alt text")
 	}
+	// The PNG shows both species, so its alt text must say so.
+	if alt := strings.ToLower(meta(page, "og:image:alt")); !strings.Contains(alt, "hongo") || !strings.Contains(alt, "musgo") {
+		t.Errorf("og:image:alt %q should mention both species", alt)
+	}
 }
 
 func TestCopyButtonsAreAccessible(t *testing.T) {
@@ -284,5 +290,105 @@ func TestBuildShowsBothSpecies(t *testing.T) {
 	// The rules table lists both names of each stage.
 	if !strings.Contains(page, "Semilla / Espora") || !strings.Contains(page, "Árbol ancestral / Corro de setas") {
 		t.Error("the stages table does not show both species")
+	}
+}
+
+func luminance(hex string) float64 {
+	var c [3]float64
+	for i := range c {
+		v, _ := strconv.ParseUint(hex[1+2*i:3+2*i], 16, 8)
+		f := float64(v) / 255
+		if f <= 0.03928 {
+			c[i] = f / 12.92
+		} else {
+			c[i] = math.Pow((f+0.055)/1.055, 2.4)
+		}
+	}
+	return 0.2126*c[0] + 0.7152*c[1] + 0.0722*c[2]
+}
+
+func contrast(a, b string) float64 {
+	la, lb := luminance(a), luminance(b)
+	if la < lb {
+		la, lb = lb, la
+	}
+	return (la + 0.05) / (lb + 0.05)
+}
+
+// Text colours of the page, in both themes, reach WCAG AA (4.5:1) on the
+// backgrounds they are drawn on; the focus outline needs 3:1.
+func TestPageColoursReachAA(t *testing.T) {
+	page := buildPage(t)
+	vars := func(block string) map[string]string {
+		m := map[string]string{}
+		for _, kv := range regexp.MustCompile(`--([a-z]+):(#[0-9a-f]{6})`).FindAllStringSubmatch(block, -1) {
+			m[kv[1]] = kv[2]
+		}
+		return m
+	}
+	light := vars(regexp.MustCompile(`(?s):root\{(.*?)\}`).FindStringSubmatch(page)[1])
+	darkOver := vars(regexp.MustCompile(`(?s)prefers-color-scheme:dark\)\{\s*:root\{(.*?)\}`).FindStringSubmatch(page)[1])
+	dark := map[string]string{}
+	for k, v := range light {
+		dark[k] = v
+	}
+	for k, v := range darkOver {
+		dark[k] = v
+	}
+	for name, th := range map[string]map[string]string{"claro": light, "oscuro": dark} {
+		for _, p := range []struct {
+			fg, bg string
+			min    float64
+		}{
+			{"ink", "paper", 4.5}, {"muted", "paper", 4.5}, {"muted", "code", 4.5},
+			{"ink", "code", 4.5}, {"accent", "paper", 4.5}, // links on hover
+		} {
+			if got := contrast(th[p.fg], th[p.bg]); got < p.min {
+				t.Errorf("tema %s: %s (%s) sobre %s (%s) tiene contraste %.2f, mínimo %.1f", name, p.fg, th[p.fg], p.bg, th[p.bg], got, p.min)
+			}
+		}
+	}
+}
+
+// A keyboard user can skip the header and jump between the species.
+func TestPageHasSkipLinkAndSpeciesNav(t *testing.T) {
+	page := buildPage(t)
+	if !strings.Contains(page, `href="#contenido"`) || !strings.Contains(page, `<main id="contenido"`) {
+		t.Error("no skip link to the main content")
+	}
+	if !strings.Contains(page, `aria-label="Especies"`) {
+		t.Error("no navigation between species")
+	}
+	for _, sp := range creature.AllSpecies {
+		if !strings.Contains(page, `<a href="#especie-`+sp.Slug()+`">`+sp.Name()+`</a>`) {
+			t.Errorf("no link to the %s section", sp.Name())
+		}
+	}
+	// The skip link is hidden until it gets focus.
+	if !strings.Contains(page, ".skip:focus") {
+		t.Error("the skip link has no focus style")
+	}
+}
+
+// Every image of the gallery has a text alternative, and no two images of
+// the same section share it (each card says its stage, mood and accessories).
+func TestGalleryAltsAreUnique(t *testing.T) {
+	page := buildPage(t)
+	seen := map[string]bool{}
+	for _, m := range regexp.MustCompile(`<img src="(svg/[^"]+)"[^>]*alt="([^"]*)"`).FindAllStringSubmatch(page, -1) {
+		if m[2] == "" {
+			t.Errorf("%s has an empty alt", m[1])
+		}
+		if strings.HasSuffix(m[1], "-dark.svg") {
+			continue
+		}
+		key := m[2]
+		if seen[key] {
+			t.Errorf("duplicated alt %q", key)
+		}
+		seen[key] = true
+	}
+	if len(seen) < 40 {
+		t.Errorf("only %d cards with alt, want 2 species x 24", len(seen))
 	}
 }

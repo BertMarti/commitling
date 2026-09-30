@@ -13,7 +13,7 @@
 <meta property="og:description" content="{{.Description}}">
 <meta property="og:url" content="{{.SiteURL}}">
 <meta property="og:image" content="{{.OGImage}}">
-<meta property="og:image:alt" content="commitling: un retoño pixel-art con una flor y, debajo del nombre, las cinco fases de la criatura">
+<meta property="og:image:alt" content="commitling: un retoño pixel-art con una flor y, debajo del nombre, las cinco fases de cada una de las dos especies, el brote de musgo y el hongo">
 <meta property="og:image:type" content="image/png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -22,11 +22,11 @@
 <style>
 :root{
   --paper:#f3efe6;--ink:#2b2724;--line:#ddd5c6;--muted:#6b6259;
-  --moss:#7fb069;--honey:#e6aa68;--accent:#ca3c25;--code:#ebe5d8;
+  --moss:#7fb069;--honey:#e6aa68;--accent:#b8341f;--code:#ebe5d8;
   color-scheme:light dark;
 }
 @media (prefers-color-scheme:dark){
-  :root{--paper:#2b2724;--ink:#f3efe6;--line:#4a433d;--muted:#a39a8e;--code:#34302c}
+  :root{--paper:#2b2724;--ink:#f3efe6;--line:#4a433d;--muted:#a39a8e;--accent:#ee6e55;--code:#34302c}
 }
 *{box-sizing:border-box}
 html{background:var(--paper)}
@@ -36,6 +36,9 @@ main,header,footer{max-width:1000px;margin:0 auto;padding:0 20px}
 a{color:inherit;text-decoration-color:var(--accent);text-underline-offset:3px;text-decoration-thickness:2px}
 a:hover{color:var(--accent)}
 :focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.skip{position:absolute;left:-9999px;top:8px;padding:6px 12px;background:var(--paper);color:var(--ink);border:2px solid var(--ink);z-index:1}
+.skip:focus{left:8px}
+.jump{display:block;margin:0 0 6px;font-size:14px}
 header{padding-top:72px;padding-bottom:40px;display:grid;grid-template-columns:auto 1fr;gap:28px;align-items:center}
 header img{width:112px;height:112px;image-rendering:pixelated}
 h1{font-size:34px;line-height:1.1;margin:0 0 10px;letter-spacing:-.02em}
@@ -89,6 +92,7 @@ footer p{max-width:none}
 </style>
 </head>
 <body>
+<a class="skip" href="#contenido">Saltar al contenido</a>
 <header>
   <img src="{{.Hero}}" alt="" width="112" height="112">
   <div>
@@ -103,7 +107,7 @@ footer p{max-width:none}
     </nav>
   </div>
 </header>
-<main>
+<main id="contenido">
   <section id="vivo" aria-labelledby="vivo-t">
     <h2 id="vivo-t">En vivo</h2>
     <div class="live">
@@ -129,6 +133,7 @@ footer p{max-width:none}
   <section id="galeria" aria-labelledby="galeria-t">
     <h2 id="galeria-t">Galería</h2>
     <p>Todas las especies, fases y ánimos, dibujados con estadísticas de ejemplo de un usuario ficticio. La especie se elige con la entrada <code>species</code> de la Action (o <code>--species</code> en la línea de órdenes); si no la indicas, sale el brote de musgo.</p>
+    <nav class="jump" aria-label="Especies">Ir a: {{range $i, $s := .Species}}{{if $i}} · {{end}}<a href="#especie-{{$s.ID}}">{{$s.Name}}</a>{{end}}</nav>
     {{range .Species}}
     <h3 class="species" id="especie-{{.ID}}">{{.Name}}</h3>
     <p class="note">{{.Intro}}</p>
