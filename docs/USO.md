@@ -285,10 +285,10 @@ En el workflow, la línea `uses: BertMarti/commitling@...` decide qué versión 
 | `@<sha>` (huella de un commit) | Una copia exacta del código, la opción más reproducible | Si te importa la máxima seguridad |
 | `@main` | La rama de desarrollo, que puede cambiar en cualquier momento (y romper tu workflow) | Solo para probar cambios |
 
-**Actualizar desde `@main` a `@v1`.** Si copiaste un workflow antiguo que usaba `BertMarti/commitling@main`:
+**Actualizar desde `@main` a `@v1`.** Si copiaste un workflow antiguo cuya línea `uses:` de commitling terminaba en `@main`:
 
 1. Abre `.github/workflows/commitling.yml` en tu repositorio de perfil y pulsa el lápiz.
-2. Cambia `BertMarti/commitling@main` por `BertMarti/commitling@v1` en cada sitio donde aparezca (dos veces si tienes la variante con tema oscuro).
+2. En esa línea `uses:`, cambia `@main` por `@v1` (en cada sitio donde aparezca: dos veces si tienes la variante con tema oscuro).
 3. Guarda con **Commit changes** y lanza el workflow a mano (**Actions → commitling → Run workflow**).
 
 No hay que tocar nada más: las entradas (`out`, `theme`, `user`, `token`) siguen igual, y `species` es opcional (sin ella, sigues con el brote de musgo).
