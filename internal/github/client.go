@@ -86,6 +86,30 @@ type APIError struct {
 	Message string
 	// Retries is how many times the request was repeated before giving up.
 	Retries int
+	// RateLimited is set on a 403 that carries rate-limit headers (a plain
+	// 403 is a permissions problem).
+	RateLimited bool
+}
+
+// IsTransient reports whether err is a failure that may pass by itself: no
+// answer at all (network), a server error (5xx) or rate limiting (429, or 403
+// with rate-limit headers). A missing user (404), bad credentials (401), 422,
+// a plain 403 or unparsable data will fail the same way tomorrow.
+func IsTransient(err error) bool {
+	var apiErr *APIError
+	var netErr *netError
+	switch {
+	case errors.As(err, &apiErr):
+		return apiErr.Status >= 500 || apiErr.Status == http.StatusTooManyRequests || apiErr.RateLimited
+	case errors.As(err, &netErr):
+		return true
+	}
+	return false
+}
+
+// rateLimitHeaders reports whether the headers of a 403 say it is rate limiting.
+func rateLimitHeaders(hdr http.Header) bool {
+	return hdr.Get("Retry-After") != "" || hdr.Get("X-RateLimit-Remaining") == "0"
 }
 
 func (e *APIError) Error() string { return e.baseError() + retriesSuffix(e.Retries) }
@@ -216,7 +240,7 @@ func (c *Client) retryWait(status int, hdr http.Header, attempt int) (time.Durat
 		limited = true
 	case http.StatusForbidden:
 		// A plain 403 is a permissions problem; only rate limiting is retried.
-		limited = hdr.Get("Retry-After") != "" || hdr.Get("X-RateLimit-Remaining") == "0"
+		limited = rateLimitHeaders(hdr)
 		if !limited {
 			return 0, false
 		}
@@ -332,7 +356,8 @@ func (c *Client) doPage(ctx context.Context, user string, page int) ([]Event, ht
 		if msg.Message == "" {
 			msg.Message = http.StatusText(resp.StatusCode)
 		}
-		return nil, resp.Header, &APIError{Status: resp.StatusCode, Message: msg.Message}
+		return nil, resp.Header, &APIError{Status: resp.StatusCode, Message: msg.Message,
+			RateLimited: resp.StatusCode == http.StatusForbidden && rateLimitHeaders(resp.Header)}
 	}
 	events, err := ParseEvents(resp.Body)
 	return events, resp.Header, err

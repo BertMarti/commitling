@@ -94,7 +94,7 @@ func runRender(args []string, stdout, stderr io.Writer) error {
 	speciesFlag := fs.String("species", "moss", "especie: moss (brote de musgo) o mushroom (hongo)")
 	nowFlag := fs.String("now", "", "fecha de referencia en RFC3339 (por defecto, ahora; con --fixture, el último evento)")
 	out := fs.String("out", "commitling.svg", "archivo SVG de salida (- para la salida estándar)")
-	keep := fs.Bool("keep-on-error", false, "si falla la API y --out ya es un SVG, conservarlo y terminar con un aviso")
+	keep := fs.Bool("keep-on-error", false, "si la API falla de forma pasajera (red, 5xx, límite de peticiones) y --out ya es un SVG, conservarlo y terminar con un aviso")
 	if err := fs.Parse(args); err != nil {
 		return usageError{err.Error()}
 	}
@@ -124,7 +124,7 @@ func runRender(args []string, stdout, stderr io.Writer) error {
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 		defer cancel()
 		events, err = newClient(os.Getenv("GITHUB_TOKEN")).FetchEvents(ctx, *user)
-		if err != nil && *keep && hasSVG(*out) {
+		if err != nil && *keep && github.IsTransient(err) && hasSVG(*out) {
 			warnKept(stdout, stderr, *out, err)
 			return nil
 		}

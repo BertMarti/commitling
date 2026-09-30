@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -206,16 +207,24 @@ func TestRenderInvalidSpeciesFailsEarlyAndClearly(t *testing.T) {
 	}
 }
 
-// apiDown points the CLI at a server that always answers 503 and returns how
-// many requests it got. Retries do not wait.
-func apiDown(t *testing.T) *int {
+// apiAnswering points the CLI at a server that always answers status (with
+// headers) and returns how many requests it got; status 0 means a server that
+// is not there (connection refused). Retries do not wait.
+func apiAnswering(t *testing.T, status int, headers http.Header) *atomic.Int32 {
 	t.Helper()
-	hits := new(int)
+	hits := new(atomic.Int32)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		*hits++
-		http.Error(w, "caído", http.StatusServiceUnavailable)
+		hits.Add(1)
+		for k, v := range headers {
+			w.Header()[k] = v
+		}
+		http.Error(w, "fallo de prueba", status)
 	}))
-	t.Cleanup(srv.Close)
+	if status == 0 {
+		srv.Close()
+	} else {
+		t.Cleanup(srv.Close)
+	}
 	old := newClient
 	newClient = func(token string) *github.Client {
 		c := github.NewClient(token)
@@ -226,6 +235,9 @@ func apiDown(t *testing.T) *int {
 	t.Cleanup(func() { newClient = old })
 	return hits
 }
+
+// apiDown is a server with a 503.
+func apiDown(t *testing.T) *atomic.Int32 { return apiAnswering(t, http.StatusServiceUnavailable, nil) }
 
 func TestKeepOnErrorKeepsThePreviousSVG(t *testing.T) {
 	hits := apiDown(t)
@@ -239,7 +251,7 @@ func TestKeepOnErrorKeepsThePreviousSVG(t *testing.T) {
 	if err := run([]string{"render", "--user", "octoexample", "--keep-on-error", "--out", out}, &stdout, &stderr); err != nil {
 		t.Fatalf("with a previous SVG the run must end with a warning, got: %v", err)
 	}
-	if *hits == 0 {
+	if hits.Load() == 0 {
 		t.Error("the API was never asked")
 	}
 	if got, _ := os.ReadFile(out); !bytes.Equal(got, previous) {
@@ -274,8 +286,8 @@ func TestKeepOnErrorWithoutPreviousSVGStillFails(t *testing.T) {
 		"not an SVG":   filepath.Join(dir, "roto.svg"),
 		"standard out": "-",
 	}
-	os.WriteFile(cases["empty file"], nil, 0o644)
-	os.WriteFile(cases["not an SVG"], []byte("<svg><g>cortado"), 0o644)
+	writeTest(t, cases["empty file"], "")
+	writeTest(t, cases["not an SVG"], "<svg><g>cortado")
 	for name, out := range cases {
 		var stdout, stderr bytes.Buffer
 		err := run([]string{"render", "--user", "octoexample", "--keep-on-error", "--out", out}, &stdout, &stderr)
@@ -292,7 +304,7 @@ func TestAPIErrorWithoutKeepOnErrorFails(t *testing.T) {
 	apiDown(t)
 	out := filepath.Join(t.TempDir(), "commitling.svg")
 	previous := []byte("<svg></svg>")
-	os.WriteFile(out, previous, 0o644)
+	writeTest(t, out, string(previous))
 	var stdout, stderr bytes.Buffer
 	if err := run([]string{"render", "--user", "octoexample", "--out", out}, &stdout, &stderr); err == nil {
 		t.Fatal("expected the API error")
@@ -305,9 +317,84 @@ func TestAPIErrorWithoutKeepOnErrorFails(t *testing.T) {
 // --keep-on-error is only for API failures: a bad fixture is still an error.
 func TestKeepOnErrorDoesNotHideOtherErrors(t *testing.T) {
 	out := filepath.Join(t.TempDir(), "commitling.svg")
-	os.WriteFile(out, []byte("<svg></svg>"), 0o644)
+	writeTest(t, out, "<svg></svg>")
 	var stdout, stderr bytes.Buffer
 	if err := run([]string{"render", "--fixture", "no-existe.json", "--keep-on-error", "--out", out}, &stdout, &stderr); err == nil {
 		t.Error("a missing fixture must stay an error")
+	}
+}
+
+func writeTest(t *testing.T, path, content string) {
+	t.Helper()
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// Only passing failures keep the previous SVG; the ones that will fail the
+// same way tomorrow (a wrong user or token) must stay visible as errors.
+func TestKeepOnErrorOnlyForTransientFailures(t *testing.T) {
+	limit := http.Header{"X-RateLimit-Remaining": {"0"}}
+	cases := []struct {
+		name      string
+		status    int
+		headers   http.Header
+		transient bool
+	}{
+		{"network error", 0, nil, true},
+		{"500", 500, nil, true},
+		{"503", 503, nil, true},
+		{"429", 429, nil, true},
+		{"403 rate limit", 403, limit, true},
+		{"404 unknown user", 404, nil, false},
+		{"401 bad token", 401, nil, false},
+		{"422", 422, nil, false},
+		{"403 without rate-limit headers", 403, nil, false},
+	}
+	for _, c := range cases {
+		apiAnswering(t, c.status, c.headers)
+		out := filepath.Join(t.TempDir(), "commitling.svg")
+		previous := "<svg>ayer</svg>\n"
+		writeTest(t, out, previous)
+		var stdout, stderr bytes.Buffer
+		err := run([]string{"render", "--user", "octoexample", "--keep-on-error", "--out", out}, &stdout, &stderr)
+		if c.transient && err != nil {
+			t.Errorf("%s: should keep the SVG and warn, got %v", c.name, err)
+		}
+		if !c.transient && err == nil {
+			t.Errorf("%s: a permanent error must fail even with --keep-on-error", c.name)
+		}
+		if got, _ := os.ReadFile(out); string(got) != previous {
+			t.Errorf("%s: the file changed: %q", c.name, got)
+		}
+	}
+}
+
+// What counts as a finished SVG: trailing whitespace (CRLF included) and a
+// BOM at the start do not matter; a cut-off or empty file does.
+func TestHasSVG(t *testing.T) {
+	cases := map[string]struct {
+		content string
+		want    bool
+	}{
+		"plain":        {"<svg></svg>", true},
+		"final LF":     {"<svg></svg>\n", true},
+		"final CRLF":   {"<svg></svg>\r\n", true},
+		"BOM at start": {"\ufeff<svg></svg>\n", true},
+		"empty":        {"", false},
+		"only spaces":  {" \r\n", false},
+		"cut off":      {"<svg><g>", false},
+		"not an SVG":   {"<html></html>", false},
+	}
+	dir := t.TempDir()
+	for name, c := range cases {
+		p := filepath.Join(dir, strings.ReplaceAll(name, " ", "_"))
+		writeTest(t, p, c.content)
+		if got := hasSVG(p); got != c.want {
+			t.Errorf("%s: hasSVG = %v, want %v", name, got, c.want)
+		}
+	}
+	if hasSVG(filepath.Join(dir, "no-existe")) {
+		t.Error("a missing file is not an SVG")
 	}
 }

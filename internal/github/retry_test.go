@@ -528,3 +528,53 @@ func TestHugeRateLimitResetIsNotRetried(t *testing.T) {
 		t.Fatalf("err=%v calls=%d waits=%v, want to give up at once", err, calls.Load(), rec.waits)
 	}
 }
+
+// IsTransient tells a passing failure (worth keeping the last good result
+// for) from one that will not fix itself.
+func TestIsTransient(t *testing.T) {
+	limit := http.Header{"X-RateLimit-Remaining": {"0"}}
+	cases := []struct {
+		name    string
+		status  int
+		headers http.Header
+		want    bool
+	}{
+		{"500", 500, nil, true},
+		{"502", 502, nil, true},
+		{"503", 503, nil, true},
+		{"504", 504, nil, true},
+		{"599", 599, nil, true},
+		{"429", 429, nil, true},
+		{"403 rate limit remaining 0", 403, limit, true},
+		{"403 Retry-After", 403, http.Header{"Retry-After": {"1"}}, true},
+		{"403 without headers", 403, nil, false},
+		{"404", 404, nil, false},
+		{"401", 401, nil, false},
+		{"422", 422, nil, false},
+	}
+	for _, c := range cases {
+		var calls atomic.Int32
+		srv := flaky(t, &calls, c.headers, c.status, c.status, c.status, c.status) // every retry fails too
+		cl, _ := newTestClient(srv.URL)
+		_, err := cl.FetchEvents(context.Background(), "octoexample")
+		if err == nil {
+			t.Fatalf("%s: expected an error", c.name)
+		}
+		if got := IsTransient(err); got != c.want {
+			t.Errorf("%s: IsTransient = %v, want %v (%v)", c.name, got, c.want, err)
+		}
+	}
+
+	// Network failures are transient, also once wrapped.
+	srv := httptest.NewServer(http.NotFoundHandler())
+	srv.Close()
+	cl, _ := newTestClient(srv.URL)
+	_, err := cl.FetchEvents(context.Background(), "octoexample")
+	if !IsTransient(err) || !IsTransient(fmt.Errorf("envuelto: %w", err)) {
+		t.Errorf("a network error must be transient: %v", err)
+	}
+	// Anything else (bad input, unparsable body) is not.
+	if IsTransient(errors.New("otra cosa")) || IsTransient(nil) {
+		t.Error("unknown errors and nil are not transient")
+	}
+}
