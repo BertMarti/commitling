@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -87,17 +88,7 @@ type APIError struct {
 	Retries int
 }
 
-func (e *APIError) Error() string {
-	msg := e.baseError()
-	switch e.Retries {
-	case 0:
-		return msg
-	case 1:
-		return msg + " (tras 1 reintento)"
-	default:
-		return fmt.Sprintf("%s (tras %d reintentos)", msg, e.Retries)
-	}
-}
+func (e *APIError) Error() string { return e.baseError() + retriesSuffix(e.Retries) }
 
 func (e *APIError) baseError() string {
 	switch {
@@ -135,31 +126,83 @@ func (c *Client) FetchEvents(ctx context.Context, user string) ([]Event, error) 
 	return Dedupe(all), nil
 }
 
+// netError is a failure to get any answer at all (DNS, connection refused or
+// reset, timeout). It is worth repeating: the requests are all GETs.
+type netError struct {
+	err     error
+	Retries int
+}
+
+func (e *netError) Error() string {
+	return e.err.Error() + retriesSuffix(e.Retries)
+}
+
+func (e *netError) Unwrap() error { return e.err }
+
+func retriesSuffix(n int) string {
+	switch n {
+	case 0:
+		return ""
+	case 1:
+		return " (tras 1 reintento)"
+	default:
+		return fmt.Sprintf(" (tras %d reintentos)", n)
+	}
+}
+
 // fetchPage asks for one page, repeating the request up to MaxRetries times
-// on 500, 502, 503 and 504 and on rate limiting (429, or 403 with rate-limit
-// headers). Anything else (404, 422, other 4xx) is final.
+// on 500, 502, 503 and 504, on rate limiting (429, or 403 with rate-limit
+// headers) and on network errors (unless the context has ended). Anything
+// else (404, 422, other 4xx) is final.
 func (c *Client) fetchPage(ctx context.Context, user string, page int) ([]Event, error) {
 	for attempt := 0; ; attempt++ {
 		events, hdr, err := c.doPage(ctx, user, page)
 		if err == nil {
 			return events, nil
 		}
-		var apiErr *APIError
-		if !errors.As(err, &apiErr) {
+		var (
+			apiErr *APIError
+			netErr *netError
+			wait   time.Duration
+			ok     bool
+		)
+		switch {
+		case errors.As(err, &apiErr):
+			apiErr.Retries = attempt
+			wait, ok = c.retryWait(apiErr.Status, hdr, attempt)
+		case errors.As(err, &netErr) && ctx.Err() == nil:
+			netErr.Retries = attempt
+			wait, ok = c.backoff(attempt), true
+		default:
 			return nil, err
 		}
-		apiErr.Retries = attempt
-		if attempt >= MaxRetries {
-			return nil, apiErr
+		if attempt >= MaxRetries || !ok {
+			return nil, err
 		}
-		wait, ok := c.retryWait(apiErr.Status, hdr, attempt)
-		if !ok {
-			return nil, apiErr
-		}
-		if err := c.sleep(ctx, wait); err != nil {
-			return nil, fmt.Errorf("%w; reintento interrumpido: %v", apiErr, err)
+		if serr := c.sleep(ctx, wait); serr != nil {
+			return nil, fmt.Errorf("%w; reintento interrumpido: %v", err, serr)
 		}
 	}
+}
+
+// backoff is the exponential wait before retry number attempt+1: 1x, 2x, 4x.
+func (c *Client) backoff(attempt int) time.Duration {
+	base := c.BaseDelay
+	if base <= 0 {
+		base = DefaultBaseDelay
+	}
+	wait := base << uint(attempt)
+	if wait > c.maxWait() || wait <= 0 {
+		wait = c.maxWait()
+	}
+	return wait
+}
+
+func (c *Client) maxWait() time.Duration {
+	if c.MaxWait > 0 {
+		return c.MaxWait
+	}
+	return DefaultMaxWait
 }
 
 // retryWait reports whether a response with this status and headers is worth
@@ -181,33 +224,21 @@ func (c *Client) retryWait(status int, hdr http.Header, attempt int) (time.Durat
 		return 0, false
 	}
 
-	base := c.BaseDelay
-	if base <= 0 {
-		base = DefaultBaseDelay
-	}
-	maxWait := c.MaxWait
-	if maxWait <= 0 {
-		maxWait = DefaultMaxWait
-	}
 	if hint, ok := c.serverHint(hdr, limited); ok {
-		if hint > maxWait {
+		if hint > c.maxWait() {
 			return 0, false // the server asks for more than we are willing to wait
 		}
 		return hint, true
 	}
-	wait := base << uint(attempt) // 1x, 2x, 4x
-	if wait > maxWait {
-		wait = maxWait
-	}
-	return wait, true
+	return c.backoff(attempt), true
 }
 
 // serverHint reads how long the server asks to wait: Retry-After (seconds or
 // an HTTP date) or, when rate limited, X-RateLimit-Reset (Unix seconds).
 func (c *Client) serverHint(hdr http.Header, limited bool) (time.Duration, bool) {
 	if v := strings.TrimSpace(hdr.Get("Retry-After")); v != "" {
-		if secs, err := strconv.Atoi(v); err == nil && secs >= 0 {
-			return time.Duration(secs) * time.Second, true
+		if secs, err := strconv.ParseInt(v, 10, 64); err == nil && secs >= 0 {
+			return secondsToDuration(secs), true
 		}
 		if t, err := http.ParseTime(v); err == nil {
 			return positive(t.Sub(c.now())), true
@@ -216,11 +247,24 @@ func (c *Client) serverHint(hdr http.Header, limited bool) (time.Duration, bool)
 	if limited {
 		if v := strings.TrimSpace(hdr.Get("X-RateLimit-Reset")); v != "" {
 			if unix, err := strconv.ParseInt(v, 10, 64); err == nil {
-				return positive(time.Unix(unix, 0).Sub(c.now())), true
+				now := c.now()
+				if unix > now.Unix() && unix-now.Unix() > 1<<31 {
+					return secondsToDuration(unix - now.Unix()), true // absurdly far: avoid time overflow
+				}
+				return positive(time.Unix(unix, 0).Sub(now)), true
 			}
 		}
 	}
 	return 0, false
+}
+
+// secondsToDuration converts without overflowing: anything beyond what a
+// Duration can hold is "a very long time".
+func secondsToDuration(secs int64) time.Duration {
+	if secs > int64(math.MaxInt64/time.Second) {
+		return time.Duration(math.MaxInt64)
+	}
+	return time.Duration(secs) * time.Second
 }
 
 func positive(d time.Duration) time.Duration {
@@ -275,7 +319,7 @@ func (c *Client) doPage(ctx context.Context, user string, page int) ([]Event, ht
 	}
 	resp, err := hc.Do(req)
 	if err != nil {
-		return nil, nil, fmt.Errorf("no se pudo contactar con la API de GitHub: %w", err)
+		return nil, nil, &netError{err: fmt.Errorf("no se pudo contactar con la API de GitHub: %w", err)}
 	}
 	defer resp.Body.Close()
 

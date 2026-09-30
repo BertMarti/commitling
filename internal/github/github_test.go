@@ -287,6 +287,7 @@ func TestFetchEventsTimesOut(t *testing.T) {
 	c := NewClient("")
 	c.BaseURL = srv.URL
 	c.HTTPClient.Timeout = 50 * time.Millisecond
+	c.Sleep = func(context.Context, time.Duration) error { return nil } // do not wait between retries
 	start := time.Now()
 	_, err := c.FetchEvents(context.Background(), "octoexample")
 	if err == nil || !strings.Contains(err.Error(), "no se pudo contactar") {

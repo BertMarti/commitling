@@ -324,3 +324,207 @@ func TestAPIErrorMessageMentionsRetries(t *testing.T) {
 		t.Error("a 404 has no retries to mention")
 	}
 }
+
+// dropper closes the connection without answering the first n requests and
+// then answers 200 with two events.
+func dropper(calls *atomic.Int32, n int) *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if int(calls.Add(1)) <= n {
+			conn, _, err := w.(http.Hijacker).Hijack()
+			if err == nil {
+				conn.Close()
+			}
+			return
+		}
+		fmt.Fprint(w, eventsJSON(2, 0))
+	}))
+}
+
+func TestRetriesNetworkErrors(t *testing.T) {
+	var calls atomic.Int32
+	srv := dropper(&calls, 2)
+	defer srv.Close()
+	c, rec := newTestClient(srv.URL)
+	events, err := c.FetchEvents(context.Background(), "octoexample")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(events) != 2 || calls.Load() != 3 || fmt.Sprint(rec.waits) != "[1s 2s]" {
+		t.Fatalf("events=%d calls=%d waits=%v, want 2, 3 and [1s 2s]", len(events), calls.Load(), rec.waits)
+	}
+}
+
+func TestNetworkErrorsGiveUpWithTheSameLimit(t *testing.T) {
+	var calls atomic.Int32
+	srv := dropper(&calls, 100)
+	defer srv.Close()
+	c, rec := newTestClient(srv.URL)
+	_, err := c.FetchEvents(context.Background(), "octoexample")
+	if err == nil {
+		t.Fatal("want an error")
+	}
+	if calls.Load() != 4 || fmt.Sprint(rec.waits) != "[1s 2s 4s]" {
+		t.Errorf("calls=%d waits=%v, want 4 requests and [1s 2s 4s]", calls.Load(), rec.waits)
+	}
+	for _, want := range []string{"no se pudo contactar", "tras 3 reintentos"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("error %q should contain %q", err, want)
+		}
+	}
+}
+
+func TestConnectionRefusedIsRetried(t *testing.T) {
+	srv := httptest.NewServer(http.NotFoundHandler())
+	url := srv.URL
+	srv.Close() // nobody listens any more
+	c, rec := newTestClient(url)
+	_, err := c.FetchEvents(context.Background(), "octoexample")
+	if err == nil || !strings.Contains(err.Error(), "tras 3 reintentos") {
+		t.Fatalf("err = %v, want a failure after 3 retries", err)
+	}
+	if fmt.Sprint(rec.waits) != "[1s 2s 4s]" {
+		t.Errorf("waits = %v", rec.waits)
+	}
+}
+
+func TestRequestTimeoutIsRetried(t *testing.T) {
+	var calls atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if calls.Add(1) == 1 {
+			select { // hang until the client gives up
+			case <-r.Context().Done():
+			case <-time.After(5 * time.Second):
+			}
+			return
+		}
+		fmt.Fprint(w, eventsJSON(2, 0))
+	}))
+	defer srv.Close()
+	c, rec := newTestClient(srv.URL)
+	c.HTTPClient.Timeout = 50 * time.Millisecond
+	events, err := c.FetchEvents(context.Background(), "octoexample")
+	if err != nil || len(events) != 2 {
+		t.Fatalf("events=%d err=%v", len(events), err)
+	}
+	if fmt.Sprint(rec.waits) != "[1s]" {
+		t.Errorf("waits = %v, want [1s]", rec.waits)
+	}
+}
+
+func TestNetworkErrorIsNotRetriedOnceContextEnded(t *testing.T) {
+	var calls atomic.Int32
+	srv := dropper(&calls, 100)
+	defer srv.Close()
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	c, rec := newTestClient(srv.URL)
+	_, err := c.FetchEvents(ctx, "octoexample")
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("err = %v, want context.Canceled", err)
+	}
+	if len(rec.waits) != 0 {
+		t.Errorf("waits = %v, want none", rec.waits)
+	}
+}
+
+func TestNetworkRetryStopsWhenSleepIsInterrupted(t *testing.T) {
+	var calls atomic.Int32
+	srv := dropper(&calls, 100)
+	defer srv.Close()
+	c, _ := newTestClient(srv.URL)
+	c.Sleep = func(ctx context.Context, d time.Duration) error { return context.Canceled }
+	_, err := c.FetchEvents(context.Background(), "octoexample")
+	if err == nil || !strings.Contains(err.Error(), "interrumpido") || calls.Load() != 1 {
+		t.Fatalf("err = %v, calls = %d", err, calls.Load())
+	}
+}
+
+// A request that cannot even be built is a bug, not a flaky network.
+func TestBadBaseURLIsNotRetried(t *testing.T) {
+	c, rec := newTestClient("http://[::1")
+	if _, err := c.FetchEvents(context.Background(), "octoexample"); err == nil {
+		t.Fatal("want an error")
+	}
+	if len(rec.waits) != 0 {
+		t.Errorf("waits = %v, want none", rec.waits)
+	}
+}
+
+// Retry-After values so large that seconds*time.Second overflows must be
+// treated as "too long", not as a negative (immediate) wait.
+func TestHugeRetryAfterIsNotRetried(t *testing.T) {
+	for _, v := range []string{"10000000000", "9223372036", "9223372036854775807"} {
+		var calls atomic.Int32
+		srv := flaky(t, &calls, http.Header{"Retry-After": {v}}, 503, 503)
+		c, rec := newTestClient(srv.URL)
+		_, err := c.FetchEvents(context.Background(), "octoexample")
+		srv.Close()
+		var apiErr *APIError
+		if !errors.As(err, &apiErr) || calls.Load() != 1 || len(rec.waits) != 0 {
+			t.Errorf("Retry-After %s: err=%v calls=%d waits=%v, want to give up at once", v, err, calls.Load(), rec.waits)
+		}
+	}
+}
+
+// Every request of the client is a GET, so repeating one is always safe.
+func TestOnlyGETRequests(t *testing.T) {
+	var methods []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		methods = append(methods, r.Method)
+		if len(methods) < 3 {
+			w.WriteHeader(http.StatusBadGateway)
+			return
+		}
+		fmt.Fprint(w, eventsJSON(1, 0))
+	}))
+	defer srv.Close()
+	c, _ := newTestClient(srv.URL)
+	if _, err := c.FetchEvents(context.Background(), "octoexample"); err != nil {
+		t.Fatal(err)
+	}
+	for _, m := range methods {
+		if m != http.MethodGet {
+			t.Errorf("method %s, want GET", m)
+		}
+	}
+}
+
+// A zero or negative Retry-After and a date in the past mean "now".
+func TestRetryAfterZeroAndPastDate(t *testing.T) {
+	past := time.Unix(1_800_000_000, 0).UTC().Add(-time.Hour).Format(http.TimeFormat)
+	for _, v := range []string{"0", past} {
+		var calls atomic.Int32
+		srv := flaky(t, &calls, http.Header{"Retry-After": {v}}, 503)
+		c, rec := newTestClient(srv.URL)
+		_, err := c.FetchEvents(context.Background(), "octoexample")
+		srv.Close()
+		if err != nil || fmt.Sprint(rec.waits) != "[0s]" {
+			t.Errorf("Retry-After %q: err=%v waits=%v, want [0s]", v, err, rec.waits)
+		}
+	}
+}
+
+// An unreadable Retry-After falls back to the exponential backoff.
+func TestGarbageRetryAfterUsesBackoff(t *testing.T) {
+	var calls atomic.Int32
+	srv := flaky(t, &calls, http.Header{"Retry-After": {"mañana"}}, 503)
+	defer srv.Close()
+	c, rec := newTestClient(srv.URL)
+	if _, err := c.FetchEvents(context.Background(), "octoexample"); err != nil {
+		t.Fatal(err)
+	}
+	if fmt.Sprint(rec.waits) != "[1s]" {
+		t.Errorf("waits = %v, want [1s]", rec.waits)
+	}
+}
+
+func TestHugeRateLimitResetIsNotRetried(t *testing.T) {
+	var calls atomic.Int32
+	h := http.Header{"X-Ratelimit-Remaining": {"0"}, "X-Ratelimit-Reset": {"9223372036854775807"}}
+	srv := flaky(t, &calls, h, 403, 403)
+	defer srv.Close()
+	c, rec := newTestClient(srv.URL)
+	if _, err := c.FetchEvents(context.Background(), "octoexample"); err == nil || calls.Load() != 1 || len(rec.waits) != 0 {
+		t.Fatalf("err=%v calls=%d waits=%v, want to give up at once", err, calls.Load(), rec.waits)
+	}
+}
