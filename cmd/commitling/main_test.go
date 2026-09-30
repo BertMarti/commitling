@@ -85,7 +85,7 @@ func TestMissingFixture(t *testing.T) {
 
 func TestVersionAndGallery(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	if err := run([]string{"version"}, &stdout, &stderr); err != nil || !strings.HasPrefix(stdout.String(), "commitling ") {
+	if err := run([]string{"version"}, &stdout, &stderr); err != nil || stdout.String() != "commitling 0.2.0\n" {
 		t.Fatalf("version: %v %q", err, stdout.String())
 	}
 	dir := t.TempDir()
