@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/BertMarti/commitling/internal/creature"
+	"github.com/BertMarti/commitling/internal/og"
 	"github.com/BertMarti/commitling/internal/render"
 	"github.com/BertMarti/commitling/internal/stats"
 )
@@ -23,8 +24,9 @@ const LiveUser = "BertMarti"
 // SiteURL is where the site is published (GitHub Pages).
 const SiteURL = "https://bertmarti.github.io/commitling/"
 
-// OGImage is the preview image for social cards (Open Graph).
-const OGImage = SiteURL + "hero.svg"
+// OGImage is the preview image for social cards (Open Graph): a 1200×630 PNG,
+// because social networks do not show SVG.
+const OGImage = SiteURL + "og.png"
 
 // Title and Description are used in <title>, the description meta tag and
 // Open Graph.
@@ -205,11 +207,18 @@ func Build(dir, version string) (int, error) {
 		return n, err
 	}
 	p.Favicon = "favicon.svg"
-	hero := render.SpriteSVG(creature.Creature{Stage: creature.Sapling, Mood: creature.Radiant, Accessories: creature.Accessories{Flower: true}})
+	hero := render.SpriteSVG(og.Hero)
 	if err := write("hero.svg", hero); err != nil {
 		return n, err
 	}
 	p.Hero = "hero.svg"
+	card1200, err := og.PNG(og.Hero)
+	if err != nil {
+		return n, err
+	}
+	if err := write("og.png", card1200); err != nil {
+		return n, err
+	}
 
 	p.XP = []rule{
 		{"Commit", fmt.Sprintf("%d XP", stats.XPCommit)},

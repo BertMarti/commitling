@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"errors"
+	"image/png"
 	"os"
 	"path/filepath"
 	"strings"
@@ -93,5 +94,39 @@ func TestVersionAndGallery(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(dir, "index.html")); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestOGCommandWritesPNG(t *testing.T) {
+	out := filepath.Join(t.TempDir(), "sub", "og.png")
+	var stdout, stderr bytes.Buffer
+	if err := run([]string{"og", "--out", out}, &stdout, &stderr); err != nil {
+		t.Fatalf("og: %v\n%s", err, stderr.String())
+	}
+	f, err := os.Open(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	img, err := png.Decode(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if b := img.Bounds(); b.Dx() != 1200 || b.Dy() != 630 {
+		t.Fatalf("og.png is %dx%d, want 1200x630", b.Dx(), b.Dy())
+	}
+
+	// To stdout it gives the same bytes, and extra arguments are rejected.
+	stdout.Reset()
+	if err := run([]string{"og", "--out", "-"}, &stdout, &stderr); err != nil {
+		t.Fatal(err)
+	}
+	disk, _ := os.ReadFile(out)
+	if !bytes.Equal(stdout.Bytes(), disk) {
+		t.Error("og --out - differs from the file")
+	}
+	var ue usageError
+	if err := run([]string{"og", "sobra"}, &stdout, &stderr); !errors.As(err, &ue) {
+		t.Errorf("og with extra args: err = %v, want a usage error", err)
 	}
 }

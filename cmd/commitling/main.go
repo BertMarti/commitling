@@ -4,6 +4,7 @@
 //	commitling render --user <login> [--theme light|dark] [--now RFC3339] --out commitling.svg
 //	commitling render --fixture testdata/events.json --out commitling.svg
 //	commitling gallery --out site/
+//	commitling og --out og.png
 //	commitling version
 package main
 
@@ -20,6 +21,7 @@ import (
 
 	"github.com/BertMarti/commitling/internal/gallery"
 	"github.com/BertMarti/commitling/internal/github"
+	"github.com/BertMarti/commitling/internal/og"
 	"github.com/BertMarti/commitling/internal/render"
 	"github.com/BertMarti/commitling/internal/stats"
 )
@@ -33,6 +35,7 @@ Uso:
   commitling render --user <usuario> [--theme light|dark] [--now RFC3339] --out <archivo.svg>
   commitling render --fixture <eventos.json> [--user <nombre>] [--theme light|dark] [--now RFC3339] --out <archivo.svg>
   commitling gallery --out <directorio>
+  commitling og --out <archivo.png>
   commitling version
 
 Variables de entorno:
@@ -64,6 +67,8 @@ func run(args []string, stdout, stderr io.Writer) error {
 		return runRender(args[1:], stdout, stderr)
 	case "gallery":
 		return runGallery(args[1:], stdout, stderr)
+	case "og":
+		return runOG(args[1:], stdout, stderr)
 	case "version", "--version", "-v":
 		fmt.Fprintf(stdout, "commitling %s\n", version)
 		return nil
@@ -187,5 +192,30 @@ func runGallery(args []string, stdout, stderr io.Writer) error {
 		return err
 	}
 	fmt.Fprintf(stderr, "galería → %s (%d archivos)\n", *out, n)
+	return nil
+}
+
+func runOG(args []string, stdout, stderr io.Writer) error {
+	fs := flag.NewFlagSet("og", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	out := fs.String("out", "og.png", "archivo PNG de salida (- para la salida estándar)")
+	if err := fs.Parse(args); err != nil {
+		return usageError{err.Error()}
+	}
+	if fs.NArg() > 0 {
+		return usageError{fmt.Sprintf("argumentos de más: %s", strings.Join(fs.Args(), " "))}
+	}
+	data, err := og.PNG(og.Hero)
+	if err != nil {
+		return err
+	}
+	if *out == "-" {
+		_, err = stdout.Write(data)
+		return err
+	}
+	if err := writeFile(*out, data); err != nil {
+		return err
+	}
+	fmt.Fprintf(stderr, "imagen Open Graph → %s (%dx%d)\n", *out, og.Width, og.Height)
 	return nil
 }
