@@ -63,7 +63,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: BertMarti/commitling@main
+      - uses: BertMarti/commitling@v1
         with:
           out: commitling.svg
       - name: Guardar el SVG si ha cambiado
@@ -88,7 +88,7 @@ Qué hace este archivo, en cristiano:
 - `schedule` / `cron`: lo ejecuta solo cada día a las 05:23 UTC (07:23 en el horario de verano de la España peninsular, 06:23 en invierno). GitHub puede retrasar unos minutos las ejecuciones programadas.
 - `workflow_dispatch`: añade el botón **Run workflow** para lanzarlo a mano.
 - `permissions: contents: write`: le permite guardar la imagen en tu repositorio. Sin esto fallaría al guardar.
-- `BertMarti/commitling@main`: es la Action de commitling, que crea el archivo `commitling.svg`.
+- `BertMarti/commitling@v1`: es la Action de commitling, que crea el archivo `commitling.svg`. `@v1` significa «la versión 1»: recibes las mejoras compatibles sin tocar nada. Si prefieres fijar una versión exacta, usa por ejemplo `@v1.0.0`.
 - El último paso guarda `commitling.svg` en tu repositorio solo si ha cambiado, con un commit «chore: actualiza commitling».
 
 ### Paso 3. Añade la imagen a tu README
@@ -135,7 +135,7 @@ Dentro de `with:` puedes ajustar:
 Por defecto tu criatura es un **brote de musgo**. Si prefieres el **hongo**, añade `species: mushroom` en `with:`:
 
 ```yaml
-      - uses: BertMarti/commitling@main
+      - uses: BertMarti/commitling@v1
         with:
           out: commitling.svg
           species: mushroom
@@ -152,10 +152,10 @@ Si tu perfil lo ve gente con el tema oscuro de GitHub, puedes ofrecer una imagen
 ```yaml
     steps:
       - uses: actions/checkout@v7
-      - uses: BertMarti/commitling@main
+      - uses: BertMarti/commitling@v1
         with:
           out: commitling.svg
-      - uses: BertMarti/commitling@main
+      - uses: BertMarti/commitling@v1
         with:
           out: commitling-dark.svg
           theme: dark

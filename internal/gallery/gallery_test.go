@@ -46,7 +46,7 @@ func TestBuild(t *testing.T) {
 	for _, want := range []string{
 		`<html lang="es">`,
 		"live/BertMarti.svg",
-		"BertMarti/commitling@main",
+		"BertMarti/commitling@v1",
 		"Árbol ancestral",
 		"Radiante",
 		"Brote de musgo",
