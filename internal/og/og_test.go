@@ -112,27 +112,40 @@ func TestSpriteIsScaledInWholeBlocks(t *testing.T) {
 	}
 }
 
-// Every stage appears, small, in the row under the tagline.
-func TestStageRowShowsAllStages(t *testing.T) {
+// Every stage of every species appears, small, in the rows under the tagline.
+func TestStageRowsShowAllStages(t *testing.T) {
 	img := Image(Hero)
-	x := textX
-	for _, st := range creature.Stages {
-		sp := creature.Draw(creature.Creature{Stage: st, Mood: creature.Happy})
-		ink := 0
-		for gy := 0; gy < creature.Size; gy++ {
-			for gx := 0; gx < creature.Size; gx++ {
-				if sp.Outline[gy][gx] == creature.PInk {
-					if img.ColorIndexAt(x+gx*stageScale, stageY+gy*stageScale) != iInk {
-						t.Fatalf("stage %s: outline pixel (%d,%d) is not ink", st.Name(), gx, gy)
+	for i, sp := range creature.AllSpecies {
+		x := textX
+		for _, st := range creature.Stages {
+			sprite := creature.Draw(creature.Creature{Species: sp, Stage: st, Mood: creature.Happy})
+			ink := 0
+			for gy := 0; gy < creature.Size; gy++ {
+				for gx := 0; gx < creature.Size; gx++ {
+					if sprite.Outline[gy][gx] == creature.PInk {
+						if img.ColorIndexAt(x+gx*stageScale, stageRowY(i)+gy*stageScale) != iInk {
+							t.Fatalf("%s/%s: outline pixel (%d,%d) is not ink", sp.Name(), sp.StageName(st), gx, gy)
+						}
+						ink++
 					}
-					ink++
 				}
 			}
+			if ink == 0 {
+				t.Fatalf("%s/%s has no outline?", sp.Name(), sp.StageName(st))
+			}
+			x += creature.Size*stageScale + stageGap
 		}
-		if ink == 0 {
-			t.Fatalf("stage %s has no outline?", st.Name())
-		}
-		x += creature.Size*stageScale + stageGap
+	}
+	// The rows fit above the site name and inside the frame.
+	last := stageRowY(len(creature.AllSpecies)-1) + creature.Size*stageScale
+	if last >= siteY {
+		t.Errorf("stage rows end at y=%d, overlapping the site name at y=%d", last, siteY)
+	}
+	if siteY+glyphH*3 > Height-24-6 {
+		t.Error("the site name touches the frame")
+	}
+	if end := textX + 5*(creature.Size*stageScale+stageGap) - stageGap; end > Width-24-6-16 {
+		t.Errorf("stage rows reach x=%d, too close to the frame", end)
 	}
 }
 

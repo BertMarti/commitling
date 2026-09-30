@@ -27,6 +27,15 @@ jobs:
           fixture: testdata/events.json
           out: out/fixture.svg
 
+      - name: Action con la especie hongo (sin red)
+        id: mushroom
+        uses: ./
+        with:
+          user: ""
+          fixture: testdata/events.json
+          species: mushroom
+          out: out/mushroom.svg
+
       - name: Action con el usuario real
         id: real
         uses: ./
@@ -37,14 +46,18 @@ jobs:
       - name: Comprobar los SVG
         env:
           FIXTURE_PATH: ${{ steps.fixture.outputs.path }}
+          MUSHROOM_PATH: ${{ steps.mushroom.outputs.path }}
           REAL_PATH: ${{ steps.real.outputs.path }}
         run: |
           set -euo pipefail
-          for f in "$FIXTURE_PATH" "$REAL_PATH"; do
+          for f in "$FIXTURE_PATH" "$MUSHROOM_PATH" "$REAL_PATH"; do
             test -s "$f"
             head -c 120 "$f"; echo
             grep -q '</svg>' "$f"
           done
           grep -q '@octoexample' "$FIXTURE_PATH"
+          grep -q 'Retoño' "$FIXTURE_PATH"
+          grep -q 'Seta' "$MUSHROOM_PATH"
+          if grep -q 'Retoño' "$MUSHROOM_PATH"; then echo 'la especie hongo no se aplicó'; exit 1; fi
           grep -q "@${{ github.repository_owner }}" "$REAL_PATH"
           grep -q '#2b2724' "$REAL_PATH"

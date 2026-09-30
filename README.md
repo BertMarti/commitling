@@ -14,7 +14,7 @@
 
 </div>
 
-Una GitHub Action lee tu actividad **pública** (commits, pull requests, issues…), calcula tu experiencia, tu racha y tus días activos, y dibuja un SVG animado: un pequeño brote de musgo con ojos que empieza siendo una semilla y acaba convertido en un árbol ancestral. Cambia de ánimo según lo que hayas hecho estos días y desbloquea accesorios. Es un diseño original, dibujado píxel a píxel.
+Una GitHub Action lee tu actividad **pública** (commits, pull requests, issues…), calcula tu experiencia, tu racha y tus días activos, y dibuja un SVG animado: un pequeño brote de musgo con ojos que empieza siendo una semilla y acaba convertido en un árbol ancestral (o, si prefieres, un hongo que crece de espora a corro de setas). Cambia de ánimo según lo que hayas hecho estos días y desbloquea accesorios. Es un diseño original, dibujado píxel a píxel.
 
 - Animación con CSS dentro del SVG (GitHub no ejecuta JavaScript en los README) y respetuosa con `prefers-reduced-motion`.
 - Determinista: mismos datos, mismo SVG, así que tu repositorio solo recibe un commit cuando la criatura cambia de verdad.
@@ -72,10 +72,23 @@ jobs:
 | `user` | `${{ github.repository_owner }}` | Usuario de GitHub cuya actividad se dibuja |
 | `out` | `commitling.svg` | Ruta del SVG, relativa al repositorio |
 | `theme` | `light` | `light` (papel) o `dark` (tinta) |
+| `species` | `moss` | Especie: `moss` (brote de musgo) o `mushroom` (hongo) |
 | `token` | `${{ github.token }}` | Token para la API; basta con el del propio workflow |
 | `fixture` | vacío | Archivo JSON de eventos para probar sin red |
 
 La Action solo genera el archivo; el commit lo hace tu workflow (como en el ejemplo), así controlas cuándo y cómo se guarda.
+
+### Especies
+
+Hay dos especies, las dos de diseño propio y con las mismas reglas (fases, ánimos y accesorios). La predeterminada es el **brote de musgo**; con `species: mushroom` (o `--species mushroom` en la CLI) sale el **hongo**, una seta pequeña que crece de espora a corro de setas.
+
+| Fase | Desde | Brote de musgo (`moss`) | Hongo (`mushroom`) |
+|---|---|---|---|
+| 1 | 0 XP | Semilla | Espora |
+| 2 | 100 XP | Brote | Botón |
+| 3 | 400 XP | Retoño | Seta |
+| 4 | 1.000 XP | Arbusto | Seta grande |
+| 5 | 2.500 XP | Árbol ancestral | Corro de setas |
 
 ### Tema oscuro (opcional)
 
@@ -144,6 +157,9 @@ go run ./cmd/commitling render --fixture testdata/events.json --out out/commitli
 # Tema oscuro y fecha de referencia fija, a la salida estándar
 go run ./cmd/commitling render --fixture testdata/events.json --theme dark --now 2026-10-01T12:00:00Z --out -
 
+# La otra especie (moss por defecto, o mushroom)
+go run ./cmd/commitling render --fixture testdata/events.json --species mushroom --out out/hongo.svg
+
 # Web estática con todas las fases, ánimos y accesorios
 go run ./cmd/commitling gallery --out site/
 
@@ -171,7 +187,7 @@ commitling solo usa la API **pública** de eventos de GitHub: lo mismo que cualq
 cmd/commitling/      CLI (render, gallery, og, version)
 internal/github/     cliente de la API de eventos públicos y parser
 internal/stats/      XP, racha, días activos y repos (puro, con «ahora» inyectable)
-internal/creature/   fases, ánimos, accesorios y mapas de píxeles
+internal/creature/   especies, fases, ánimos, accesorios y mapas de píxeles
 internal/render/     generación del SVG
 internal/gallery/    web estática de la galería
 internal/og/         imagen PNG 1200x630 para Open Graph (solo biblioteca estándar)

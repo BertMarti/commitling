@@ -62,9 +62,16 @@ No subas claves, tokens, `.env` ni datos personales: el repositorio es público.
 
 Los ánimos se tocan igual: `Mood`, `MoodFor`, `eyes` y `mouths` en `sprites.go`, y sus animaciones en `internal/render/render.go`.
 
+## Cómo añadir una especie
+
+1. `internal/creature/creature.go`: añade la constante de `Species` (después de las existentes, para no cambiar la predeterminada), su nombre, su slug (ASCII, el que se usa en `species:`) y los nombres en español de sus cinco fases en `speciesStageNames`; añádela a `AllSpecies` y, si quieres alias, a `SpeciesByName`.
+2. Un archivo nuevo en `internal/creature/` (como `mushroom.go`) con su `[...]stageArt` de cinco mapas 16×16, y engánchalo en `artFor` de `sprites.go`. La cara (8×4) va sobre un relleno, la fila de la bufanda debe ser un tramo continuo, y el gorro y la flor no pueden tapar la cara; `TestAnchorsFitTheBody` lo comprueba.
+3. La galería, la tarjeta SVG y la imagen Open Graph recorren `AllSpecies`, así que las verás sin más cambios; revisa la web y la imagen generadas (claro y oscuro).
+4. Actualiza las tablas de especies del `README.md` y de `docs/USO.md`, el texto de la entrada `species` de `action.yml` y los tests.
+
 ## Regla de diseño: personaje original
 
-La criatura es **diseño propio**: un brote de musgo con ojos, dibujado píxel a píxel. Está prohibido imitar criaturas de videojuegos, anime o marcas, y no se aceptan sprites, nombres ni siluetas tomados de otras obras.
+Las criaturas son **diseño propio**: un brote de musgo con ojos y una seta pequeña con ojos, dibujados píxel a píxel. Está prohibido imitar criaturas de videojuegos, anime o marcas, y no se aceptan sprites, nombres ni siluetas tomados de otras obras.
 
 Respeta también el estilo «papel y píxel» de [AGENTS.md](AGENTS.md): paleta de la criatura limitada a 5 colores (`#2b2724`, `#f3efe6`, `#7fb069`, `#e6aa68`, `#ca3c25`), píxeles nítidos, sin degradados ni sombras, animaciones suaves y respetando `prefers-reduced-motion`.
 

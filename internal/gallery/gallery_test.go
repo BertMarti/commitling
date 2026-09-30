@@ -32,9 +32,9 @@ func TestBuild(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// 20 stage×mood cards and 4 accessory cards, light and dark, plus
-	// favicon, hero, og.png and index.
-	if want := (20+4)*2 + 4; n != want {
+	// Per species, 20 stage×mood cards and 4 accessory cards, light and
+	// dark, plus favicon, hero, og.png and index.
+	if want := 2*(20+4)*2 + 4; n != want {
 		t.Fatalf("Build wrote %d files, want %d", n, want)
 	}
 
@@ -49,6 +49,10 @@ func TestBuild(t *testing.T) {
 		"BertMarti/commitling@main",
 		"Árbol ancestral",
 		"Radiante",
+		"Brote de musgo",
+		"Espora",
+		"Corro de setas",
+		"species: mushroom",
 		"Privacidad",
 		"contents: write",
 	} {
@@ -60,7 +64,7 @@ func TestBuild(t *testing.T) {
 	// Every local image referenced by the page exists and is valid XML.
 	re := regexp.MustCompile(`(?:src|srcset|href)="((?:svg/|favicon|hero)[^"]+)"`)
 	refs := re.FindAllStringSubmatch(page, -1)
-	if len(refs) < 48 {
+	if len(refs) < 96 {
 		t.Fatalf("only %d local images referenced", len(refs))
 	}
 	for _, m := range refs {
@@ -238,5 +242,47 @@ func TestBuildWritesOpenGraphPNG(t *testing.T) {
 	}
 	if !strings.HasSuffix(OGImage, "/og.png") {
 		t.Errorf("OGImage = %q, want the PNG", OGImage)
+	}
+}
+
+func TestBuildShowsBothSpecies(t *testing.T) {
+	dir := t.TempDir()
+	if _, err := Build(dir, "test"); err != nil {
+		t.Fatal(err)
+	}
+	html, err := os.ReadFile(filepath.Join(dir, "index.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	page := string(html)
+	for _, sp := range creature.AllSpecies {
+		if !strings.Contains(page, `id="especie-`+sp.Slug()+`"`) {
+			t.Errorf("no section for %s", sp.Name())
+		}
+		prefix := ""
+		if sp != creature.MossSprout {
+			prefix = sp.Slug() + "-"
+		}
+		for _, st := range creature.Stages {
+			for _, m := range creature.Moods {
+				for _, suffix := range []string{".svg", "-dark.svg"} {
+					name := "svg/" + prefix + st.Slug() + "-" + m.Slug() + suffix
+					data, err := os.ReadFile(filepath.Join(dir, filepath.FromSlash(name)))
+					if err != nil {
+						t.Fatalf("missing %s: %v", name, err)
+					}
+					if !strings.Contains(string(data), sp.StageName(st)) {
+						t.Errorf("%s does not name the stage %q", name, sp.StageName(st))
+					}
+				}
+			}
+		}
+		if _, err := os.Stat(filepath.Join(dir, "svg", prefix+"acc-all.svg")); err != nil {
+			t.Errorf("missing accessory card for %s: %v", sp.Name(), err)
+		}
+	}
+	// The rules table lists both names of each stage.
+	if !strings.Contains(page, "Semilla / Espora") || !strings.Contains(page, "Árbol ancestral / Corro de setas") {
+		t.Error("the stages table does not show both species")
 	}
 }

@@ -41,6 +41,9 @@ header img{width:112px;height:112px;image-rendering:pixelated}
 h1{font-size:34px;line-height:1.1;margin:0 0 10px;letter-spacing:-.02em}
 h2{font-size:13px;letter-spacing:.14em;text-transform:uppercase;margin:0 0 20px;color:var(--muted);font-weight:600}
 h3{font-size:16px;margin:36px 0 14px}
+h3.species{font-size:20px;margin:56px 0 8px;padding-top:28px;border-top:2px dashed var(--line)}
+h3.species:first-of-type{margin-top:32px;padding-top:0;border-top:0}
+h4{font-size:15px;margin:32px 0 14px}
 p{margin:0 0 14px;max-width:68ch}
 .lead{font-size:17px;margin:0}
 nav{margin-top:14px;display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px}
@@ -125,9 +128,12 @@ footer p{max-width:none}
 
   <section id="galeria" aria-labelledby="galeria-t">
     <h2 id="galeria-t">Galería</h2>
-    <p>Todas las fases y ánimos, dibujados con estadísticas de ejemplo de un usuario ficticio.</p>
+    <p>Todas las especies, fases y ánimos, dibujados con estadísticas de ejemplo de un usuario ficticio. La especie se elige con la entrada <code>species</code> de la Action (o <code>--species</code> en la línea de órdenes); si no la indicas, sale el brote de musgo.</p>
+    {{range .Species}}
+    <h3 class="species" id="especie-{{.ID}}">{{.Name}}</h3>
+    <p class="note">{{.Intro}}</p>
     {{range .Rows}}
-    <h3>{{.Title}}</h3>
+    <h4>{{.Title}}</h4>
     <div class="grid">
       {{range .Figures}}
       <figure>
@@ -140,7 +146,7 @@ footer p{max-width:none}
       {{end}}
     </div>
     {{end}}
-    <h3 id="accesorios">Accesorios</h3>
+    <h4 id="accesorios-{{.ID}}">Accesorios · {{.Name}}</h4>
     <div class="grid">
       {{range .Extras}}
       <figure>
@@ -152,6 +158,7 @@ footer p{max-width:none}
       </figure>
       {{end}}
     </div>
+    {{end}}
   </section>
 
   <section id="reglas" aria-labelledby="reglas-t">

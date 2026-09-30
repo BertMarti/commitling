@@ -130,3 +130,41 @@ func TestOGCommandWritesPNG(t *testing.T) {
 		t.Errorf("og with extra args: err = %v, want a usage error", err)
 	}
 }
+
+func TestRenderSpecies(t *testing.T) {
+	render := func(args ...string) (string, error) {
+		var stdout, stderr bytes.Buffer
+		full := append([]string{"render", "--fixture", fixture, "--out", "-"}, args...)
+		err := run(full, &stdout, &stderr)
+		return stdout.String(), err
+	}
+	def, err := render()
+	if err != nil {
+		t.Fatal(err)
+	}
+	moss, err := render("--species", "moss")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if def != moss {
+		t.Error("moss must be the default species")
+	}
+	mush, err := render("--species", "mushroom")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(mush, "Seta") || strings.Contains(mush, "Retoño") {
+		t.Error("--species mushroom did not draw the mushroom")
+	}
+	if again, _ := render("--species", "mushroom"); again != mush {
+		t.Error("the mushroom render is not deterministic")
+	}
+	// The Spanish name works too, and an unknown species is a usage error.
+	if hongo, err := render("--species", "hongo"); err != nil || hongo != mush {
+		t.Errorf("--species hongo: err=%v, same=%v", err, hongo == mush)
+	}
+	var ue usageError
+	if _, err := render("--species", "dragon"); !errors.As(err, &ue) {
+		t.Errorf("unknown species: err = %v, want a usage error", err)
+	}
+}

@@ -110,6 +110,15 @@ type row struct {
 	Figures []Figure
 }
 
+// speciesSection is the part of the gallery of one species.
+type speciesSection struct {
+	ID     string
+	Name   string
+	Intro  template.HTML
+	Rows   []row
+	Extras []Figure
+}
+
 type rule struct{ Name, When string }
 
 type page struct {
@@ -121,8 +130,7 @@ type page struct {
 	LiveUser    string
 	Favicon     string
 	Hero        string
-	Rows        []row
-	Extras      []Figure
+	Species     []speciesSection
 	XP          []rule
 	Stages      []rule
 	Moods       []rule
@@ -143,13 +151,16 @@ func Build(dir, version string) (int, error) {
 		n++
 		return os.WriteFile(path, data, 0o644)
 	}
-	card := func(name string, s stats.Stats) (Figure, error) {
+	card := func(name string, sp creature.Species, s stats.Stats) (Figure, error) {
 		f := Figure{Light: "svg/" + name + ".svg", Dark: "svg/" + name + "-dark.svg"}
 		lc := render.NewCard(DemoUser, s, render.Light)
+		lc.Creature.Species = sp
+		dc := render.NewCard(DemoUser, s, render.Dark)
+		dc.Creature.Species = sp
 		if err := write(f.Light, render.SVG(lc)); err != nil {
 			return f, err
 		}
-		if err := write(f.Dark, render.SVG(render.NewCard(DemoUser, s, render.Dark))); err != nil {
+		if err := write(f.Dark, render.SVG(dc)); err != nil {
 			return f, err
 		}
 		f.Alt = "commitling: " + render.Description(lc)
@@ -171,19 +182,6 @@ func Build(dir, version string) (int, error) {
 </picture>`,
 	}
 
-	for _, st := range creature.Stages {
-		r := row{Title: fmt.Sprintf("%s · desde %s XP", st.Name(), render.Thousands(st.MinXP()))}
-		for _, m := range creature.Moods {
-			f, err := card(st.Slug()+"-"+m.Slug(), Sample(st, m))
-			if err != nil {
-				return n, err
-			}
-			f.Caption = m.Name()
-			r.Figures = append(r.Figures, f)
-		}
-		p.Rows = append(p.Rows, r)
-	}
-
 	extras := []struct {
 		name, caption string
 		s             stats.Stats
@@ -193,13 +191,38 @@ func Build(dir, version string) (int, error) {
 		{"acc-flower", "Flor: 5 repositorios distintos o más", stats.Stats{XP: 260, DaysSinceLast: 1, Streak: 2, ActiveDays30: 12, ActiveDays90: 20, Repos: 6}},
 		{"acc-all", "Todo desbloqueado", stats.Stats{XP: 3900, DaysSinceLast: 0, Streak: 14, ActiveDays30: 27, ActiveDays90: 64, Repos: 9}},
 	}
-	for _, e := range extras {
-		f, err := card(e.name, e.s)
-		if err != nil {
-			return n, err
+	intros := map[creature.Species]string{
+		creature.MossSprout: "La especie predeterminada: un brote de musgo con ojos que acaba siendo un árbol ancestral.",
+		creature.Mushroom:   "Una seta pequeña con ojos que empieza siendo una espora y acaba en un corro de setas. Se elige con <code>species: mushroom</code>.",
+	}
+	for _, sp := range creature.AllSpecies {
+		// The default species keeps the file names of the first release.
+		prefix := ""
+		if sp != creature.MossSprout {
+			prefix = sp.Slug() + "-"
 		}
-		f.Caption = e.caption
-		p.Extras = append(p.Extras, f)
+		sec := speciesSection{ID: sp.Slug(), Name: sp.Name(), Intro: template.HTML(intros[sp])}
+		for _, st := range creature.Stages {
+			r := row{Title: fmt.Sprintf("%s · desde %s XP", sp.StageName(st), render.Thousands(st.MinXP()))}
+			for _, m := range creature.Moods {
+				f, err := card(prefix+st.Slug()+"-"+m.Slug(), sp, Sample(st, m))
+				if err != nil {
+					return n, err
+				}
+				f.Caption = m.Name()
+				r.Figures = append(r.Figures, f)
+			}
+			sec.Rows = append(sec.Rows, r)
+		}
+		for _, e := range extras {
+			f, err := card(prefix+e.name, sp, e.s)
+			if err != nil {
+				return n, err
+			}
+			f.Caption = e.caption
+			sec.Extras = append(sec.Extras, f)
+		}
+		p.Species = append(p.Species, sec)
 	}
 
 	icon := render.SpriteSVG(creature.Creature{Stage: creature.Sprout, Mood: creature.Happy})
@@ -227,7 +250,11 @@ func Build(dir, version string) (int, error) {
 		{"Otra actividad pública (estrellas, forks, comentarios…)", fmt.Sprintf("%d XP", stats.XPOther)},
 	}
 	for _, st := range creature.Stages {
-		p.Stages = append(p.Stages, rule{st.Name(), "desde " + render.Thousands(st.MinXP()) + " XP"})
+		names := make([]string, len(creature.AllSpecies))
+		for i, sp := range creature.AllSpecies {
+			names[i] = sp.StageName(st)
+		}
+		p.Stages = append(p.Stages, rule{strings.Join(names, " / "), "desde " + render.Thousands(st.MinXP()) + " XP"})
 	}
 	p.Moods = []rule{
 		{creature.Sleeping.Name(), fmt.Sprintf("%d días o más sin actividad (o ninguna)", creature.SleepingAfterDays)},

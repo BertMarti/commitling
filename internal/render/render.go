@@ -178,7 +178,7 @@ func plural(n int, one, many string) string {
 func Description(c Card) string {
 	cr := c.Creature
 	s := fmt.Sprintf("%s, %s. %s XP, racha de %s, %d días activos en los últimos 30",
-		cr.Stage.Name(), strings.ToLower(cr.Mood.Name()), Thousands(c.Stats.XP),
+		cr.StageName(), strings.ToLower(cr.Mood.Name()), Thousands(c.Stats.XP),
 		plural(c.Stats.Streak, "día", "días"), c.Stats.ActiveDays30)
 	if acc := cr.Accessories.Names(); len(acc) > 0 {
 		s += ". Accesorios: " + strings.Join(acc, ", ")
@@ -453,7 +453,7 @@ func writePanel(b *strings.Builder, c Card, t Theme) {
 		}
 	}
 
-	fitted(b, panelX, 64, panelWidth, []float64{22, 20, 18, 16}, t.Ink, "", " b", cr.Stage.Name())
+	fitted(b, panelX, 64, panelWidth, []float64{22, 20, 18, 16}, t.Ink, "", " b", cr.StageName())
 
 	fmt.Fprintf(b, "<rect x=\"%d\" y=\"78\" width=\"8\" height=\"8\" fill=\"%s\" shape-rendering=\"crispEdges\"/>\n", panelX, moodColor(cr.Mood, t))
 	text(b, panelX+14, 86, 12, t.Ink, "", "", cr.Mood.Name())
@@ -467,7 +467,7 @@ func writePanel(b *strings.Builder, c Card, t Theme) {
 	goalSizes := []float64{11, 10, 9}
 	if next, ok := cr.Stage.Next(); ok {
 		fitted(b, panelEnd, 110, goalRoom, goalSizes, t.Muted, "end", "",
-			fmt.Sprintf("%s: %s XP", strings.ToLower(next.Name()), Thousands(next.MinXP())),
+			fmt.Sprintf("%s: %s XP", strings.ToLower(cr.Species.StageName(next)), Thousands(next.MinXP())),
 			fmt.Sprintf("meta: %s XP", Thousands(next.MinXP())))
 	} else {
 		fitted(b, panelEnd, 110, goalRoom, goalSizes, t.Muted, "end", "", "fase máxima", "máxima")
