@@ -6,6 +6,10 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ## [Sin publicar]
 
+### Añadido
+
+- **Conservar el último SVG válido ante caídas largas de la API** (#16): opción `--keep-on-error` en `commitling render` y entrada `keep-on-error` en la Action (por defecto `true`, compatible con los workflows existentes, que la reciben sin cambiar nada). Si la API falla tras los reintentos y el archivo de salida ya es un SVG completo, se conserva intacto y el paso termina en verde con un aviso (`::warning::` en GitHub Actions). Sin archivo previo, con un archivo vacío o cortado, o con `--out -`, el error se mantiene. Un `fixture` inexistente o una especie no válida siguen siendo errores.
+
 ## [0.2.0] - 2026-09-30
 
 Versión guiada por issues (#4 a #9). Los cambios llegan en los pull requests #10 a #14 y la documentación en el #15.

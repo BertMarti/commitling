@@ -82,8 +82,8 @@ func TestActionInputsAreDocumented(t *testing.T) {
 	if inputs == nil {
 		t.Fatal("no inputs block")
 	}
-	names := regexp.MustCompile(`(?m)^  ([a-z_]+):\n`).FindAllStringSubmatch(inputs[1], -1)
-	want := []string{"user", "out", "theme", "token", "species", "fixture"}
+	names := regexp.MustCompile(`(?m)^  ([a-z_-]+):\n`).FindAllStringSubmatch(inputs[1], -1)
+	want := []string{"user", "out", "theme", "token", "species", "fixture", "keep-on-error"}
 	if len(names) != len(want) {
 		t.Fatalf("inputs = %v, want %v", names, want)
 	}
@@ -140,7 +140,7 @@ func TestActionYAMLPlainScalarsAreSafe(t *testing.T) {
 func TestActionInputDefaultsMatchTheCLI(t *testing.T) {
 	yml := readRepoFile(t, "action.yml")
 	def := func(input string) string {
-		m := regexp.MustCompile(`(?ms)^  ` + input + `:\n(.*?)(?:^  \w+:\n|^outputs:)`).FindStringSubmatch(yml)
+		m := regexp.MustCompile(`(?ms)^  ` + input + `:\n(.*?)(?:^  [\w-]+:\n|^outputs:)`).FindStringSubmatch(yml)
 		if m == nil {
 			t.Fatalf("input %q not found", input)
 		}
@@ -156,11 +156,17 @@ func TestActionInputDefaultsMatchTheCLI(t *testing.T) {
 	if got := def("theme"); got != "light" {
 		t.Errorf("theme default = %q, want light", got)
 	}
+	if got := def("keep-on-error"); got != `"true"` {
+		t.Errorf("keep-on-error default = %s, want \"true\" (on by default)", got)
+	}
+	if !strings.Contains(yml, "--keep-on-error") || !strings.Contains(yml, "CL_KEEP_ON_ERROR: ${{ inputs.keep-on-error }}") {
+		t.Error("the keep-on-error input is not passed to the CLI")
+	}
 	if !strings.Contains(yml, "--species \"$CL_SPECIES\"") {
 		t.Error("the species input is not passed to the CLI")
 	}
 	// The description names every species so nobody has to guess the slug.
-	spec := regexp.MustCompile(`(?ms)^  species:\n(.*?)^  \w+:\n`).FindStringSubmatch(yml)
+	spec := regexp.MustCompile(`(?ms)^  species:\n(.*?)^  [\w-]+:\n`).FindStringSubmatch(yml)
 	for _, sp := range creature.AllSpecies {
 		if !strings.Contains(spec[1], sp.Slug()) {
 			t.Errorf("the species description does not name %q", sp.Slug())
@@ -168,7 +174,7 @@ func TestActionInputDefaultsMatchTheCLI(t *testing.T) {
 	}
 	// The user-facing docs list every input too.
 	uso := readRepoFile(t, "docs/USO.md")
-	for _, in := range []string{"user", "out", "theme", "token", "species", "fixture"} {
+	for _, in := range []string{"user", "out", "theme", "token", "species", "fixture", "keep-on-error"} {
 		if !strings.Contains(uso, "| `"+in+"` |") {
 			t.Errorf("docs/USO.md does not document the %q input", in)
 		}

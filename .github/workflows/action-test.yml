@@ -53,16 +53,68 @@ jobs:
           out: out/real-dark.svg
           theme: dark
 
+      # Caída de la API simulada con un token inválido (401 inmediato, sin red
+      # ajena): el SVG previo (copia del del fixture) se conserva.
+      - name: Preparar un SVG previo
+        run: cp "${{ steps.fixture.outputs.path }}" out/keep.svg
+
+      - name: Con la API caída y un SVG previo, se conserva con un aviso
+        id: kept
+        uses: ./
+        with:
+          token: no-es-un-token
+          out: out/keep.svg
+
+      - name: Sin SVG previo, el error de la API se mantiene
+        id: nokeep
+        continue-on-error: true
+        uses: ./
+        with:
+          token: no-es-un-token
+          out: out/nokeep.svg
+
+      - name: Con keep-on-error a false, la caída falla aunque haya SVG previo
+        id: optout
+        continue-on-error: true
+        uses: ./
+        with:
+          token: no-es-un-token
+          out: out/keep.svg
+          keep-on-error: false
+
+      - name: Un valor inválido de keep-on-error falla con un error claro
+        id: badkeep
+        continue-on-error: true
+        uses: ./
+        with:
+          user: ""
+          fixture: testdata/events.json
+          keep-on-error: quizas
+          out: out/badkeep.svg
+
       - name: Comprobar los SVG
         env:
           FIXTURE_PATH: ${{ steps.fixture.outputs.path }}
           MUSHROOM_PATH: ${{ steps.mushroom.outputs.path }}
           REAL_PATH: ${{ steps.real.outputs.path }}
           INVALID_OUTCOME: ${{ steps.invalid.outcome }}
+          KEPT_OUTCOME: ${{ steps.kept.outcome }}
+          KEPT_PATH: ${{ steps.kept.outputs.path }}
+          NOKEEP_OUTCOME: ${{ steps.nokeep.outcome }}
+          OPTOUT_OUTCOME: ${{ steps.optout.outcome }}
+          BADKEEP_OUTCOME: ${{ steps.badkeep.outcome }}
         run: |
           set -euo pipefail
           test "$INVALID_OUTCOME" = failure || { echo 'species: dragon debería fallar'; exit 1; }
           test ! -e out/invalid.svg
+          test "$KEPT_OUTCOME" = success || { echo 'con SVG previo debería terminar en verde'; exit 1; }
+          test "$NOKEEP_OUTCOME" = failure || { echo 'sin SVG previo debería fallar'; exit 1; }
+          test "$OPTOUT_OUTCOME" = failure || { echo 'keep-on-error: false debería fallar'; exit 1; }
+          test "$BADKEEP_OUTCOME" = failure || { echo 'keep-on-error: quizas debería fallar'; exit 1; }
+          test ! -e out/nokeep.svg
+          test ! -e out/badkeep.svg
+          test "$KEPT_PATH" = "$GITHUB_WORKSPACE/out/keep.svg"
+          cmp out/keep.svg "$FIXTURE_PATH" || { echo 'el SVG previo no se conservó intacto'; exit 1; }
           for f in "$FIXTURE_PATH" "$MUSHROOM_PATH" "$REAL_PATH"; do
             test -s "$f"
             head -c 120 "$f"; echo

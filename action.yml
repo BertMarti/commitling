@@ -30,6 +30,10 @@ inputs:
     description: Archivo JSON de eventos (relativo al repositorio) para trabajar sin red. Si se indica, no se llama a la API.
     required: false
     default: ""
+  keep-on-error:
+    description: Si la API de GitHub falla y el SVG de salida ya existe, lo conserva y termina con un aviso en vez de fallar (true o false).
+    required: false
+    default: "true"
 
 outputs:
   path:
@@ -59,6 +63,7 @@ runs:
         CL_THEME: ${{ inputs.theme }}
         CL_SPECIES: ${{ inputs.species }}
         CL_FIXTURE: ${{ inputs.fixture }}
+        CL_KEEP_ON_ERROR: ${{ inputs.keep-on-error }}
       run: |
         set -euo pipefail
         abs() { case "$1" in /*|[A-Za-z]:*) printf '%s' "$1" ;; *) printf '%s/%s' "$GITHUB_WORKSPACE" "$1" ;; esac; }
@@ -70,6 +75,12 @@ runs:
         else
           args+=(--user "$CL_USER")
         fi
+        # Composite inputs are always strings: accept only true or false.
+        case "$CL_KEEP_ON_ERROR" in
+          true) args+=(--keep-on-error) ;;
+          false) ;;
+          *) echo "::error::keep-on-error debe ser true o false, no '$CL_KEEP_ON_ERROR'"; exit 2 ;;
+        esac
         cd "$GITHUB_ACTION_PATH"
         go run ./cmd/commitling "${args[@]}"
         echo "path=$out" >> "$GITHUB_OUTPUT"
