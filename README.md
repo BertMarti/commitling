@@ -67,11 +67,11 @@ jobs:
 
 ### GitHub Marketplace y versiones
 
-commitling está pensada para publicarse en el [GitHub Marketplace](https://github.com/marketplace?type=actions) como Action. Una vez publicada se puede encontrar buscando «commitling»; el uso es el del ejemplo de arriba:
+commitling está preparada para el [GitHub Marketplace](https://github.com/marketplace?type=actions) como Action (la publica el responsable del proyecto al crear la versión 1). Una vez publicada se encuentra buscando «commitling»; el uso es el del ejemplo de arriba:
 
 - `BertMarti/commitling@v1` sigue la versión mayor 1: recibes correcciones y mejoras compatibles sin tocar tu workflow (la etiqueta `v1` se mueve con cada versión 1.x).
 - `BertMarti/commitling@v1.0.0` fija una versión exacta, y una huella de commit (`@<sha>`) es lo más reproducible.
-- `@main` funciona, pero es la rama de desarrollo y puede cambiar en cualquier momento.
+- `@main` funciona, pero es la rama de desarrollo y puede cambiar en cualquier momento. Si tu workflow aún termina en `@main`, cámbialo por `@v1` (pasos en la [guía de uso](docs/USO.md#6-versiones-de-la-action-y-cómo-actualizar)).
 
 La Action declara su nombre, descripción y `branding` (icono `feather`, color `green`) en `action.yml`, que es lo que el Marketplace muestra.
 
@@ -82,11 +82,11 @@ La Action declara su nombre, descripción y `branding` (icono `feather`, color `
 | `user` | `${{ github.repository_owner }}` | Usuario de GitHub cuya actividad se dibuja |
 | `out` | `commitling.svg` | Ruta del SVG, relativa al repositorio |
 | `theme` | `light` | `light` (papel) o `dark` (tinta) |
-| `species` | `moss` | Especie: `moss` (brote de musgo) o `mushroom` (hongo) |
+| `species` | `moss` | Especie: `moss` (brote de musgo) o `mushroom` (hongo); un valor desconocido hace fallar el paso |
 | `token` | `${{ github.token }}` | Token para la API; basta con el del propio workflow |
 | `fixture` | vacío | Archivo JSON de eventos para probar sin red |
 
-La Action solo genera el archivo; el commit lo hace tu workflow (como en el ejemplo), así controlas cuándo y cómo se guarda.
+La Action tiene una salida, `path` (ruta absoluta del SVG generado). Solo genera el archivo; el commit lo hace tu workflow (como en el ejemplo), así controlas cuándo y cómo se guarda.
 
 ### Especies
 
@@ -99,6 +99,15 @@ Hay dos especies, las dos de diseño propio y con las mismas reglas (fases, áni
 | 3 | 400 XP | Retoño | Seta |
 | 4 | 1.000 XP | Arbusto | Seta grande |
 | 5 | 2.500 XP | Árbol ancestral | Corro de setas |
+
+<table>
+  <tr>
+    <td align="center"><img alt="Árbol ancestral radiante (brote de musgo)" src="https://bertmarti.github.io/commitling/svg/ancient-radiant.svg" width="380"><br><sub><code>moss</code>: árbol ancestral, radiante</sub></td>
+    <td align="center"><img alt="Corro de setas radiante (hongo)" src="https://bertmarti.github.io/commitling/svg/mushroom-ancient-radiant.svg" width="380"><br><sub><code>mushroom</code>: corro de setas, radiante</sub></td>
+  </tr>
+</table>
+
+Capturas de la [galería](https://bertmarti.github.io/commitling/), generada por el propio binario (`commitling gallery`). `species` acepta también `musgo`, `hongo` y `seta`, sin distinguir mayúsculas.
 
 ### Tema oscuro (opcional)
 
@@ -150,6 +159,8 @@ Todo se calcula con los eventos públicos de los últimos 90 días (lo que ofrec
 | Gorro | Más de 30 días activos en los últimos 90 |
 | Bufanda | Racha de 10 días o más |
 | Flor | 5 repositorios distintos o más con commits, PR o issues |
+
+Reintentos: si la API de GitHub falla (500, 502, 503 o 504), limita las peticiones (429, o 403 con cabeceras de límite) o no responde, commitling repite la petición hasta 3 veces, con esperas de 1, 2 y 4 s (o las que indique GitHub, hasta 30 s). Si pide esperar más de 30 s o se agotan los reintentos, se rinde con un error claro; 404, 422 y otros 4xx no se reintentan.
 
 Detalles: la racha cuenta días seguidos con actividad y se mantiene hasta el final del día siguiente (no se rompe por la mañana antes de tu primer commit). Si GitHub no indica cuántos commits lleva un push, cuenta como uno.
 
@@ -215,12 +226,20 @@ go test ./...
 
 ## Documentación
 
-- [Guía de uso](docs/USO.md): instalación paso a paso, tema oscuro, reglas con ejemplos, preguntas frecuentes y solución de problemas.
-- [Contribuir](CONTRIBUTING.md): requisitos, comandos, ramas, commits y cómo añadir un accesorio o una fase.
+- [Guía de uso](docs/USO.md): instalación paso a paso, tema oscuro, elección de especie, versiones de la Action, comando `og`, reglas con ejemplos, preguntas frecuentes y solución de problemas.
+- [Contribuir](CONTRIBUTING.md): requisitos, comandos, flujo por issues, ramas, commits y cómo añadir un accesorio, una fase o una especie.
+- [Registro de cambios](CHANGELOG.md): qué trae cada versión.
 
 ## Cómo se ha hecho
 
-commitling se ha construido con un equipo de agentes de IA de Claude Code: builder (Opus), qa y docs (Sonnet), coordinados por un agente lead. Cada uno trabajó en su rama y todo entra en `main` mediante pull request, con la supervisión y la fusión de Alberto. OpenCode estaba previsto para la documentación, pero no pudo ejecutarse en modo autónomo. Las reglas del equipo están en [AGENTS.md](AGENTS.md) y el estado del proyecto en [MEMORY.md](MEMORY.md).
+commitling se ha construido con un equipo de agentes de IA de Claude Code, coordinados por un agente lead y guiados por issues del hito (una rama y un PR por issue):
+
+- **lead** y **builder** de la v0.1.0 (MVP): Claude Opus.
+- **qa**, **docs** y todo el trabajo de la v0.2.0 (reintentos, imagen Open Graph, hongo, Action para v1, revisión y documentación): Claude Sonnet.
+- **OpenCode** estaba previsto para la documentación, pero no pudo ejecutarse en modo autónomo (el sistema de permisos no lo permite), así que la escribió Claude Code.
+- **Alberto** supervisa y fusiona: nadie más hace commit ni push a `main`, ni crea etiquetas o releases.
+
+Las reglas del equipo están en [AGENTS.md](AGENTS.md) y el estado del proyecto en [MEMORY.md](MEMORY.md).
 
 ## Licencia
 
