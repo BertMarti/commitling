@@ -53,16 +53,49 @@ jobs:
           out: out/real-dark.svg
           theme: dark
 
+      # keep-on-error (activada por defecto) solo conserva el SVG ante fallos
+      # transitorios (red, 5xx, límite de peticiones), que cubren los tests de
+      # la CLI. Un 401 (token inválido) es permanente: debe fallar aunque haya
+      # un SVG previo, y dejar ese archivo intacto.
+      - name: Preparar un SVG previo
+        env:
+          FIXTURE_PATH: ${{ steps.fixture.outputs.path }}
+        run: cp "$FIXTURE_PATH" out/keep.svg
+
+      - name: Un 401 falla aunque haya SVG previo
+        id: unauthorized
+        continue-on-error: true
+        uses: ./
+        with:
+          token: no-es-un-token
+          out: out/keep.svg
+
+      - name: Un valor inválido de keep-on-error falla con un error claro
+        id: badkeep
+        continue-on-error: true
+        uses: ./
+        with:
+          user: ""
+          fixture: testdata/events.json
+          keep-on-error: quizas
+          out: out/badkeep.svg
+
       - name: Comprobar los SVG
         env:
           FIXTURE_PATH: ${{ steps.fixture.outputs.path }}
           MUSHROOM_PATH: ${{ steps.mushroom.outputs.path }}
           REAL_PATH: ${{ steps.real.outputs.path }}
           INVALID_OUTCOME: ${{ steps.invalid.outcome }}
+          UNAUTHORIZED_OUTCOME: ${{ steps.unauthorized.outcome }}
+          BADKEEP_OUTCOME: ${{ steps.badkeep.outcome }}
         run: |
           set -euo pipefail
           test "$INVALID_OUTCOME" = failure || { echo 'species: dragon debería fallar'; exit 1; }
           test ! -e out/invalid.svg
+          test "$UNAUTHORIZED_OUTCOME" = failure || { echo 'un 401 debería fallar aunque haya SVG previo'; exit 1; }
+          test "$BADKEEP_OUTCOME" = failure || { echo 'keep-on-error: quizas debería fallar'; exit 1; }
+          test ! -e out/badkeep.svg
+          cmp out/keep.svg "$FIXTURE_PATH" || { echo 'el SVG previo cambió'; exit 1; }
           for f in "$FIXTURE_PATH" "$MUSHROOM_PATH" "$REAL_PATH"; do
             test -s "$f"
             head -c 120 "$f"; echo

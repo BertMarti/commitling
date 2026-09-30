@@ -1,7 +1,7 @@
 // Command commitling draws a pixel-art creature that grows with your public
 // GitHub activity.
 //
-//	commitling render --user <login> [--theme light|dark] [--species moss|mushroom] [--now RFC3339] --out commitling.svg
+//	commitling render --user <login> [--theme light|dark] [--species moss|mushroom] [--keep-on-error] [--now RFC3339] --out commitling.svg
 //	commitling render --fixture testdata/events.json --out commitling.svg
 //	commitling gallery --out site/
 //	commitling og --out og.png
@@ -9,6 +9,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"flag"
@@ -33,7 +34,7 @@ var version = "0.2.0"
 const usage = `commitling: una mascota pixel-art que crece con tus commits.
 
 Uso:
-  commitling render --user <usuario> [--theme light|dark] [--species moss|mushroom] [--now RFC3339] --out <archivo.svg>
+  commitling render --user <usuario> [--theme light|dark] [--species moss|mushroom] [--keep-on-error] [--now RFC3339] --out <archivo.svg>
   commitling render --fixture <eventos.json> [--user <nombre>] [--theme light|dark] [--species moss|mushroom] [--now RFC3339] --out <archivo.svg>
   commitling gallery --out <directorio>
   commitling og --out <archivo.png>
@@ -42,6 +43,9 @@ Uso:
 Variables de entorno:
   GITHUB_TOKEN  token opcional para la API de GitHub (más límite de peticiones)
 `
+
+// newClient builds the API client; tests replace it to point at a fake server.
+var newClient = github.NewClient
 
 func main() {
 	if err := run(os.Args[1:], os.Stdout, os.Stderr); err != nil {
@@ -90,6 +94,7 @@ func runRender(args []string, stdout, stderr io.Writer) error {
 	speciesFlag := fs.String("species", "moss", "especie: moss (brote de musgo) o mushroom (hongo)")
 	nowFlag := fs.String("now", "", "fecha de referencia en RFC3339 (por defecto, ahora; con --fixture, el último evento)")
 	out := fs.String("out", "commitling.svg", "archivo SVG de salida (- para la salida estándar)")
+	keep := fs.Bool("keep-on-error", false, "si la API falla de forma pasajera (red, 5xx, límite de peticiones) y --out ya es un SVG, conservarlo y terminar con un aviso")
 	if err := fs.Parse(args); err != nil {
 		return usageError{err.Error()}
 	}
@@ -118,7 +123,11 @@ func runRender(args []string, stdout, stderr io.Writer) error {
 	} else {
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 		defer cancel()
-		events, err = github.NewClient(os.Getenv("GITHUB_TOKEN")).FetchEvents(ctx, *user)
+		events, err = newClient(os.Getenv("GITHUB_TOKEN")).FetchEvents(ctx, *user)
+		if err != nil && *keep && github.IsTransient(err) && hasSVG(*out) {
+			warnKept(stdout, stderr, *out, err)
+			return nil
+		}
 	}
 	if err != nil {
 		return err
@@ -157,6 +166,23 @@ func runRender(args []string, stdout, stderr io.Writer) error {
 	}
 	fmt.Fprintf(stderr, "%s → %s (%s)\n", displayName(login), *out, render.Description(card))
 	return nil
+}
+
+// hasSVG reports whether path already holds a finished SVG (one that ends in
+// </svg>): the only thing worth keeping when the API is down.
+func hasSVG(path string) bool {
+	data, err := os.ReadFile(path)
+	return err == nil && bytes.HasSuffix(bytes.TrimSpace(data), []byte("</svg>"))
+}
+
+// warnKept tells that the previous SVG was kept. Inside GitHub Actions it is
+// also a workflow annotation (one line, on stdout, where the runner reads it).
+func warnKept(stdout, stderr io.Writer, out string, cause error) {
+	msg := fmt.Sprintf("la API de GitHub no responde (%v); se conserva %s sin cambios", cause, out)
+	fmt.Fprintln(stderr, "commitling: aviso:", msg)
+	if os.Getenv("GITHUB_ACTIONS") == "true" {
+		fmt.Fprintln(stdout, "::warning title=commitling::"+strings.NewReplacer("%", "%25", "\r", "%0D", "\n", "%0A").Replace(msg))
+	}
 }
 
 func displayName(login string) string {

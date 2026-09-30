@@ -131,6 +131,7 @@ Dentro de `with:` puedes ajustar:
 | `species` | `moss` | Especie de la criatura: `moss` (brote de musgo) o `mushroom` (hongo) |
 | `token` | el token del propio workflow | Suele bastar; no hace falta que lo cambies |
 | `fixture` | vacío | Archivo de eventos de ejemplo para probar sin conexión (solo para desarrollo) |
+| `keep-on-error` | `true` | Ante una caída transitoria de la API de GitHub (red, errores 5xx o límite de peticiones), si el SVG (`out`) ya existe lo deja como está y termina con un aviso en vez de fallar (`true` o `false`); un token caducado o un usuario inexistente siguen fallando |
 
 ### Elegir la especie
 
@@ -322,6 +323,8 @@ go run ./cmd/commitling version
 
 `--species` acepta los mismos valores que `species` en la Action (sección 3) y `--out -` escribe en la salida estándar.
 
+**Conservar el SVG ante una caída de la API (`--keep-on-error`).** Con esta opción, si la API de GitHub sigue fallando tras los reintentos por una causa **transitoria** (error de red, 5xx o límite de peticiones: 429, o 403 con cabeceras de límite) y el archivo de `--out` ya existe y es un SVG completo, commitling lo deja intacto, escribe un aviso («la API de GitHub no responde… se conserva … sin cambios») y termina con código 0. Los fallos **permanentes** siguen siendo un error aunque haya archivo previo: 401 (token inválido o caducado), 404 (usuario inexistente), 422 y 403 sin cabeceras de límite (permisos). Sin archivo previo, con un archivo vacío o cortado, o con `--out -`, el error también se mantiene, y no afecta a otros errores (un `--fixture` que no existe, una especie no válida…). En la Action equivale a la entrada `keep-on-error`, que está activada por defecto.
+
 **La imagen de vista previa (`og`).** Es el PNG de 1200×630 píxeles que muestran Slack, X, LinkedIn o Telegram cuando alguien pega el enlace de la web del proyecto (formato «Open Graph»). Enseña una criatura grande y las cinco fases de las dos especies, en la paleta de la criatura, sin suavizado y en unos 3 KB. `commitling og --out og.png` la dibuja donde le digas (con `--out -` va a la salida estándar); no necesita red ni usuario, y sale siempre igual. Solo te hace falta si mantienes tu propia web: `commitling gallery` ya la genera como `og.png` dentro de la carpeta de salida y las etiquetas `og:image` de la página apuntan a ella. Ten en cuenta que las redes sociales guardan las vistas previas en caché, así que un cambio puede tardar en verse.
 
 ## 8. Preguntas frecuentes
@@ -383,6 +386,8 @@ El mensaje dice que GitHub ha rechazado la petición (403 o 429) y que puede ser
 - **Qué se reintenta:** los errores del servidor (500, 502, 503 y 504), el límite de peticiones (429, o 403 con `Retry-After` o `X-RateLimit-Remaining: 0`) y los errores de red (DNS, conexión rechazada o cortada, tiempo agotado; el mensaje dice «no se pudo contactar con la API de GitHub»). Solo se repite la página que falla, no todas.
 - **Cuántas veces:** hasta 3 reintentos (4 intentos en total), con esperas de 1, 2 y 4 segundos, o las que indique GitHub en `Retry-After` o `X-RateLimit-Reset`. En total, unos 7 segundos de espera como mucho.
 - **Cuándo se rinde:** al agotar los 3 reintentos (el error dice «tras 3 reintentos»), o de inmediato si GitHub pide esperar más de 30 segundos (por ejemplo, hasta que se reinicie la cuota dentro de media hora): esperar tanto colgaría el workflow. Tampoco reintenta lo que no tiene arreglo esperando: usuario no encontrado (404), 422 y un 403 sin cabeceras de límite (que es un problema de permisos).
+
+**Qué pasa con tu perfil si la caída es larga:** con `keep-on-error` (activada por defecto), cuando se agotan los reintentos por una causa transitoria (error de red, 5xx o límite de peticiones) la Action no falla: conserva el `commitling.svg` que ya tenías en el repositorio (por eso el workflow debe hacer `actions/checkout` antes, como el de arriba), muestra el aviso «la API de GitHub no responde… se conserva commitling.svg sin cambios» en el log y en el resumen del workflow, y termina en verde; el paso de guardar dice «Sin cambios.» y tu perfil sigue mostrando la criatura de ayer. Mañana se vuelve a intentar. **Lo que no es transitorio sigue fallando, a propósito**, para que te enteres: un `token:` propio caducado o inválido (401), un `user:` que no existe (404), un 422 o un 403 de permisos. Si aun así quieres que falle también ante las caídas transitorias, pon `keep-on-error: false`; y la primera vez, sin SVG previo, el error se mantiene porque no hay nada que conservar.
 
 En un workflow normal no debería pasar, porque la Action usa el token del propio workflow, que tiene más margen. Si falla, es casi siempre pasajero: espera y vuelve a ejecutarlo (o deja que lo haga el cron del día siguiente). Comprueba también que no has puesto un `token:` propio caducado, y que el usuario de `user:` existe. Si la usas fuera de GitHub Actions (en la línea de órdenes), define la variable `GITHUB_TOKEN` para subir el límite.
 

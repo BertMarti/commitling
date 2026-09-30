@@ -1,5 +1,5 @@
 # MEMORY.md · commitling
-Última actualización: 2026-09-30 por docs
+Última actualización: 2026-09-30 por builder (agent-project-3, #16)
 
 ## Estado actual
 v0.1.0 está en `main` (MVP, revisión QA y guía de uso ya fusionados). Fase v0.2.0, guiada por issues (ver «Equipo de agentes y ramas» en AGENTS.md): todo el trabajo está hecho y en PR abiertos contra `main` (ninguno fusionado aún), a fusionar en este orden:
@@ -24,6 +24,8 @@ Cambios de #4: el cliente reintenta hasta 3 veces (esperas de 1, 2 y 4 s) ante 5
 Revisión QA de v0.2.0 (#8, rama `agent/qa/8-revision-v0.2`, PR #14 contra `main`, se fusiona después de #13): reintentos también ante errores de red, espera negativa por cabeceras enormes corregida, CLI `0.2.0`, galería con contraste AA del acento, enlace para saltar y salto entre especies, `og:image:alt` con las dos especies y tests nuevos de `action.yml` y de especie inválida. Detalle en «Decisiones».
 
 Documentación de v0.2.0 (#9, PR #15, se fusiona después de #14): `CHANGELOG.md` nuevo (Keep a Changelog, en español, con `[0.2.0]` y `[0.1.0]`), `docs/USO.md` con especies (valores y alias), versiones de la Action y cómo actualizar desde `@main`, comando `og` y reintentos; README con capturas de la galería, reintentos, Marketplace y «Cómo se ha hecho» con el equipo real; `CONTRIBUTING.md` con el flujo por issues y la receta para añadir una especie.
+
+Fase v0.3.0 (#16, rama `agent/builder/16-keep-on-error`, PR contra `main`): `--keep-on-error` en `commitling render` y entrada `keep-on-error` de la Action (por defecto `true`). Si la API falla tras los reintentos por una causa transitoria (red, 5xx, 429, 403 con cabeceras de límite) y el archivo de `--out` ya es un SVG completo, se conserva intacto y se termina con aviso (código 0); 401, 404, 422 y 403 de permisos siguen fallando. Ver decisiones del 2026-09-30 (#16).
 
 ## Decisiones (por qué)
 - 2026-09-29: Animación con CSS dentro del SVG porque GitHub no ejecuta JavaScript en los README.
@@ -75,6 +77,12 @@ Documentación de v0.2.0 (#9, PR #15, se fusiona después de #14): `CHANGELOG.md
 - 2026-09-30 (docs): `docs/USO.md` y el README no pueden contener la cadena `commitling@main` (un test la prohíbe para que no queden ejemplos con la rama): se menciona la rama como `@main` a secas. `docs/USO.md` pasa a nueve secciones (nuevas: «Versiones de la Action y cómo actualizar» y «Desde la línea de órdenes y la imagen de vista previa»).
 - 2026-09-30 (docs): las capturas del README apuntan a los SVG de la galería desplegada (`svg/ancient-radiant.svg` y `svg/mushroom-ancient-radiant.svg`), así que se ven tras el primer despliegue de Pages, igual que la criatura en vivo.
 - 2026-09-30 (docs): «Cómo se ha hecho» describe el equipo real: lead y builder de v0.1 con Claude Opus; qa, docs y toda la v0.2 con Claude Sonnet; OpenCode previsto pero sin poder ejecutarse en modo autónomo; Alberto supervisa y fusiona.
+- 2026-09-30 (builder, #16): `keep-on-error` solo cubre fallos de la API (`FetchEvents`), no un `--fixture` inexistente ni errores de uso. «SVG válido» = el archivo existe y termina en `</svg>` (tras recortar espacios, CRLF incluido; un BOM al inicio no importa); un archivo vacío o cortado no se conserva y el error sigue. `--out -` nunca se conserva (no hay archivo).
+- 2026-09-30 (builder, #16, revisión del lead): solo se conserva ante fallos TRANSITORIOS. `github.IsTransient(err)` (con `errors.As` sobre `netError` y `*APIError`): error de red, `Status >= 500`, 429 y 403 con cabeceras de límite (`APIError.RateLimited`, mismo criterio `rateLimitHeaders` que los reintentos). Permanentes: 404, 401, 422 y 403 sin cabeceras: siguen fallando aunque haya SVG previo, para que un token caducado o un usuario inexistente se vean. Test por clase en la CLI (`httptest`) y en `internal/github`. `action-test.yml` comprueba que un 401 falla dejando el SVG previo intacto; el caso transitorio lo cubren los tests de la CLI (el CI no puede provocar un 5xx real).
+- 2026-09-30 (builder, #16): en la Action la entrada vale `true` por defecto, así que los workflows existentes (que hacen `checkout` antes) quedan protegidos sin tocar nada; no cambia ninguna entrada existente. Los booleanos de una Action compuesta son cadenas: solo se acepta `true` o `false`, otro valor falla con `::error::` (código 2). La CLI sigue con el valor `false` por defecto (la opción es explícita).
+- 2026-09-30 (builder, #16): el aviso sale por stderr (`commitling: aviso: ...`) y, si `GITHUB_ACTIONS=true`, también como anotación `::warning title=commitling::...` en stdout (una línea, con `%`, CR y LF escapados). Sin salida nueva en la Action: `path` sigue apuntando al archivo conservado.
+- 2026-09-30 (builder, #16): `newClient` (variable de paquete en `cmd/commitling`) permite apuntar la CLI a un `httptest` en los tests; los tests simulan un 503 sin esperas con `Client.Sleep`. `action-test.yml` simula la caída con un token inválido (401 inmediato) y prueba: SVG previo conservado byte a byte, sin previo falla, `keep-on-error: false` falla y un valor inválido falla.
+- 2026-09-30 (builder, #16): en `action_test.go` las regex de entradas admiten guiones (`keep-on-error`).
 
 ## Siguiente paso
 1. Alberto: fusionar los PR en orden (#10, #11, #12, #13, #14 y #15) y, tras cada uno, comprobar el CI (todos van contra `main`).
@@ -91,7 +99,8 @@ Documentación de v0.2.0 (#9, PR #15, se fusiona después de #14): `CHANGELOG.md
 - `action-test.yml` prueba la especie hongo con el fixture, pero un fallo ahí solo se ve en el CI del PR.
 - Las redes sociales cachean las vistas previas: tras desplegar, puede tardar en verse el nuevo `og.png` (se puede forzar con el depurador de Facebook o el Card Validator de LinkedIn).
 - El ancho del texto del SVG se estima (0,62 em por carácter), no se mide: con una fuente más ancha que las de la pila (p. ej. una monoespaciada del sistema fuera de la lista) podría rozar el borde con logins de casi 39 caracteres.
-- Tras 3 reintentos (unos 7 s de espera) el cliente se rinde, tanto con 5xx y límite de peticiones como con errores de red. Una caída larga de la API sigue haciendo fallar la ejecución diaria (se reintenta al día siguiente).
+- Tras 3 reintentos (unos 7 s de espera) el cliente se rinde, tanto con 5xx y límite de peticiones como con errores de red. Con `keep-on-error` (#16) la Action conserva el SVG anterior y termina con aviso si el fallo es transitorio; con un fallo permanente, sin SVG previo o con `keep-on-error: false`, la ejecución falla (se reintenta al día siguiente).
+- `keep-on-error` solo conserva fallos transitorios; un `token:` propio caducado (401) o un usuario inexistente (404) siguen haciendo fallar el paso. Un 403 sin cabeceras de límite (p. ej. permisos) también.
 - En el Windows local de Alberto, `go run ./cmd/commitling` falla casi siempre por el Control de aplicaciones (los tests suelen pasar tras reintentar). Para generar la galería a mano sirve un `main` auxiliar en `out/` que llame a `gallery.Build`.
 
 ## Registro de sesiones
@@ -105,3 +114,4 @@ Documentación de v0.2.0 (#9, PR #15, se fusiona después de #14): `CHANGELOG.md
 - 2026-09-30 builder · Claude Code Sonnet (agent/builder/7-action-v1): Action lista para v1 y el Marketplace (#7): `@v1` en los ejemplos, sección de Marketplace en el README y tests de `action.yml`.
 - 2026-09-30 qa · Claude Code Sonnet (agent/qa/8-revision-v0.2): revisión de v0.2.0 (#8): reintentos ante errores de red, espera negativa con cabeceras enormes, CLI 0.2.0, contraste AA y navegación de la galería, tests de `action.yml` y de especie inválida.
 - 2026-09-30 docs · Claude Code Sonnet (agent/docs/9-documentacion-v0.2): documentación de v0.2.0 (#9): `CHANGELOG.md`, `docs/USO.md` (especies, `og`, reintentos, `@v1`), README (capturas, «Cómo se ha hecho» real), `CONTRIBUTING.md` (flujo por issues, receta de especie) y este archivo.
+- 2026-09-30 builder · Claude Code Sonnet (agent/builder/16-keep-on-error): conservar el último SVG ante caídas largas de la API (#16): `--keep-on-error`, entrada `keep-on-error`, tests con `httptest`, paso en `action-test.yml` y documentación.

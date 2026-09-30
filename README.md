@@ -85,6 +85,7 @@ La Action declara su nombre, descripción y `branding` (icono `feather`, color `
 | `species` | `moss` | Especie: `moss` (brote de musgo) o `mushroom` (hongo); un valor desconocido hace fallar el paso |
 | `token` | `${{ github.token }}` | Token para la API; basta con el del propio workflow |
 | `fixture` | vacío | Archivo JSON de eventos para probar sin red |
+| `keep-on-error` | `true` | Ante una caída transitoria de la API de GitHub (red, errores 5xx o límite de peticiones), si el SVG de `out` ya existe lo conserva y termina con un aviso en vez de fallar; `false` para que falle siempre. Un token caducado (401) o un usuario inexistente (404) siguen fallando |
 
 La Action tiene una salida, `path` (ruta absoluta del SVG generado). Solo genera el archivo; el commit lo hace tu workflow (como en el ejemplo), así controlas cuándo y cómo se guarda.
 
@@ -162,6 +163,8 @@ Todo se calcula con los eventos públicos de los últimos 90 días (lo que ofrec
 
 Reintentos: si la API de GitHub falla (500, 502, 503 o 504), limita las peticiones (429, o 403 con cabeceras de límite) o no responde, commitling repite la petición hasta 3 veces, con esperas de 1, 2 y 4 s (o las que indique GitHub, hasta 30 s). Si pide esperar más de 30 s o se agotan los reintentos, se rinde con un error claro; 404, 422 y otros 4xx no se reintentan.
 
+Caídas largas de la API: cuando se agotan los reintentos por una caída **transitoria** (errores de red, 5xx o límite de peticiones: 429, o 403 con cabeceras de límite), la Action **conserva el SVG anterior** (el que tu workflow ya tiene en el repositorio tras el `checkout`) y termina en verde con un aviso (`::warning::`) en el log, en vez de fallar y dejar el perfil sin actualizar. Es la entrada `keep-on-error` (activada por defecto) o `--keep-on-error` en la CLI. Lo **permanente** sigue fallando aunque haya SVG previo, para que lo veas: un token caducado o inválido (401), un usuario inexistente (404), un 422 y un 403 sin cabeceras de límite (permisos). Tampoco se conserva nada sin archivo previo (o con uno vacío o cortado), y un `fixture` inexistente o un `species` inválido siguen siendo errores.
+
 Detalles: la racha cuenta días seguidos con actividad y se mantiene hasta el final del día siguiente (no se rompe por la mañana antes de tu primer commit). Si GitHub no indica cuántos commits lleva un push, cuenta como uno.
 
 ## CLI
@@ -180,6 +183,9 @@ go run ./cmd/commitling render --fixture testdata/events.json --theme dark --now
 
 # La otra especie (moss por defecto, o mushroom)
 go run ./cmd/commitling render --fixture testdata/events.json --species mushroom --out out/hongo.svg
+
+# Si la API tiene una caída transitoria y out/commitling.svg ya existe, lo conserva (aviso, código de salida 0)
+go run ./cmd/commitling render --user BertMarti --keep-on-error --out out/commitling.svg
 
 # Web estática con todas las fases, ánimos y accesorios
 go run ./cmd/commitling gallery --out site/
