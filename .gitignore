@@ -3,3 +3,4 @@ site/
 /commitling
 *.exe
 .env
+graphify-out/
