@@ -1,5 +1,5 @@
 # MEMORY.md · commitling
-Última actualización: 2026-09-30 por builder
+Última actualización: 2026-09-30 por qa
 
 ## Estado actual
 v0.1.0 está en `main` (MVP, revisión QA y guía de uso ya fusionados). Fase v0.2.0, guiada por issues (ver «Equipo de agentes y ramas» en AGENTS.md): el builder entrega un PR por issue, todos contra `main` y en este orden de fusión:
@@ -17,6 +17,8 @@ Cambios de #6: nueva especie **hongo** (`mushroom`, "Espora, Botón, Seta, Seta 
 Cambios de #5: nuevo paquete `internal/og` (PNG 1200x630 con `image`, `image/color` e `image/png`, paleta indexada de 7 colores, escala entera, fuente de mapa de bits propia 5x7), comando `commitling og --out`, la galería genera `og.png` y `og:image`/`twitter:card` apuntan a él.
 
 Cambios de #4: el cliente reintenta hasta 3 veces (esperas de 1, 2 y 4 s) ante 500, 502, 503 y 504 y ante límite de peticiones (429, o 403 con `Retry-After` o `X-RateLimit-Remaining: 0`), respeta `Retry-After` (segundos o fecha) y `X-RateLimit-Reset` y no reintenta 404, 422 ni otros 4xx.
+
+Revisión QA de v0.2.0 (#8, rama `agent/qa/8-revision-v0.2`, PR contra `main`, se fusiona después de #13): reintentos también ante errores de red, espera negativa por cabeceras enormes corregida, CLI `0.2.0`, galería con contraste AA del acento, enlace para saltar y salto entre especies, `og:image:alt` con las dos especies y tests nuevos de `action.yml` y de especie inválida. Detalle en «Decisiones».
 
 ## Decisiones (por qué)
 - 2026-09-29: Animación con CSS dentro del SVG porque GitHub no ejecuta JavaScript en los README.
@@ -56,10 +58,18 @@ Cambios de #4: el cliente reintenta hasta 3 veces (esperas de 1, 2 y 4 s) ante 5
 - 2026-09-30 (builder): Action para v1 y Marketplace (#7). El nombre se queda en `commitling`: no hay usuario ni organización con ese nombre en GitHub (requisito del Marketplace), pero la unicidad entre Actions solo se comprueba al publicar; si diera error, alternativa «commitling · mascota pixel-art». `branding`: icono `feather` (de la lista de Feather que admite GitHub) y color `green`. Los ejemplos pasan a `@v1` (README, galería con `WorkflowSnippet`, `docs/USO.md`); el test que ata README y galería sigue en verde y hay tests nuevos (`internal/gallery/action_test.go`) que validan branding, longitud de la descripción (<=125), que cada entrada tiene descripción y aparece en la tabla del README, y que ningún ejemplo usa `@main`.
 - 2026-09-30 (builder): política de versiones propuesta: releases `v1.0.0`, `v1.1.0`… y una etiqueta móvil `v1` que apunta a la última 1.x compatible. La cambia Alberto (el builder no crea etiquetas ni releases).
 
+- 2026-09-30 (qa): errores de red (DNS, conexión rechazada o cortada, timeout de 15 s) se reintentan con el mismo límite y backoff que los 5xx (3 reintentos, 1, 2 y 4 s) salvo que el contexto haya terminado; es seguro porque todas las peticiones son GET. Un fallo al construir la petición no se reintenta. El error final dice «tras N reintentos».
+- 2026-09-30 (qa): un `Retry-After` o `X-RateLimit-Reset` gigante desbordaba `time.Duration` y daba una espera negativa (reintento inmediato). Ahora se convierte con saturación y cuenta como «supera el tope de 30 s», así que no se reintenta. Test con 10^10 s, `MaxInt64` y reset `MaxInt64`.
+- 2026-09-30 (qa): versión de la CLI `0.2.0` (`cmd/commitling/main.go`); el test de `version` exige el número exacto para no olvidarlo en la próxima versión.
+- 2026-09-30 (qa): colores de la web: `--accent` #ca3c25 daba 4,37:1 (claro) y 2,95:1 (oscuro) como texto al pasar el cursor y como contorno de foco; pasa a #b8341f (claro) y #ee6e55 (oscuro). No son colores de la criatura. Test que calcula el contraste de las parejas de texto de la página en los dos temas.
+- 2026-09-30 (qa): galería con dos especies: enlace «Saltar al contenido» (visible al enfocarlo), navegación «Ir a: Brote de musgo · Hongo» y `og:image:alt` que menciona las dos especies. Cada `alt` de tarjeta es único y no vacío (test). Revisada en el navegador del panel (tema oscuro, ancho de móvil): sin desbordes horizontales y sin imágenes rotas salvo la criatura en vivo, que no existe hasta el primer despliegue.
+- 2026-09-30 (qa): revisados sin cambios: PNG (1200x630, determinista, paleta indexada, la fuente cubre todo lo que se dibuja y nada sale del marco), hongo (diseño propio, sin cara en el pie ni sombrero rojo con puntos; XML válido y determinista en las 2x5x4x2x2 combinaciones), `species` inválido (error de uso claro y antes de tocar la red) y `branding` de `action.yml` (`feather`/`green`).
+- 2026-09-30 (qa): `action.yml` vigilado además por test (escalares planos seguros para YAML, valores por defecto iguales a los de la CLI, entradas en `docs/USO.md`) y `action-test.yml` comprueba que `species: dragon` hace fallar la Action sin escribir el archivo.
+
 ## Siguiente paso
 1. Alberto: fusionar los PR del builder en orden (#10, #11, #12 y el de #7) y, tras cada uno, comprobar el CI.
 2. Alberto: justo después de fusionar el de #7, crear la etiqueta `v1` y publicar en el Marketplace (instrucciones exactas en el PR de #7); mientras no exista `v1`, los ejemplos con `@v1` fallan.
-3. lead: valorar subir `version` de la CLI (hoy `0.1.0`) al cerrar el hito v0.2.0.
+3. Alberto: tras fusionar el PR de QA (#8) la CLI ya dice `0.2.0`; crear la release `v0.2.0` cuando todo esté fusionado y el CI en verde.
 4. qa (otra ronda): revisión visual real de la galería en navegador y del foco/orden de tabulación en móvil.
 5. Pendiente menor: la sección «Cómo se ha hecho» del README aún cita OpenCode como parte del equipo.
 
@@ -71,7 +81,8 @@ Cambios de #4: el cliente reintenta hasta 3 veces (esperas de 1, 2 y 4 s) ante 5
 - `action-test.yml` prueba la especie hongo con el fixture, pero un fallo ahí solo se ve en el CI del PR.
 - Las redes sociales cachean las vistas previas: tras desplegar, puede tardar en verse el nuevo `og.png` (se puede forzar con el depurador de Facebook o el Card Validator de LinkedIn).
 - El ancho del texto del SVG se estima (0,62 em por carácter), no se mide: con una fuente más ancha que las de la pila (p. ej. una monoespaciada del sistema fuera de la lista) podría rozar el borde con logins de casi 39 caracteres.
-- El cliente no reintenta los errores de red (DNS, conexión rechazada, timeout); solo las respuestas 5xx y de límite de peticiones. Una caída larga de la API sigue haciendo fallar la ejecución diaria (se reintenta al día siguiente).
+- Tras 3 reintentos (unos 7 s de espera) el cliente se rinde, tanto con 5xx y límite de peticiones como con errores de red. Una caída larga de la API sigue haciendo fallar la ejecución diaria (se reintenta al día siguiente).
+- En el Windows local de Alberto, `go run ./cmd/commitling` falla casi siempre por el Control de aplicaciones (los tests suelen pasar tras reintentar). Para generar la galería a mano sirve un `main` auxiliar en `out/` que llame a `gallery.Build`.
 
 ## Registro de sesiones
 - 2026-09-29 lead (main): creación del repositorio y reparto del equipo.
@@ -82,4 +93,4 @@ Cambios de #4: el cliente reintenta hasta 3 veces (esperas de 1, 2 y 4 s) ante 5
 - 2026-09-30 builder · Claude Code Sonnet (agent/builder/5-og-png): PNG 1200x630 para Open Graph (#5): `internal/og`, comando `og`, galería y metadatos.
 - 2026-09-30 builder · Claude Code Sonnet (agent/builder/6-nueva-especie): especie hongo (#6): sprites, `--species`, entrada `species`, galería con dos especies, Open Graph con ambas y tests.
 - 2026-09-30 builder · Claude Code Sonnet (agent/builder/7-action-v1): Action lista para v1 y el Marketplace (#7): `@v1` en los ejemplos, sección de Marketplace en el README y tests de `action.yml`.
-
+- 2026-09-30 qa · Claude Code Sonnet (agent/qa/8-revision-v0.2): revisión de v0.2.0 (#8): reintentos ante errores de red, espera negativa con cabeceras enormes, CLI 0.2.0, contraste AA y navegación de la galería, tests de `action.yml` y de especie inválida.

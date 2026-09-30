@@ -175,6 +175,10 @@ func TestPageHeadForSharing(t *testing.T) {
 	if meta(page, "og:image:alt") == "" {
 		t.Error("og:image needs an alt text")
 	}
+	// The PNG shows both species, so its alt text must say so.
+	if alt := strings.ToLower(meta(page, "og:image:alt")); !strings.Contains(alt, "hongo") || !strings.Contains(alt, "musgo") {
+		t.Errorf("og:image:alt %q should mention both species", alt)
+	}
 }
 
 func TestCopyButtonsAreAccessible(t *testing.T) {
