@@ -6,6 +6,8 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ## [Sin publicar]
 
+## [0.3.0] - 2026-09-30
+
 ### Añadido
 
 - **Conservar el último SVG válido ante caídas transitorias de la API** (#16): opción `--keep-on-error` en `commitling render` y entrada `keep-on-error` en la Action (por defecto `true`; los workflows existentes la reciben sin cambiar nada). Si la API falla tras los reintentos por una causa transitoria (error de red, 5xx, 429, o 403 con cabeceras de límite) y el archivo de salida ya es un SVG completo, se conserva intacto y el paso termina en verde con un aviso (`::warning::` en GitHub Actions). Los fallos permanentes (401, 404, 422, 403 sin cabeceras de límite), la ausencia de archivo previo, un archivo vacío o cortado y `--out -` siguen siendo un error, igual que un `fixture` inexistente o una especie no válida.
@@ -58,6 +60,7 @@ Primera versión: el MVP.
 
 - Las acciones de los workflows suben de versión para evitar Node 20 (`checkout@v7`, `setup-go@v7`, `configure-pages@v6`, `upload-pages-artifact@v5` y `deploy-pages@v5`) (PR #2).
 
-[Sin publicar]: https://github.com/BertMarti/commitling/compare/v0.2.0...HEAD
+[Sin publicar]: https://github.com/BertMarti/commitling/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/BertMarti/commitling/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/BertMarti/commitling/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/BertMarti/commitling/releases/tag/v0.1.0
