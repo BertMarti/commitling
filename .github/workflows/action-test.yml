@@ -36,6 +36,16 @@ jobs:
           species: mushroom
           out: out/mushroom.svg
 
+      - name: Una especie inválida falla con un error claro
+        id: invalid
+        continue-on-error: true
+        uses: ./
+        with:
+          user: ""
+          fixture: testdata/events.json
+          species: dragon
+          out: out/invalid.svg
+
       - name: Action con el usuario real
         id: real
         uses: ./
@@ -48,8 +58,11 @@ jobs:
           FIXTURE_PATH: ${{ steps.fixture.outputs.path }}
           MUSHROOM_PATH: ${{ steps.mushroom.outputs.path }}
           REAL_PATH: ${{ steps.real.outputs.path }}
+          INVALID_OUTCOME: ${{ steps.invalid.outcome }}
         run: |
           set -euo pipefail
+          test "$INVALID_OUTCOME" = failure || { echo 'species: dragon debería fallar'; exit 1; }
+          test ! -e out/invalid.svg
           for f in "$FIXTURE_PATH" "$MUSHROOM_PATH" "$REAL_PATH"; do
             test -s "$f"
             head -c 120 "$f"; echo

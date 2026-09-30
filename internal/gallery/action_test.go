@@ -5,6 +5,8 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+
+	"github.com/BertMarti/commitling/internal/creature"
 )
 
 func readRepoFile(t *testing.T, rel string) string {
@@ -112,5 +114,63 @@ func TestExamplesUseV1(t *testing.T) {
 	}
 	if !strings.Contains(WorkflowSnippet, "uses: BertMarti/commitling@v1") {
 		t.Error("the workflow of the gallery does not use @v1")
+	}
+}
+
+// Descriptions are plain YAML scalars: ": " or " #" inside would break the
+// file (GitHub would refuse the Action), and a tab or trailing space is
+// almost always a mistake.
+func TestActionYAMLPlainScalarsAreSafe(t *testing.T) {
+	yml := readRepoFile(t, "action.yml")
+	for i, line := range strings.Split(yml, "\n") {
+		if strings.Contains(line, "\t") {
+			t.Errorf("action.yml:%d has a tab", i+1)
+		}
+		m := regexp.MustCompile(`^\s*(?:description|name|author):[ \t]+([^"'\s].*)$`).FindStringSubmatch(line)
+		if m == nil {
+			continue
+		}
+		if strings.Contains(m[1], ": ") || strings.Contains(m[1], " #") {
+			t.Errorf("action.yml:%d: plain scalar %q contains \": \" or \" #\"; quote it", i+1, m[1])
+		}
+	}
+}
+
+// The defaults and accepted values of the Action match the CLI.
+func TestActionInputDefaultsMatchTheCLI(t *testing.T) {
+	yml := readRepoFile(t, "action.yml")
+	def := func(input string) string {
+		m := regexp.MustCompile(`(?ms)^  ` + input + `:\n(.*?)(?:^  \w+:\n|^outputs:)`).FindStringSubmatch(yml)
+		if m == nil {
+			t.Fatalf("input %q not found", input)
+		}
+		d := regexp.MustCompile(`(?m)^    default:[ \t]*(.*)$`).FindStringSubmatch(m[1])
+		if d == nil {
+			t.Fatalf("input %q has no default", input)
+		}
+		return d[1]
+	}
+	if got, want := def("species"), creature.AllSpecies[0].Slug(); got != want {
+		t.Errorf("species default = %q, want the CLI default %q", got, want)
+	}
+	if got := def("theme"); got != "light" {
+		t.Errorf("theme default = %q, want light", got)
+	}
+	if !strings.Contains(yml, "--species \"$CL_SPECIES\"") {
+		t.Error("the species input is not passed to the CLI")
+	}
+	// The description names every species so nobody has to guess the slug.
+	spec := regexp.MustCompile(`(?ms)^  species:\n(.*?)^  \w+:\n`).FindStringSubmatch(yml)
+	for _, sp := range creature.AllSpecies {
+		if !strings.Contains(spec[1], sp.Slug()) {
+			t.Errorf("the species description does not name %q", sp.Slug())
+		}
+	}
+	// The user-facing docs list every input too.
+	uso := readRepoFile(t, "docs/USO.md")
+	for _, in := range []string{"user", "out", "theme", "token", "species", "fixture"} {
+		if !strings.Contains(uso, "| `"+in+"` |") {
+			t.Errorf("docs/USO.md does not document the %q input", in)
+		}
 	}
 }
