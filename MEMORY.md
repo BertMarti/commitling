@@ -1,7 +1,9 @@
 # MEMORY.md · commitling
-Última actualización: 2026-09-30 por qa
+Última actualización: 2026-09-30 por docs
 
 ## Estado actual
+Documentación en `agent/docs` (PR hacia `agent/qa`; se fusiona después de #1 y #2 y luego hay que reorientarlo a `main`): `docs/USO.md` (guía para personas usuarias, contrastada con el código), `CONTRIBUTING.md` y una sección «Documentación» en el README que enlaza ambos.
+
 Revisión QA en `agent/qa` (PR #2 hacia `agent/builder`; se fusiona después de #1 y luego hay que reorientarlo a `main`): acciones sin Node 20, texto del SVG que ya no desborda, cliente HTTP endurecido, eventos duplicados descartados, galería con Open Graph y botones de copiar accesibles. Ver «Decisiones» del 2026-09-30.
 
 MVP completo en la rama `agent/builder` (PR #1 abierto a `main`, pendiente de revisión del lead):
@@ -39,12 +41,14 @@ MVP completo en la rama `agent/builder` (PR #1 abierto a `main`, pendiente de re
 - 2026-09-30 (qa): cliente HTTP: `User-Agent: commitling`, `X-GitHub-Api-Version: 2022-11-28`, timeout de 15 s (también si se construye el `Client` a mano). Un 422 pasada la página 1 es fin de datos; en la página 1 sigue siendo error.
 - 2026-09-30 (qa): eventos con el mismo id se cuentan una vez (`github.Dedupe`, en `FetchEvents` y en `Activities`): al llegar un evento nuevo mientras se pagina, la página 2 repetía el último de la 1 y duplicaba su XP. Eventos sin id no se fusionan. `stats.Compute` ya ignoraba el orden y las fechas futuras; se añadieron tests.
 - 2026-09-30 (qa): galería: `og:title`, `og:description`, `og:image` = `https://bertmarti.github.io/commitling/hero.svg`, `og:url`, `og:type`, `twitter:card`, canonical; botones de copiar con `aria-label`, región `aria-live`, texto seleccionado y mensaje si falla el portapapeles, ocultos sin JavaScript; los bloques `pre` son enfocables con teclado.
+- 2026-09-30 (docs): la guía de uso la escribe Claude Code (Sonnet) y no OpenCode, porque el sistema de permisos no permite lanzar OpenCode en modo autónomo; la fila del agente docs de `AGENTS.md` y la rama (`agent/docs`, no `agent/opencode-docs`) se actualizaron. OpenCode se retomará cuando se permita su ejecución autónoma.
+- 2026-09-30 (docs): `docs/USO.md` repite el workflow del README (y una variante con tema oscuro). Solo el del README está vigilado por test frente a `gallery.WorkflowSnippet`; si se cambia el workflow hay que cambiar los tres sitios. La guía también advierte de que la XP puede bajar (solo cuentan los últimos 90 días) y de que GitHub desactiva los workflows programados tras unos 60 días sin actividad.
 
 ## Siguiente paso
 1. lead: revisar y fusionar el PR de `agent/builder`; tras el merge, comprobar el despliegue en https://bertmarti.github.io/commitling/ y la imagen en vivo del README.
 2. lead: fusionar #1, reorientar el PR #2 (qa) a `main` y fusionarlo; comprobar el despliegue.
 2b. qa (pendiente para otra ronda): reintentos ante 5xx intermitentes en el cliente; revisión visual real de la galería en navegador (esta ronda solo se verificó con tests y sintaxis del JS con `node --check`); comprobar el resto de la web (foco, orden de tabulación) en móvil.
-3. docs (`agent/opencode-docs`): escribir `docs/USO.md` a partir de las secciones «Úsalo en tu perfil», «Reglas» y «CLI» del README y de la web; recordar que el workflow del README está atado a `internal/gallery/gallery.go` por un test.
+3. lead: fusionar #1 y #2 y después el PR de `agent/docs` (base `agent/qa`; reorientarlo a `main` si hace falta). Cuando exista la etiqueta `v1`, cambiar `@main` por `@v1` en README, galería y `docs/USO.md`. Pendiente menor: la sección «Cómo se ha hecho» del README aún cita OpenCode como parte del equipo.
 4. Pendiente: publicar una etiqueta `v1` para que la gente use `BertMarti/commitling@v1` en lugar de `@main`.
 
 ## Problemas conocidos
@@ -60,3 +64,4 @@ MVP completo en la rama `agent/builder` (PR #1 abierto a `main`, pendiente de re
 - 2026-09-29 lead (main): creación del repositorio y reparto del equipo.
 - 2026-09-29 builder (agent/builder): MVP completo (stats, cliente GitHub, criatura, SVG, CLI, galería, Action, CI, Pages, README) y PR a main.
 - 2026-09-30 qa · Claude Code Sonnet (agent/qa): versiones de acciones, desbordes del SVG con tests, cliente HTTP (cabeceras, timeout, 422), eventos duplicados, contraste AA y galería (Open Graph, copiar accesible). PR #2 hacia agent/builder.
+- 2026-09-30 docs · Claude Code Sonnet (agent/docs): `docs/USO.md` (guía para personas usuarias contrastada con el código), `CONTRIBUTING.md`, enlaces desde el README y fila del agente docs en AGENTS.md. PR hacia agent/qa.
