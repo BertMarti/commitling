@@ -1,4 +1,5 @@
 out/
+site/
 /commitling
 *.exe
 .env

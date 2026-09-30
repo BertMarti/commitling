@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>commitling · una mascota pixel-art para tu perfil de GitHub</title>
+<meta name="description" content="Una mascota pixel-art original que vive en el README de tu perfil de GitHub y crece con tus commits.">
+<link rel="icon" href="{{.Favicon}}" type="image/svg+xml">
+<style>
+:root{
+  --paper:#f3efe6;--ink:#2b2724;--line:#ddd5c6;--muted:#7a7168;
+  --moss:#7fb069;--honey:#e6aa68;--accent:#ca3c25;--code:#ebe5d8;
+  color-scheme:light dark;
+}
+@media (prefers-color-scheme:dark){
+  :root{--paper:#2b2724;--ink:#f3efe6;--line:#4a433d;--muted:#a39a8e;--code:#34302c}
+}
+*{box-sizing:border-box}
+html{background:var(--paper)}
+body{margin:0;background:var(--paper);color:var(--ink);
+  font:15px/1.7 ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+main,header,footer{max-width:1000px;margin:0 auto;padding:0 20px}
+a{color:inherit;text-decoration-color:var(--accent);text-underline-offset:3px;text-decoration-thickness:2px}
+a:hover{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+header{padding-top:72px;padding-bottom:40px;display:grid;grid-template-columns:auto 1fr;gap:28px;align-items:center}
+header img{width:112px;height:112px;image-rendering:pixelated}
+h1{font-size:34px;line-height:1.1;margin:0 0 10px;letter-spacing:-.02em}
+h2{font-size:13px;letter-spacing:.14em;text-transform:uppercase;margin:0 0 20px;color:var(--muted);font-weight:600}
+h3{font-size:16px;margin:36px 0 14px}
+p{margin:0 0 14px;max-width:68ch}
+.lead{font-size:17px;margin:0}
+nav{margin-top:14px;display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px}
+section{padding:56px 0;border-top:2px dashed var(--line)}
+.live{display:grid;justify-items:start;gap:12px}
+.live img,.grid img{display:block;width:100%;max-width:480px;height:auto}
+.note{font-size:13px;color:var(--muted)}
+.steps{counter-reset:s;list-style:none;padding:0;margin:0;display:grid;gap:14px;max-width:72ch}
+.steps li{counter-increment:s;padding-left:44px;position:relative}
+.steps li::before{content:counter(s);position:absolute;left:0;top:1px;width:28px;height:28px;display:grid;place-items:center;
+  background:var(--moss);color:#2b2724;font-weight:700;font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px 24px}
+figure{margin:0}
+figcaption{font-size:13px;color:var(--muted);margin-top:8px}
+.tables{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 40px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+caption{text-align:left;font-weight:700;padding-bottom:8px}
+td{padding:7px 0;border-bottom:1px solid var(--line);vertical-align:top}
+td:first-child{padding-right:16px;white-space:nowrap}
+td:last-child{color:var(--muted)}
+.xp td:first-child{white-space:normal}
+.xp td:last-child{white-space:nowrap;text-align:right}
+.code{position:relative;margin:10px 0 22px}
+pre{margin:0;padding:18px 20px;background:var(--code);overflow-x:auto;font-size:13px;line-height:1.6;border-left:4px solid var(--moss)}
+code{font-family:inherit}
+p code,li code,td code{background:var(--code);padding:1px 5px}
+pre code,li pre code{background:none;padding:0}
+.copy{position:absolute;top:10px;right:10px;font:inherit;font-size:12px;padding:4px 10px;cursor:pointer;
+  background:var(--paper);color:var(--ink);border:1px solid var(--line)}
+.copy:hover{border-color:var(--ink)}
+footer{padding-top:40px;padding-bottom:64px;border-top:2px dashed var(--line);font-size:13px;color:var(--muted)}
+footer p{max-width:none}
+@media (max-width:720px){
+  header{grid-template-columns:1fr;padding-top:40px;gap:16px}
+  header img{width:80px;height:80px}
+  h1{font-size:28px}
+  .grid,.tables{grid-template-columns:1fr}
+  section{padding:40px 0}
+}
+</style>
+</head>
+<body>
+<header>
+  <img src="{{.Hero}}" alt="" width="112" height="112">
+  <div>
+    <h1>commitling</h1>
+    <p class="lead">Una mascota pixel-art que vive en el README de tu perfil de GitHub y crece con tus commits.</p>
+    <nav aria-label="Secciones">
+      <a href="#vivo">En vivo</a>
+      <a href="#galeria">Galería</a>
+      <a href="#reglas">Reglas</a>
+      <a href="#instalar">Instalar</a>
+      <a href="https://github.com/BertMarti/commitling">Código</a>
+    </nav>
+  </div>
+</header>
+<main>
+  <section id="vivo" aria-labelledby="vivo-t">
+    <h2 id="vivo-t">En vivo</h2>
+    <div class="live">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="live/{{.LiveUser}}-dark.svg">
+        <img src="live/{{.LiveUser}}.svg" width="480" height="200" alt="La criatura de @{{.LiveUser}}, generada con su actividad pública en GitHub" onerror="this.closest('.live').querySelector('.missing').hidden=false;this.closest('picture').hidden=true">
+      </picture>
+      <p class="note">La criatura de <a href="https://github.com/{{.LiveUser}}">@{{.LiveUser}}</a>, regenerada cada día con su actividad pública.</p>
+      <p class="note missing" hidden>La criatura en vivo aún no está disponible; se genera en el despliegue diario.</p>
+    </div>
+  </section>
+
+  <section id="como" aria-labelledby="como-t">
+    <h2 id="como-t">Cómo funciona</h2>
+    <ol class="steps">
+      <li>Una GitHub Action lee tu actividad <strong>pública</strong> de los últimos 90 días: commits, pull requests, issues y el resto de eventos.</li>
+      <li>Calcula tu experiencia, tu racha de días seguidos y tus días activos. Los días se cuentan en UTC.</li>
+      <li>Dibuja un SVG animado: la criatura crece por fases, cambia de ánimo según tu actividad reciente y desbloquea accesorios.</li>
+      <li>Tu workflow guarda el SVG en tu repositorio de perfil solo si ha cambiado. Mismos datos, mismo dibujo.</li>
+    </ol>
+  </section>
+
+  <section id="galeria" aria-labelledby="galeria-t">
+    <h2 id="galeria-t">Galería</h2>
+    <p>Todas las fases y ánimos, dibujados con estadísticas de ejemplo de un usuario ficticio.</p>
+    {{range .Rows}}
+    <h3>{{.Title}}</h3>
+    <div class="grid">
+      {{range .Figures}}
+      <figure>
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="{{.Dark}}">
+          <img src="{{.Light}}" width="480" height="200" loading="lazy" alt="{{.Alt}}">
+        </picture>
+        <figcaption>{{.Caption}}</figcaption>
+      </figure>
+      {{end}}
+    </div>
+    {{end}}
+    <h3 id="accesorios">Accesorios</h3>
+    <div class="grid">
+      {{range .Extras}}
+      <figure>
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="{{.Dark}}">
+          <img src="{{.Light}}" width="480" height="200" loading="lazy" alt="{{.Alt}}">
+        </picture>
+        <figcaption>{{.Caption}}</figcaption>
+      </figure>
+      {{end}}
+    </div>
+  </section>
+
+  <section id="reglas" aria-labelledby="reglas-t">
+    <h2 id="reglas-t">Reglas</h2>
+    <p>Son deterministas: con los mismos datos, la criatura es siempre la misma.</p>
+    <div class="tables">
+      <table class="xp">
+        <caption>Experiencia</caption>
+        <tbody>{{range .XP}}<tr><td>{{.Name}}</td><td>{{.When}}</td></tr>{{end}}</tbody>
+      </table>
+      <table>
+        <caption>Fases</caption>
+        <tbody>{{range .Stages}}<tr><td>{{.Name}}</td><td>{{.When}}</td></tr>{{end}}</tbody>
+      </table>
+      <table>
+        <caption>Ánimos</caption>
+        <tbody>{{range .Moods}}<tr><td>{{.Name}}</td><td>{{.When}}</td></tr>{{end}}</tbody>
+      </table>
+      <table>
+        <caption>Accesorios</caption>
+        <tbody>{{range .Acc}}<tr><td>{{.Name}}</td><td>{{.When}}</td></tr>{{end}}</tbody>
+      </table>
+    </div>
+    <p class="note" style="margin-top:22px">La racha cuenta días seguidos con actividad y se mantiene hasta el final del día siguiente, así no se rompe por la mañana antes de tu primer commit. Si GitHub no indica cuántos commits lleva un push, cuenta como uno.</p>
+  </section>
+
+  <section id="instalar" aria-labelledby="instalar-t">
+    <h2 id="instalar-t">Instálalo en tu perfil</h2>
+    <ol class="steps">
+      <li>Abre (o crea) tu repositorio de perfil: el que se llama igual que tu usuario, <code>tu-usuario/tu-usuario</code>.</li>
+      <li>Crea el archivo <code>.github/workflows/commitling.yml</code> con este contenido:
+        <div class="code"><button class="copy" type="button" data-copy="wf">Copiar</button><pre><code id="wf">{{.Workflow}}</code></pre></div>
+      </li>
+      <li>Añade la criatura a tu <code>README.md</code>:
+        <div class="code"><button class="copy" type="button" data-copy="rd">Copiar</button><pre><code id="rd">{{.Readme}}</code></pre></div>
+      </li>
+      <li>Ve a la pestaña <strong>Actions</strong>, elige «commitling» y pulsa <strong>Run workflow</strong>. Después se actualizará sola cada día.</li>
+    </ol>
+    <h3>Opcional: tema oscuro</h3>
+    <p>Añade un segundo paso con <code>theme: dark</code> y <code>out: commitling-dark.svg</code> (y súmalo al <code>git add</code>), y usa esto en el README para que GitHub elija según el tema de quien lo mira:</p>
+    <div class="code"><button class="copy" type="button" data-copy="rdd">Copiar</button><pre><code id="rdd">{{.ReadmeDrk}}</code></pre></div>
+  </section>
+
+  <section id="privacidad" aria-labelledby="privacidad-t">
+    <h2 id="privacidad-t">Privacidad</h2>
+    <p>commitling solo usa la API pública de eventos de GitHub: lo mismo que cualquiera puede ver en tu perfil. No lee repositorios privados, no guarda nada fuera de tu repositorio y no necesita más permisos que el <code>GITHUB_TOKEN</code> de tu propio workflow.</p>
+  </section>
+</main>
+<footer>
+  <p>commitling {{.Version}} · licencia MIT · <a href="https://github.com/BertMarti/commitling">github.com/BertMarti/commitling</a></p>
+  <p>Construido por un equipo de agentes de IA (Claude Code y OpenCode) supervisado por Alberto. La criatura es un diseño original.</p>
+</footer>
+<script>
+document.querySelectorAll('.copy').forEach(function (b) {
+  b.addEventListener('click', function () {
+    var text = document.getElementById(b.dataset.copy).textContent;
+    if (!navigator.clipboard) { return; }
+    navigator.clipboard.writeText(text).then(function () {
+      b.textContent = 'Copiado';
+      setTimeout(function () { b.textContent = 'Copiar'; }, 1600);
+    });
+  });
+});
+</script>
+</body>
+</html>

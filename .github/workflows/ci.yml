@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: gofmt
+        if: runner.os == 'Linux'
+        run: |
+          unformatted="$(gofmt -l .)"
+          if [ -n "$unformatted" ]; then
+            echo "Archivos sin formatear:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: go test
+        run: go test ./...
+
+      - name: render con el fixture
+        run: |
+          go run ./cmd/commitling render --fixture testdata/events.json --out out/commitling.svg
+          go run ./cmd/commitling render --fixture testdata/events.json --theme dark --out out/commitling-dark.svg
+          test -s out/commitling.svg
+          test -s out/commitling-dark.svg
+
+      - name: galería
+        run: |
+          go run ./cmd/commitling gallery --out out/site
+          test -s out/site/index.html
+          ls out/site/svg | wc -l
+
+      - name: versión
+        run: go run ./cmd/commitling version
