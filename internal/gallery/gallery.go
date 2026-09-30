@@ -55,7 +55,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: BertMarti/commitling@main
+      - uses: BertMarti/commitling@v1
         with:
           out: commitling.svg
       - name: Guardar el SVG si ha cambiado

@@ -41,7 +41,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: BertMarti/commitling@main
+      - uses: BertMarti/commitling@v1
         with:
           out: commitling.svg
       - name: Guardar el SVG si ha cambiado
@@ -64,6 +64,16 @@ jobs:
 ```
 
 4. En la pestaña **Actions**, elige «commitling» y pulsa **Run workflow**. A partir de ahí se actualiza sola cada día.
+
+### GitHub Marketplace y versiones
+
+commitling está pensada para publicarse en el [GitHub Marketplace](https://github.com/marketplace?type=actions) como Action. Una vez publicada se puede encontrar buscando «commitling»; el uso es el del ejemplo de arriba:
+
+- `BertMarti/commitling@v1` sigue la versión mayor 1: recibes correcciones y mejoras compatibles sin tocar tu workflow (la etiqueta `v1` se mueve con cada versión 1.x).
+- `BertMarti/commitling@v1.0.0` fija una versión exacta, y una huella de commit (`@<sha>`) es lo más reproducible.
+- `@main` funciona, pero es la rama de desarrollo y puede cambiar en cualquier momento.
+
+La Action declara su nombre, descripción y `branding` (icono `feather`, color `green`) en `action.yml`, que es lo que el Marketplace muestra.
 
 ### Entradas de la Action
 

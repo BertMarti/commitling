@@ -5,8 +5,10 @@
 v0.1.0 está en `main` (MVP, revisión QA y guía de uso ya fusionados). Fase v0.2.0, guiada por issues (ver «Equipo de agentes y ramas» en AGENTS.md): el builder entrega un PR por issue, todos contra `main` y en este orden de fusión:
 1. #4 `agent/builder/4-reintentos-5xx`: el cliente de la API reintenta (hecho, PR #10).
 2. #5 `agent/builder/5-og-png`: PNG 1200x630 para Open Graph (hecho, PR #11).
-3. #6 `agent/builder/6-nueva-especie`: segunda especie seleccionable (hecho, PR abierto).
-4. #7 `agent/builder/7-action-v1`: Action lista para v1 y el Marketplace (pendiente).
+3. #6 `agent/builder/6-nueva-especie`: segunda especie seleccionable (hecho, PR #12).
+4. #7 `agent/builder/7-action-v1`: Action lista para v1 y el Marketplace (hecho, PR abierto). Ojo: los ejemplos ya dicen `@v1`, que no existe hasta que Alberto cree la etiqueta; fusionar #7 y crear la etiqueta seguidos.
+
+Cambios de #7: `action.yml` validado para el Marketplace (nombre `commitling`, descripción de 104 caracteres, `author`, `branding` `feather`/`green`), ejemplos del README, la galería y `docs/USO.md` con `@v1`, sección «GitHub Marketplace y versiones» en el README y tests que vigilan `action.yml`, sus entradas frente al README y que no quede `@main` en los ejemplos.
 
 Lo que hay hoy en `main` (v0.1.0): `internal/stats` (XP, días activos, racha), `internal/github` (cliente de eventos públicos, parser, dedupe), `internal/creature` (5 fases, 4 ánimos, 3 accesorios, sprites 16x16), `internal/render` (tarjeta SVG 480x200 con animación CSS, temas claro y oscuro), `internal/gallery` (web estática), CLI `render`/`gallery`/`version`, `action.yml`, workflows `ci`, `deploy` (Pages, diario) y `action-test`, README, `docs/USO.md` y `CONTRIBUTING.md`.
 
@@ -30,7 +32,7 @@ Cambios de #4: el cliente reintenta hasta 3 veces (esperas de 1, 2 y 4 s) ante 5
 - 2026-09-29 (builder): tema oscuro: fondo #2b2724, tinta #f3efe6, líneas #4a433d y apagado #a39a8e (derivados). La silueta de la criatura se dibuja en papel en el tema oscuro (capa `Outline` aparte), como una pegatina; la paleta sigue siendo de 5 colores.
 - 2026-09-29 (builder): paquete extra `internal/gallery` (no estaba en la estructura de AGENTS.md) para la web; la plantilla va embebida con `go:embed`.
 - 2026-09-29 (builder): en `action.yml` la ruta de go.mod se toma de `$GITHUB_ACTION_PATH` en un paso `run` y se pasa como salida a setup-go, porque `github.action_path` no es fiable en los `with:` de una action compuesta. Entrada extra `fixture` para probar sin red.
-- 2026-09-29 (builder): el workflow de ejemplo usa `BertMarti/commitling@main` (aún no hay etiqueta `v1`).
+- 2026-09-29 (builder): el workflow de ejemplo usaba `BertMarti/commitling@main` (aún no había etiqueta `v1`); desde #7 usa `@v1` (ver decisiones del 2026-09-30).
 - 2026-09-29 (builder): si la API falla en el despliegue, la criatura en vivo se genera con el fixture y muestra «@octoexample» (no se hace pasar por datos reales); queda un aviso en el log y en el resumen del job.
 - 2026-09-29 (builder): un test comprueba que el workflow del README es idéntico a `gallery.WorkflowSnippet`; si se cambia uno, hay que cambiar el otro.
 
@@ -51,12 +53,15 @@ Cambios de #4: el cliente reintenta hasta 3 veces (esperas de 1, 2 y 4 s) ante 5
 - 2026-09-30 (builder): `Creature{}` (valor cero) sigue siendo el brote de musgo, así que `render.NewCard` y `creature.FromStats` no cambian; la CLI asigna `card.Creature.Species`. Los archivos de la especie predeterminada en la galería conservan sus nombres (`svg/<fase>-<ánimo>.svg`); los del hongo llevan el prefijo `mushroom-`.
 - 2026-09-30 (builder): `species` inválido en la Action/CLI es error de uso (código 2) en lugar de caer en la predeterminada, para que un error tipográfico no pase desapercibido. Se aceptan `moss`, `musgo`, `mushroom`, `hongo` y `seta` sin distinguir mayúsculas.
 - 2026-09-30 (builder): la web de la galería pasa a una sección por especie (`h3.species` + `h4` por fase); la tabla de fases de las reglas muestra los dos nombres («Semilla / Espora»). La cara y los accesorios de cada especie tienen test de anclaje (la cara sobre relleno, la bufanda en una fila continua, el gorro y la flor sin tapar la cara).
+- 2026-09-30 (builder): Action para v1 y Marketplace (#7). El nombre se queda en `commitling`: no hay usuario ni organización con ese nombre en GitHub (requisito del Marketplace), pero la unicidad entre Actions solo se comprueba al publicar; si diera error, alternativa «commitling · mascota pixel-art». `branding`: icono `feather` (de la lista de Feather que admite GitHub) y color `green`. Los ejemplos pasan a `@v1` (README, galería con `WorkflowSnippet`, `docs/USO.md`); el test que ata README y galería sigue en verde y hay tests nuevos (`internal/gallery/action_test.go`) que validan branding, longitud de la descripción (<=125), que cada entrada tiene descripción y aparece en la tabla del README, y que ningún ejemplo usa `@main`.
+- 2026-09-30 (builder): política de versiones propuesta: releases `v1.0.0`, `v1.1.0`… y una etiqueta móvil `v1` que apunta a la última 1.x compatible. La cambia Alberto (el builder no crea etiquetas ni releases).
 
 ## Siguiente paso
-1. Alberto: fusionar los PR del builder en orden (#4, #5, #6, #7) y, tras cada uno, comprobar el CI.
-2. Alberto: tras fusionar el de #7, crear la etiqueta `v1` y publicar en el Marketplace (instrucciones en el PR de #7).
-3. qa (otra ronda): revisión visual real de la galería en navegador y del foco/orden de tabulación en móvil.
-4. Pendiente menor: la sección «Cómo se ha hecho» del README aún cita OpenCode como parte del equipo.
+1. Alberto: fusionar los PR del builder en orden (#10, #11, #12 y el de #7) y, tras cada uno, comprobar el CI.
+2. Alberto: justo después de fusionar el de #7, crear la etiqueta `v1` y publicar en el Marketplace (instrucciones exactas en el PR de #7); mientras no exista `v1`, los ejemplos con `@v1` fallan.
+3. lead: valorar subir `version` de la CLI (hoy `0.1.0`) al cerrar el hito v0.2.0.
+4. qa (otra ronda): revisión visual real de la galería en navegador y del foco/orden de tabulación en móvil.
+5. Pendiente menor: la sección «Cómo se ha hecho» del README aún cita OpenCode como parte del equipo.
 
 ## Problemas conocidos
 - En el Windows local de Alberto, el Control de aplicaciones (Smart App Control) bloquea a veces los binarios que genera Go (`go test`, `go run`, `go build`). Solución: `GOTMPDIR="$PWD/out/gotmp"` y reintentar; en el CI no pasa.
@@ -76,4 +81,5 @@ Cambios de #4: el cliente reintenta hasta 3 veces (esperas de 1, 2 y 4 s) ante 5
 - 2026-09-30 builder · Claude Code Sonnet (agent/builder/4-reintentos-5xx): reintentos ante 5xx y límite de peticiones (#4) y flujo por issues en AGENTS.md.
 - 2026-09-30 builder · Claude Code Sonnet (agent/builder/5-og-png): PNG 1200x630 para Open Graph (#5): `internal/og`, comando `og`, galería y metadatos.
 - 2026-09-30 builder · Claude Code Sonnet (agent/builder/6-nueva-especie): especie hongo (#6): sprites, `--species`, entrada `species`, galería con dos especies, Open Graph con ambas y tests.
+- 2026-09-30 builder · Claude Code Sonnet (agent/builder/7-action-v1): Action lista para v1 y el Marketplace (#7): `@v1` en los ejemplos, sección de Marketplace en el README y tests de `action.yml`.
 
