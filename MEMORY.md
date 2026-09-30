@@ -1,20 +1,16 @@
 # MEMORY.md · commitling
-Última actualización: 2026-09-30 por docs
+Última actualización: 2026-09-30 por builder
 
 ## Estado actual
-Documentación en `agent/docs` (PR hacia `agent/qa`; se fusiona después de #1 y #2 y luego hay que reorientarlo a `main`): `docs/USO.md` (guía para personas usuarias, contrastada con el código), `CONTRIBUTING.md` y una sección «Documentación» en el README que enlaza ambos.
+v0.1.0 está en `main` (MVP, revisión QA y guía de uso ya fusionados). Fase v0.2.0, guiada por issues (ver «Equipo de agentes y ramas» en AGENTS.md): el builder entrega un PR por issue, todos contra `main` y en este orden de fusión:
+1. #4 `agent/builder/4-reintentos-5xx`: el cliente de la API reintenta (hecho, PR abierto).
+2. #5 `agent/builder/5-og-png`: PNG 1200x630 para Open Graph (pendiente).
+3. #6 `agent/builder/6-nueva-especie`: segunda especie seleccionable (pendiente).
+4. #7 `agent/builder/7-action-v1`: Action lista para v1 y el Marketplace (pendiente).
 
-Revisión QA en `agent/qa` (PR #2 hacia `agent/builder`; se fusiona después de #1 y luego hay que reorientarlo a `main`): acciones sin Node 20, texto del SVG que ya no desborda, cliente HTTP endurecido, eventos duplicados descartados, galería con Open Graph y botones de copiar accesibles. Ver «Decisiones» del 2026-09-30.
+Lo que hay hoy en `main` (v0.1.0): `internal/stats` (XP, días activos, racha), `internal/github` (cliente de eventos públicos, parser, dedupe), `internal/creature` (5 fases, 4 ánimos, 3 accesorios, sprites 16x16), `internal/render` (tarjeta SVG 480x200 con animación CSS, temas claro y oscuro), `internal/gallery` (web estática), CLI `render`/`gallery`/`version`, `action.yml`, workflows `ci`, `deploy` (Pages, diario) y `action-test`, README, `docs/USO.md` y `CONTRIBUTING.md`.
 
-MVP completo en la rama `agent/builder` (PR #1 abierto a `main`, pendiente de revisión del lead):
-- `internal/stats`: XP, días activos (30 y 90), racha, días desde la última actividad y repos distintos. Puro, con «ahora» inyectable.
-- `internal/github`: cliente de `/users/<u>/events/public` (paginado, hasta 300 eventos, `GITHUB_TOKEN` opcional), parser y conversión a actividades. Fixture ficticio en `testdata/events.json` (usuario «octoexample»).
-- `internal/creature`: 5 fases, 4 ánimos, 3 accesorios y mapas de píxeles 16×16 originales (brote de musgo con ojos).
-- `internal/render`: tarjeta SVG 480×200 con animación CSS (respirar/saltar, parpadeo, zzz, destellos), `prefers-reduced-motion`, temas `light` y `dark`.
-- `internal/gallery`: web estática (`index.html` + 48 SVG claro/oscuro + favicon + hero) con reglas, instalación y hueco para `live/BertMarti.svg`.
-- `cmd/commitling`: `render`, `gallery`, `version`.
-- `action.yml` (compuesta) y workflows `ci.yml`, `deploy.yml` (Pages, diario) y `action-test.yml`.
-- README completo. Tests en todos los paquetes.
+Cambios de #4: el cliente reintenta hasta 3 veces (esperas de 1, 2 y 4 s) ante 500, 502, 503 y 504 y ante límite de peticiones (429, o 403 con `Retry-After` o `X-RateLimit-Remaining: 0`), respeta `Retry-After` (segundos o fecha) y `X-RateLimit-Reset` y no reintenta 404, 422 ni otros 4xx.
 
 ## Decisiones (por qué)
 - 2026-09-29: Animación con CSS dentro del SVG porque GitHub no ejecuta JavaScript en los README.
@@ -43,13 +39,14 @@ MVP completo en la rama `agent/builder` (PR #1 abierto a `main`, pendiente de re
 - 2026-09-30 (qa): galería: `og:title`, `og:description`, `og:image` = `https://bertmarti.github.io/commitling/hero.svg`, `og:url`, `og:type`, `twitter:card`, canonical; botones de copiar con `aria-label`, región `aria-live`, texto seleccionado y mensaje si falla el portapapeles, ocultos sin JavaScript; los bloques `pre` son enfocables con teclado.
 - 2026-09-30 (docs): la guía de uso la escribe Claude Code (Sonnet) y no OpenCode, porque el sistema de permisos no permite lanzar OpenCode en modo autónomo; la fila del agente docs de `AGENTS.md` y la rama (`agent/docs`, no `agent/opencode-docs`) se actualizaron. OpenCode se retomará cuando se permita su ejecución autónoma.
 - 2026-09-30 (docs): `docs/USO.md` repite el workflow del README (y una variante con tema oscuro). Solo el del README está vigilado por test frente a `gallery.WorkflowSnippet`; si se cambia el workflow hay que cambiar los tres sitios. La guía también advierte de que la XP puede bajar (solo cuentan los últimos 90 días) y de que GitHub desactiva los workflows programados tras unos 60 días sin actividad.
+- 2026-09-30 (builder): flujo por issues (#4 a #7), una rama y un PR por issue, cada rama parte de la anterior pero todos los PR van contra `main`; AGENTS.md actualizado.
+- 2026-09-30 (builder): reintentos (#4): 3 reintentos como máximo (4 peticiones por página), backoff 1, 2, 4 s. Si el servidor indica una espera con `Retry-After` o `X-RateLimit-Reset` se usa esa; si supera el tope de 30 s (`DefaultMaxWait`) **no se reintenta** y se devuelve el error con su explicación (esperar 40 minutos a que se reinicie la cuota colgaría el workflow). Un 403 sin cabeceras de límite es de permisos y no se reintenta; un 429 siempre. Solo se repite la página que falla. El error final dice «tras N reintentos». `Sleep` y `Now` son inyectables en `Client` para testear sin esperar. El tiempo máximo de la CLI pasa de 1 a 3 minutos para dejar sitio a las esperas.
 
 ## Siguiente paso
-1. lead: revisar y fusionar el PR de `agent/builder`; tras el merge, comprobar el despliegue en https://bertmarti.github.io/commitling/ y la imagen en vivo del README.
-2. lead: fusionar #1, reorientar el PR #2 (qa) a `main` y fusionarlo; comprobar el despliegue.
-2b. qa (pendiente para otra ronda): reintentos ante 5xx intermitentes en el cliente; revisión visual real de la galería en navegador (esta ronda solo se verificó con tests y sintaxis del JS con `node --check`); comprobar el resto de la web (foco, orden de tabulación) en móvil.
-3. lead: fusionar #1 y #2 y después el PR de `agent/docs` (base `agent/qa`; reorientarlo a `main` si hace falta). Cuando exista la etiqueta `v1`, cambiar `@main` por `@v1` en README, galería y `docs/USO.md`. Pendiente menor: la sección «Cómo se ha hecho» del README aún cita OpenCode como parte del equipo.
-4. Pendiente: publicar una etiqueta `v1` para que la gente use `BertMarti/commitling@v1` en lugar de `@main`.
+1. Alberto: fusionar los PR del builder en orden (#4, #5, #6, #7) y, tras cada uno, comprobar el CI.
+2. Alberto: tras fusionar el de #7, crear la etiqueta `v1` y publicar en el Marketplace (instrucciones en el PR de #7).
+3. qa (otra ronda): revisión visual real de la galería en navegador y del foco/orden de tabulación en móvil.
+4. Pendiente menor: la sección «Cómo se ha hecho» del README aún cita OpenCode como parte del equipo.
 
 ## Problemas conocidos
 - En el Windows local de Alberto, el Control de aplicaciones (Smart App Control) bloquea a veces los binarios que genera Go (`go test`, `go run`, `go build`). Solución: `GOTMPDIR="$PWD/out/gotmp"` y reintentar; en el CI no pasa.
@@ -58,10 +55,12 @@ MVP completo en la rama `agent/builder` (PR #1 abierto a `main`, pendiente de re
 - La Action compila con `go run` en cada ejecución (unos segundos extra); aceptable para un cron diario.
 - `og:image` apunta a un SVG (lo pedido): X/Twitter, Facebook y LinkedIn no muestran SVG en las vistas previas; para que salga imagen habría que publicar un PNG 1200×630 (sin dependencias no hay rasterizador en la biblioteca estándar; habría que generarlo aparte).
 - El ancho del texto del SVG se estima (0,62 em por carácter), no se mide: con una fuente más ancha que las de la pila (p. ej. una monoespaciada del sistema fuera de la lista) podría rozar el borde con logins de casi 39 caracteres.
-- El cliente no reintenta ante 5xx: una caída puntual de la API hace fallar la ejecución diaria (se reintenta al día siguiente).
+- El cliente no reintenta los errores de red (DNS, conexión rechazada, timeout); solo las respuestas 5xx y de límite de peticiones. Una caída larga de la API sigue haciendo fallar la ejecución diaria (se reintenta al día siguiente).
 
 ## Registro de sesiones
 - 2026-09-29 lead (main): creación del repositorio y reparto del equipo.
 - 2026-09-29 builder (agent/builder): MVP completo (stats, cliente GitHub, criatura, SVG, CLI, galería, Action, CI, Pages, README) y PR a main.
 - 2026-09-30 qa · Claude Code Sonnet (agent/qa): versiones de acciones, desbordes del SVG con tests, cliente HTTP (cabeceras, timeout, 422), eventos duplicados, contraste AA y galería (Open Graph, copiar accesible). PR #2 hacia agent/builder.
 - 2026-09-30 docs · Claude Code Sonnet (agent/docs): `docs/USO.md` (guía para personas usuarias contrastada con el código), `CONTRIBUTING.md`, enlaces desde el README y fila del agente docs en AGENTS.md. PR hacia agent/qa.
+- 2026-09-30 builder · Claude Code Sonnet (agent/builder/4-reintentos-5xx): reintentos ante 5xx y límite de peticiones (#4) y flujo por issues en AGENTS.md.
+

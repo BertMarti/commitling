@@ -105,7 +105,7 @@ func runRender(args []string, stdout, stderr io.Writer) error {
 	if *fixture != "" {
 		events, err = readFixture(*fixture)
 	} else {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 		defer cancel()
 		events, err = github.NewClient(os.Getenv("GITHUB_TOKEN")).FetchEvents(ctx, *user)
 	}

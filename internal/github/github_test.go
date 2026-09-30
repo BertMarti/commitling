@@ -203,6 +203,7 @@ func TestFetchEventsErrors(t *testing.T) {
 		}))
 		cl := NewClient("")
 		cl.BaseURL = srv.URL
+		cl.Sleep = func(context.Context, time.Duration) error { return nil }
 		_, err := cl.FetchEvents(context.Background(), "octoexample")
 		srv.Close()
 		var apiErr *APIError

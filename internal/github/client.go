@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -23,6 +24,19 @@ const (
 	APIVersion = "2022-11-28"
 	// RequestTimeout bounds each HTTP request of the default client.
 	RequestTimeout = 15 * time.Second
+)
+
+const (
+	// MaxRetries is how many times a failed request is repeated (so a page is
+	// asked for at most 1+MaxRetries times).
+	MaxRetries = 3
+	// DefaultBaseDelay is the first exponential-backoff wait: 1 s, 2 s, 4 s.
+	DefaultBaseDelay = time.Second
+	// DefaultMaxWait is the longest wait commitling accepts, whether it comes
+	// from the backoff or from Retry-After / X-RateLimit-Reset. A server that
+	// asks for more is not retried: better to fail with a clear message than
+	// to hang a scheduled workflow.
+	DefaultMaxWait = 30 * time.Second
 )
 
 const (
@@ -42,6 +56,17 @@ type Client struct {
 	Token      string
 	HTTPClient *http.Client
 	UserAgent  string
+
+	// BaseDelay is the first backoff wait (default DefaultBaseDelay).
+	BaseDelay time.Duration
+	// MaxWait caps every wait between attempts (default DefaultMaxWait).
+	MaxWait time.Duration
+	// Sleep waits for d or until ctx ends; nil uses a real timer. Tests inject
+	// a fake one.
+	Sleep func(ctx context.Context, d time.Duration) error
+	// Now gives the current time to interpret X-RateLimit-Reset and a
+	// Retry-After date; nil uses time.Now.
+	Now func() time.Time
 }
 
 // NewClient returns a client for the public API. token may be empty.
@@ -58,9 +83,23 @@ func NewClient(token string) *Client {
 type APIError struct {
 	Status  int
 	Message string
+	// Retries is how many times the request was repeated before giving up.
+	Retries int
 }
 
 func (e *APIError) Error() string {
+	msg := e.baseError()
+	switch e.Retries {
+	case 0:
+		return msg
+	case 1:
+		return msg + " (tras 1 reintento)"
+	default:
+		return fmt.Sprintf("%s (tras %d reintentos)", msg, e.Retries)
+	}
+}
+
+func (e *APIError) baseError() string {
 	switch {
 	case e.Status == http.StatusNotFound:
 		return "usuario no encontrado en GitHub (404)"
@@ -96,12 +135,128 @@ func (c *Client) FetchEvents(ctx context.Context, user string) ([]Event, error) 
 	return Dedupe(all), nil
 }
 
+// fetchPage asks for one page, repeating the request up to MaxRetries times
+// on 500, 502, 503 and 504 and on rate limiting (429, or 403 with rate-limit
+// headers). Anything else (404, 422, other 4xx) is final.
 func (c *Client) fetchPage(ctx context.Context, user string, page int) ([]Event, error) {
+	for attempt := 0; ; attempt++ {
+		events, hdr, err := c.doPage(ctx, user, page)
+		if err == nil {
+			return events, nil
+		}
+		var apiErr *APIError
+		if !errors.As(err, &apiErr) {
+			return nil, err
+		}
+		apiErr.Retries = attempt
+		if attempt >= MaxRetries {
+			return nil, apiErr
+		}
+		wait, ok := c.retryWait(apiErr.Status, hdr, attempt)
+		if !ok {
+			return nil, apiErr
+		}
+		if err := c.sleep(ctx, wait); err != nil {
+			return nil, fmt.Errorf("%w; reintento interrumpido: %v", apiErr, err)
+		}
+	}
+}
+
+// retryWait reports whether a response with this status and headers is worth
+// repeating and how long to wait first.
+func (c *Client) retryWait(status int, hdr http.Header, attempt int) (time.Duration, bool) {
+	limited := false
+	switch status {
+	case http.StatusInternalServerError, http.StatusBadGateway,
+		http.StatusServiceUnavailable, http.StatusGatewayTimeout:
+	case http.StatusTooManyRequests:
+		limited = true
+	case http.StatusForbidden:
+		// A plain 403 is a permissions problem; only rate limiting is retried.
+		limited = hdr.Get("Retry-After") != "" || hdr.Get("X-RateLimit-Remaining") == "0"
+		if !limited {
+			return 0, false
+		}
+	default:
+		return 0, false
+	}
+
+	base := c.BaseDelay
+	if base <= 0 {
+		base = DefaultBaseDelay
+	}
+	maxWait := c.MaxWait
+	if maxWait <= 0 {
+		maxWait = DefaultMaxWait
+	}
+	if hint, ok := c.serverHint(hdr, limited); ok {
+		if hint > maxWait {
+			return 0, false // the server asks for more than we are willing to wait
+		}
+		return hint, true
+	}
+	wait := base << uint(attempt) // 1x, 2x, 4x
+	if wait > maxWait {
+		wait = maxWait
+	}
+	return wait, true
+}
+
+// serverHint reads how long the server asks to wait: Retry-After (seconds or
+// an HTTP date) or, when rate limited, X-RateLimit-Reset (Unix seconds).
+func (c *Client) serverHint(hdr http.Header, limited bool) (time.Duration, bool) {
+	if v := strings.TrimSpace(hdr.Get("Retry-After")); v != "" {
+		if secs, err := strconv.Atoi(v); err == nil && secs >= 0 {
+			return time.Duration(secs) * time.Second, true
+		}
+		if t, err := http.ParseTime(v); err == nil {
+			return positive(t.Sub(c.now())), true
+		}
+	}
+	if limited {
+		if v := strings.TrimSpace(hdr.Get("X-RateLimit-Reset")); v != "" {
+			if unix, err := strconv.ParseInt(v, 10, 64); err == nil {
+				return positive(time.Unix(unix, 0).Sub(c.now())), true
+			}
+		}
+	}
+	return 0, false
+}
+
+func positive(d time.Duration) time.Duration {
+	if d < 0 {
+		return 0
+	}
+	return d
+}
+
+func (c *Client) now() time.Time {
+	if c.Now != nil {
+		return c.Now()
+	}
+	return time.Now()
+}
+
+func (c *Client) sleep(ctx context.Context, d time.Duration) error {
+	if c.Sleep != nil {
+		return c.Sleep(ctx, d)
+	}
+	t := time.NewTimer(d)
+	defer t.Stop()
+	select {
+	case <-t.C:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
+func (c *Client) doPage(ctx context.Context, user string, page int) ([]Event, http.Header, error) {
 	u := fmt.Sprintf("%s/users/%s/events/public?per_page=%d&page=%d",
 		strings.TrimRight(c.BaseURL, "/"), url.PathEscape(user), perPage, page)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("X-GitHub-Api-Version", APIVersion)
@@ -120,7 +275,7 @@ func (c *Client) fetchPage(ctx context.Context, user string, page int) ([]Event,
 	}
 	resp, err := hc.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("no se pudo contactar con la API de GitHub: %w", err)
+		return nil, nil, fmt.Errorf("no se pudo contactar con la API de GitHub: %w", err)
 	}
 	defer resp.Body.Close()
 
@@ -133,7 +288,8 @@ func (c *Client) fetchPage(ctx context.Context, user string, page int) ([]Event,
 		if msg.Message == "" {
 			msg.Message = http.StatusText(resp.StatusCode)
 		}
-		return nil, &APIError{Status: resp.StatusCode, Message: msg.Message}
+		return nil, resp.Header, &APIError{Status: resp.StatusCode, Message: msg.Message}
 	}
-	return ParseEvents(resp.Body)
+	events, err := ParseEvents(resp.Body)
+	return events, resp.Header, err
 }
