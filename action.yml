@@ -31,7 +31,7 @@ inputs:
     required: false
     default: ""
   keep-on-error:
-    description: Si la API de GitHub falla y el SVG de salida ya existe, lo conserva y termina con un aviso en vez de fallar (true o false).
+    description: Ante un fallo transitorio de la API (red, 5xx, límite de peticiones), conserva el SVG de salida existente y avisa (true o false).
     required: false
     default: "true"
 

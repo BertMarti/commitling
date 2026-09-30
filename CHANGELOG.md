@@ -8,7 +8,12 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ### Añadido
 
-- **Conservar el último SVG válido ante caídas largas de la API** (#16): opción `--keep-on-error` en `commitling render` y entrada `keep-on-error` en la Action (por defecto `true`, compatible con los workflows existentes, que la reciben sin cambiar nada). Si la API falla tras los reintentos y el archivo de salida ya es un SVG completo, se conserva intacto y el paso termina en verde con un aviso (`::warning::` en GitHub Actions). Sin archivo previo, con un archivo vacío o cortado, o con `--out -`, el error se mantiene. Un `fixture` inexistente o una especie no válida siguen siendo errores.
+- **Conservar el último SVG válido ante caídas transitorias de la API** (#16): opción `--keep-on-error` en `commitling render` y entrada `keep-on-error` en la Action (por defecto `true`; los workflows existentes la reciben sin cambiar nada). Si la API falla tras los reintentos por una causa transitoria (error de red, 5xx, 429, o 403 con cabeceras de límite) y el archivo de salida ya es un SVG completo, se conserva intacto y el paso termina en verde con un aviso (`::warning::` en GitHub Actions). Los fallos permanentes (401, 404, 422, 403 sin cabeceras de límite), la ausencia de archivo previo, un archivo vacío o cortado y `--out -` siguen siendo un error, igual que un `fixture` inexistente o una especie no válida.
+- `github.IsTransient` y `APIError.RateLimited` en el cliente de la API.
+
+### Cambiado
+
+- Los workflows existentes dejan de fallar ante caídas transitorias de la API (errores de red, 5xx o límite de peticiones) si el SVG de salida ya existe: ahora lo conservan y avisan, porque `keep-on-error` está activada por defecto. Es un cambio de comportamiento compatible: para recuperar el fallo anterior, `keep-on-error: false`. Los errores permanentes (token inválido, usuario inexistente) siguen haciendo fallar el paso.
 
 ## [0.2.0] - 2026-09-30
 
