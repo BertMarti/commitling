@@ -43,12 +43,15 @@ func mustParseXML(t *testing.T, svg []byte) {
 func TestSVGIsValidXMLForEveryState(t *testing.T) {
 	all := []creature.Accessories{{}, {Hat: true, Scarf: true, Flower: true}}
 	for _, th := range []Theme{Light, Dark} {
-		for _, st := range creature.Stages {
-			for _, m := range creature.Moods {
-				for _, acc := range all {
-					c := Card{User: "octoexample", Stats: sampleStats(), Theme: th,
-						Creature: creature.Creature{Stage: st, Mood: m, Accessories: acc}}
-					mustParseXML(t, SVG(c))
+		for _, sp := range creature.AllSpecies {
+			for _, st := range creature.Stages {
+				for _, m := range creature.Moods {
+					for _, acc := range all {
+						c := Card{User: "octoexample", Stats: sampleStats(), Theme: th,
+							Creature: creature.Creature{Species: sp, Stage: st, Mood: m, Accessories: acc}}
+						mustParseXML(t, SVG(c))
+						mustParseXML(t, SpriteSVG(c.Creature))
+					}
 				}
 			}
 		}
@@ -229,12 +232,14 @@ func TestLongTextStaysInsideTheCard(t *testing.T) {
 	huge := stats.Stats{XP: 1234567, Streak: 90, ActiveDays30: 30, ActiveDays90: 90, Repos: 1234567, DaysSinceLast: 0}
 	all := creature.Accessories{Hat: true, Scarf: true, Flower: true}
 	for _, th := range []Theme{Light, Dark} {
-		for _, st := range creature.Stages {
-			for _, m := range creature.Moods {
-				for _, user := range []string{"", "u", "octoexample", user39, strings.Repeat("W", 80)} {
-					c := Card{User: user, Stats: huge, Theme: th,
-						Creature: creature.Creature{Stage: st, Mood: m, Accessories: all}}
-					checkTextFits(t, th.Name+"/"+st.Name()+"/"+m.Name()+"/"+user, SVG(c))
+		for _, sp := range creature.AllSpecies {
+			for _, st := range creature.Stages {
+				for _, m := range creature.Moods {
+					for _, user := range []string{"", "u", "octoexample", user39, strings.Repeat("W", 80)} {
+						c := Card{User: user, Stats: huge, Theme: th,
+							Creature: creature.Creature{Species: sp, Stage: st, Mood: m, Accessories: all}}
+						checkTextFits(t, th.Name+"/"+sp.Slug()+"/"+st.Name()+"/"+m.Name()+"/"+user, SVG(c))
+					}
 				}
 			}
 		}
@@ -313,5 +318,34 @@ func TestTextContrast(t *testing.T) {
 				t.Errorf("%s theme: %s on background has contrast %.2f, want at least 4.5", th.Name, name, got)
 			}
 		}
+	}
+}
+
+func TestMushroomCard(t *testing.T) {
+	c := NewCard("octoexample", sampleStats(), Light)
+	moss := string(SVG(c))
+	c.Creature.Species = creature.Mushroom
+	mush := string(SVG(c))
+	if moss == mush {
+		t.Fatal("the species does not change the SVG")
+	}
+	for _, want := range []string{"Seta grande", "1.234 XP", "corro de setas: 2.500 XP", "fase 4 de 5", "Radiante"} {
+		if !strings.Contains(mush, want) {
+			t.Errorf("mushroom SVG does not contain %q", want)
+		}
+	}
+	if strings.Contains(mush, "Arbusto") || strings.Contains(mush, "árbol ancestral") {
+		t.Error("mushroom SVG uses the moss stage names")
+	}
+	if again := string(SVG(c)); again != mush {
+		t.Error("the mushroom SVG is not deterministic")
+	}
+	if d := Description(c); !strings.HasPrefix(d, "Seta grande, radiante.") {
+		t.Errorf("Description = %q", d)
+	}
+	// The last stage has no goal.
+	c.Creature.Stage = creature.Ancient
+	if !strings.Contains(string(SVG(c)), "Corro de setas") {
+		t.Error("last mushroom stage not named")
 	}
 }

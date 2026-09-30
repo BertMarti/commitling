@@ -106,14 +106,16 @@ func TestFromStats(t *testing.T) {
 
 func TestPixelMapsAreWellFormed(t *testing.T) {
 	valid := map[byte]bool{Clear: true, PInk: true, PPaper: true, PMoss: true, PHoney: true, PRed: true}
-	for _, st := range Stages {
-		for y, row := range art[st].body {
-			if len(row) != Size {
-				t.Errorf("%s row %d has %d pixels, want %d", st.Name(), y, len(row), Size)
-			}
-			for x := 0; x < len(row); x++ {
-				if !valid[row[x]] {
-					t.Errorf("%s (%d,%d): invalid pixel %q", st.Name(), x, y, row[x])
+	for _, sp := range AllSpecies {
+		for _, st := range Stages {
+			for y, row := range artFor(sp, st).body {
+				if len(row) != Size {
+					t.Errorf("%s/%s row %d has %d pixels, want %d", sp.Name(), st.Name(), y, len(row), Size)
+				}
+				for x := 0; x < len(row); x++ {
+					if !valid[row[x]] {
+						t.Errorf("%s/%s (%d,%d): invalid pixel %q", sp.Name(), st.Name(), x, y, row[x])
+					}
 				}
 			}
 		}
@@ -122,31 +124,55 @@ func TestPixelMapsAreWellFormed(t *testing.T) {
 
 // The face, scarf and accessories must land on the creature, not on air.
 func TestAnchorsFitTheBody(t *testing.T) {
-	for _, st := range Stages {
-		a := art[st]
-		g := parse(a.body)
-		for dy := 0; dy < 4; dy++ {
-			for dx := 0; dx < 8; dx++ {
-				x, y := a.face.X+dx, a.face.Y+dy
-				if p := g[y][x]; p == Clear || p == PInk {
-					t.Errorf("%s: face pixel (%d,%d) is %q, want a fill colour", st.Name(), x, y, p)
+	for _, sp := range AllSpecies {
+		for _, st := range Stages {
+			name := sp.Name() + "/" + sp.StageName(st)
+			a := artFor(sp, st)
+			g := parse(a.body)
+			for dy := 0; dy < 4; dy++ {
+				for dx := 0; dx < 8; dx++ {
+					x, y := a.face.X+dx, a.face.Y+dy
+					if p := g[y][x]; p == Clear || p == PInk {
+						t.Errorf("%s: face pixel (%d,%d) is %q, want a fill colour", name, x, y, p)
+					}
 				}
 			}
-		}
-		filled := 0
-		for x := 0; x < Size; x++ {
-			if g[a.scarfRow][x] != Clear {
-				filled++
+			filled := 0
+			for x := 0; x < Size; x++ {
+				if g[a.scarfRow][x] != Clear {
+					filled++
+				}
 			}
-		}
-		if filled < 6 {
-			t.Errorf("%s: scarf row %d is too narrow (%d pixels)", st.Name(), a.scarfRow, filled)
-		}
-		if a.hat.X < 0 || a.hat.Y < 0 || a.hat.X+len(hatArt[0]) > Size || a.hat.Y+len(hatArt) > Size {
-			t.Errorf("%s: hat out of bounds at %+v", st.Name(), a.hat)
-		}
-		if a.flower.X < 0 || a.flower.Y < 0 || a.flower.X+3 > Size || a.flower.Y+3 > Size {
-			t.Errorf("%s: flower out of bounds at %+v", st.Name(), a.flower)
+			if filled < 6 {
+				t.Errorf("%s: scarf row %d is too narrow (%d pixels)", name, a.scarfRow, filled)
+			}
+			// The scarf row must be one solid run, or the scarf would
+			// bridge gaps in the body.
+			first, last := -1, -1
+			for x := 0; x < Size; x++ {
+				if g[a.scarfRow][x] != Clear {
+					if first < 0 {
+						first = x
+					}
+					last = x
+				}
+			}
+			if last-first+1 != filled {
+				t.Errorf("%s: scarf row %d has gaps", name, a.scarfRow)
+			}
+			if a.hat.X < 0 || a.hat.Y < 0 || a.hat.X+len(hatArt[0]) > Size || a.hat.Y+len(hatArt) > Size {
+				t.Errorf("%s: hat out of bounds at %+v", name, a.hat)
+			}
+			if a.flower.X < 0 || a.flower.Y < 0 || a.flower.X+3 > Size || a.flower.Y+3 > Size {
+				t.Errorf("%s: flower out of bounds at %+v", name, a.flower)
+			}
+			// The hat and the flower must not cover the face.
+			if a.hat.Y+len(hatArt) > a.face.Y {
+				t.Errorf("%s: hat (rows %d-%d) reaches the face (from row %d)", name, a.hat.Y, a.hat.Y+len(hatArt)-1, a.face.Y)
+			}
+			if a.flower.Y+3 > a.face.Y && a.flower.X < a.face.X+8 && a.flower.X+3 > a.face.X {
+				t.Errorf("%s: flower at %+v covers the face", name, a.flower)
+			}
 		}
 	}
 }
@@ -154,14 +180,16 @@ func TestAnchorsFitTheBody(t *testing.T) {
 // Only the five colours of the palette may appear.
 func TestDrawUsesPalette(t *testing.T) {
 	all := Accessories{Hat: true, Scarf: true, Flower: true}
-	for _, st := range Stages {
-		for _, m := range Moods {
-			sp := Draw(Creature{Stage: st, Mood: m, Accessories: all})
-			for _, g := range []*Grid{&sp.Outline, &sp.Body, &sp.Eyes} {
-				for y := range g {
-					for x := range g[y] {
-						if p := g[y][x]; p != Clear && Color(p) == "" {
-							t.Fatalf("%s/%s: pixel %q at (%d,%d) is not in the palette", st.Name(), m.Name(), p, x, y)
+	for _, sp := range AllSpecies {
+		for _, st := range Stages {
+			for _, m := range Moods {
+				s := Draw(Creature{Species: sp, Stage: st, Mood: m, Accessories: all})
+				for _, g := range []*Grid{&s.Outline, &s.Body, &s.Eyes} {
+					for y := range g {
+						for x := range g[y] {
+							if p := g[y][x]; p != Clear && Color(p) == "" {
+								t.Fatalf("%s/%s/%s: pixel %q at (%d,%d) is not in the palette", sp.Name(), st.Name(), m.Name(), p, x, y)
+							}
 						}
 					}
 				}
@@ -183,6 +211,109 @@ func TestDrawChangesWithMoodAndAccessories(t *testing.T) {
 	for _, acc := range []Accessories{{Hat: true}, {Scarf: true}, {Flower: true}} {
 		if Draw(Creature{Stage: Sapling, Mood: Happy, Accessories: acc}) == base {
 			t.Errorf("accessory %+v is not drawn", acc)
+		}
+	}
+}
+
+func TestSpeciesNamesAndSlugs(t *testing.T) {
+	if len(AllSpecies) != 2 || AllSpecies[0] != MossSprout {
+		t.Fatalf("AllSpecies = %v, want the default first", AllSpecies)
+	}
+	if (Creature{}).Species != MossSprout {
+		t.Error("the zero value must be the default species")
+	}
+	seen := map[string]bool{}
+	for _, sp := range AllSpecies {
+		if sp.Name() == "" || sp.Slug() == "" || seen[sp.Slug()] {
+			t.Errorf("species %d has a bad or repeated name/slug: %q %q", sp, sp.Name(), sp.Slug())
+		}
+		seen[sp.Slug()] = true
+		for _, st := range Stages {
+			if sp.StageName(st) == "" {
+				t.Errorf("%s has no name for stage %d", sp.Name(), st)
+			}
+		}
+	}
+	// The default species keeps the original stage names.
+	for _, st := range Stages {
+		if MossSprout.StageName(st) != st.Name() {
+			t.Errorf("moss stage %d is %q, want %q", st, MossSprout.StageName(st), st.Name())
+		}
+	}
+	if Mushroom.StageName(Seed) != "Espora" || Mushroom.StageName(Ancient) != "Corro de setas" {
+		t.Error("unexpected mushroom stage names")
+	}
+}
+
+func TestSpeciesByName(t *testing.T) {
+	ok := map[string]Species{
+		"": MossSprout, "  ": MossSprout, "moss": MossSprout, "MOSS": MossSprout, "musgo": MossSprout, "Brote de musgo": MossSprout,
+		"mushroom": Mushroom, " Mushroom ": Mushroom, "hongo": Mushroom, "seta": Mushroom,
+	}
+	for in, want := range ok {
+		got, found := SpeciesByName(in)
+		if !found || got != want {
+			t.Errorf("SpeciesByName(%q) = %v, %v; want %v", in, got, found, want)
+		}
+	}
+	for _, bad := range []string{"dragon", "moss mushroom", "../x", "1"} {
+		if _, found := SpeciesByName(bad); found {
+			t.Errorf("SpeciesByName(%q) should not be found", bad)
+		}
+	}
+}
+
+func TestFromStatsAs(t *testing.T) {
+	s := stats.Stats{XP: 450, DaysSinceLast: 0, Streak: 6}
+	def := FromStats(s)
+	if def.Species != MossSprout {
+		t.Fatalf("FromStats gives species %v, want the default", def.Species)
+	}
+	m := FromStatsAs(Mushroom, s)
+	if m.Species != Mushroom || m.Stage != def.Stage || m.Mood != def.Mood || m.Accessories != def.Accessories {
+		t.Fatalf("FromStatsAs = %+v, want the same state as %+v with another species", m, def)
+	}
+	if m.StageName() != "Seta" || def.StageName() != "Retoño" {
+		t.Errorf("stage names: %q and %q", m.StageName(), def.StageName())
+	}
+}
+
+// Every stage, mood and accessory set draws differently for each species,
+// deterministically, and the species look different from each other.
+func TestSpeciesDrawDifferently(t *testing.T) {
+	all := Accessories{Hat: true, Scarf: true, Flower: true}
+	for _, st := range Stages {
+		for _, m := range Moods {
+			for _, acc := range []Accessories{{}, all} {
+				moss := Draw(Creature{Species: MossSprout, Stage: st, Mood: m, Accessories: acc})
+				mush := Draw(Creature{Species: Mushroom, Stage: st, Mood: m, Accessories: acc})
+				if moss == mush {
+					t.Errorf("stage %d mood %d: both species draw the same", st, m)
+				}
+				if again := Draw(Creature{Species: Mushroom, Stage: st, Mood: m, Accessories: acc}); again != mush {
+					t.Errorf("stage %d mood %d: Draw is not deterministic", st, m)
+				}
+			}
+		}
+	}
+	// Within a species, every stage is different from the others.
+	for _, sp := range AllSpecies {
+		seen := map[Sprite]Stage{}
+		for _, st := range Stages {
+			d := Draw(Creature{Species: sp, Stage: st, Mood: Happy})
+			if prev, dup := seen[d]; dup {
+				t.Errorf("%s: stages %d and %d look the same", sp.Name(), prev, st)
+			}
+			seen[d] = st
+		}
+	}
+}
+
+// The mushroom is its own design: it must not reuse the moss sprout's maps.
+func TestMushroomMapsAreNotTheMossOnes(t *testing.T) {
+	for _, st := range Stages {
+		if mushroomArt[st].body == mossArt[st].body {
+			t.Errorf("stage %d: mushroom body equals the moss body", st)
 		}
 	}
 }

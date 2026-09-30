@@ -1,12 +1,71 @@
-// Package creature decides what the commitling looks like: its growth stage,
-// its mood and the accessories it has unlocked, plus the pixel maps used to
-// draw it.
+// Package creature decides what the commitling looks like: its species, its
+// growth stage, its mood and the accessories it has unlocked, plus the pixel
+// maps used to draw it.
 //
-// The creature is an original design: a small moss sprout with eyes that
-// grows from a honey-coloured seed into an ancient tree.
+// Both species are original designs. The default one is a small moss sprout
+// with eyes that grows from a honey-coloured seed into an ancient tree; the
+// other one is a little mushroom that grows from a spore into a fairy ring.
 package creature
 
-import "github.com/BertMarti/commitling/internal/stats"
+import (
+	"strings"
+
+	"github.com/BertMarti/commitling/internal/stats"
+)
+
+// Species is the kind of creature. Every species has the same five stages,
+// four moods and three accessories, drawn with its own pixel maps.
+type Species int
+
+// Species. MossSprout is the zero value and therefore the default.
+const (
+	MossSprout Species = iota
+	Mushroom
+)
+
+// AllSpecies lists every species, default first.
+var AllSpecies = []Species{MossSprout, Mushroom}
+
+var speciesNames = [...]string{"Brote de musgo", "Hongo"}
+
+var speciesSlugs = [...]string{"moss", "mushroom"}
+
+// Names of the stages of each species, in growth order.
+var speciesStageNames = [...][5]string{
+	MossSprout: {"Semilla", "Brote", "Retoño", "Arbusto", "Árbol ancestral"},
+	Mushroom:   {"Espora", "Botón", "Seta", "Seta grande", "Corro de setas"},
+}
+
+// Name is the Spanish name of the species.
+func (sp Species) Name() string { return speciesNames[sp] }
+
+// Slug is the stable ASCII identifier used in the CLI, the Action and file
+// names.
+func (sp Species) Slug() string { return speciesSlugs[sp] }
+
+// StageName is the Spanish name of a stage for this species.
+func (sp Species) StageName(st Stage) string { return speciesStageNames[sp][st] }
+
+// SpeciesByName finds a species by its slug or its Spanish name, ignoring
+// case and surrounding spaces. The empty string is the default species.
+func SpeciesByName(name string) (Species, bool) {
+	n := strings.ToLower(strings.TrimSpace(name))
+	if n == "" {
+		return MossSprout, true
+	}
+	for _, sp := range AllSpecies {
+		if n == sp.Slug() || n == strings.ToLower(sp.Name()) {
+			return sp, true
+		}
+	}
+	switch n {
+	case "musgo":
+		return MossSprout, true
+	case "seta", "setas":
+		return Mushroom, true
+	}
+	return MossSprout, false
+}
 
 // Stage is a growth stage, unlocked by experience.
 type Stage int
@@ -38,7 +97,8 @@ var stageNames = [...]string{"Semilla", "Brote", "Retoño", "Arbusto", "Árbol a
 
 var stageSlugs = [...]string{"seed", "sprout", "sapling", "shrub", "ancient"}
 
-// Name is the Spanish name shown on the card.
+// Name is the Spanish name of the stage for the default species (see
+// Species.StageName for the others).
 func (s Stage) Name() string { return stageNames[s] }
 
 // Slug is a stable ASCII identifier, used for file names.
@@ -176,14 +236,23 @@ func (a Accessories) Names() []string {
 
 // Creature is the full state to draw.
 type Creature struct {
+	Species     Species
 	Stage       Stage
 	Mood        Mood
 	Accessories Accessories
 }
 
-// FromStats derives the creature from the stats. It is deterministic.
-func FromStats(s stats.Stats) Creature {
+// StageName is the Spanish name of the current stage for its species.
+func (c Creature) StageName() string { return c.Species.StageName(c.Stage) }
+
+// FromStats derives a creature of the default species from the stats. It is
+// deterministic.
+func FromStats(s stats.Stats) Creature { return FromStatsAs(MossSprout, s) }
+
+// FromStatsAs derives a creature of the given species from the stats.
+func FromStatsAs(sp Species, s stats.Stats) Creature {
 	return Creature{
+		Species:     sp,
 		Stage:       StageFor(s.XP),
 		Mood:        MoodFor(s),
 		Accessories: AccessoriesFor(s),

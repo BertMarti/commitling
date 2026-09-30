@@ -37,10 +37,15 @@ const (
 	heroX      = 96
 	heroY      = 150
 	textX      = 496 // left edge of the text column
-	stageY     = 396 // top of the row of small stages
+	stageY     = 392 // top of the first row of small stages
 	stageScale = 3
 	stageGap   = 20
+	stageRowH  = creature.Size*stageScale + 12 // distance between rows of stages
+	siteY      = 530
 )
+
+// stageRowY is the top of the row of stages of the i-th species.
+func stageRowY(i int) int { return stageY + i*stageRowH }
 
 // Palette indexes.
 const (
@@ -148,14 +153,17 @@ func Image(hero creature.Creature) *image.Paletted {
 	c.text(textX, 282, Tagline1, 4, iInk)
 	c.text(textX, 326, Tagline2, 4, iInk)
 
-	// The five stages, from seed to ancient tree.
-	x := textX
-	for _, st := range creature.Stages {
-		c.sprite(x, stageY, creature.Creature{Stage: st, Mood: creature.Happy}, stageScale)
-		x += creature.Size*stageScale + stageGap
+	// The five stages of each species, one row per species, from the
+	// youngest to the oldest.
+	for i, sp := range creature.AllSpecies {
+		x := textX
+		for _, st := range creature.Stages {
+			c.sprite(x, stageRowY(i), creature.Creature{Species: sp, Stage: st, Mood: creature.Happy}, stageScale)
+			x += creature.Size*stageScale + stageGap
+		}
 	}
 
-	c.text(textX, 490, Site, 3, iMuted)
+	c.text(textX, siteY, Site, 3, iMuted)
 	return img
 }
 

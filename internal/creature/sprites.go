@@ -91,8 +91,17 @@ type stageArt struct {
 	flower Point
 }
 
-// Pixel maps. K ink, P paper, G moss, H honey, R accent, . transparent.
-var art = [...]stageArt{
+// artFor returns the pixel map of a stage of a species.
+func artFor(sp Species, st Stage) stageArt {
+	if sp == Mushroom {
+		return mushroomArt[st]
+	}
+	return mossArt[st]
+}
+
+// Pixel maps of the moss sprout. K ink, P paper, G moss, H honey, R accent,
+// . transparent.
+var mossArt = [...]stageArt{
 	Seed: {
 		body: [Size]string{
 			"................",
@@ -268,7 +277,7 @@ func (m Mood) Blinks() bool { return m == Happy || m == Bored }
 
 // Draw composes the sprite of a creature.
 func Draw(c Creature) Sprite {
-	a := art[c.Stage]
+	a := artFor(c.Species, c.Stage)
 	var sp Sprite
 	base := parse(a.body)
 	sp.Body = base

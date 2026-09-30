@@ -22,6 +22,10 @@ inputs:
     description: Token para la API de GitHub. Basta con el GITHUB_TOKEN del workflow.
     required: false
     default: ${{ github.token }}
+  species:
+    description: Especie de la criatura, moss (brote de musgo, la predeterminada) o mushroom (hongo).
+    required: false
+    default: moss
   fixture:
     description: Archivo JSON de eventos (relativo al repositorio) para trabajar sin red. Si se indica, no se llama a la API.
     required: false
@@ -53,12 +57,13 @@ runs:
         CL_USER: ${{ inputs.user }}
         CL_OUT: ${{ inputs.out }}
         CL_THEME: ${{ inputs.theme }}
+        CL_SPECIES: ${{ inputs.species }}
         CL_FIXTURE: ${{ inputs.fixture }}
       run: |
         set -euo pipefail
         abs() { case "$1" in /*|[A-Za-z]:*) printf '%s' "$1" ;; *) printf '%s/%s' "$GITHUB_WORKSPACE" "$1" ;; esac; }
         out="$(abs "$CL_OUT")"
-        args=(render --theme "$CL_THEME" --out "$out")
+        args=(render --theme "$CL_THEME" --species "$CL_SPECIES" --out "$out")
         if [ -n "$CL_FIXTURE" ]; then
           args+=(--fixture "$(abs "$CL_FIXTURE")")
           if [ -n "$CL_USER" ]; then args+=(--user "$CL_USER"); fi

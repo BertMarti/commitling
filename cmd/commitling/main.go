@@ -1,7 +1,7 @@
 // Command commitling draws a pixel-art creature that grows with your public
 // GitHub activity.
 //
-//	commitling render --user <login> [--theme light|dark] [--now RFC3339] --out commitling.svg
+//	commitling render --user <login> [--theme light|dark] [--species moss|mushroom] [--now RFC3339] --out commitling.svg
 //	commitling render --fixture testdata/events.json --out commitling.svg
 //	commitling gallery --out site/
 //	commitling og --out og.png
@@ -19,6 +19,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/BertMarti/commitling/internal/creature"
 	"github.com/BertMarti/commitling/internal/gallery"
 	"github.com/BertMarti/commitling/internal/github"
 	"github.com/BertMarti/commitling/internal/og"
@@ -32,8 +33,8 @@ var version = "0.1.0"
 const usage = `commitling: una mascota pixel-art que crece con tus commits.
 
 Uso:
-  commitling render --user <usuario> [--theme light|dark] [--now RFC3339] --out <archivo.svg>
-  commitling render --fixture <eventos.json> [--user <nombre>] [--theme light|dark] [--now RFC3339] --out <archivo.svg>
+  commitling render --user <usuario> [--theme light|dark] [--species moss|mushroom] [--now RFC3339] --out <archivo.svg>
+  commitling render --fixture <eventos.json> [--user <nombre>] [--theme light|dark] [--species moss|mushroom] [--now RFC3339] --out <archivo.svg>
   commitling gallery --out <directorio>
   commitling og --out <archivo.png>
   commitling version
@@ -86,6 +87,7 @@ func runRender(args []string, stdout, stderr io.Writer) error {
 	user := fs.String("user", "", "usuario de GitHub")
 	fixture := fs.String("fixture", "", "archivo JSON de eventos para trabajar sin red")
 	theme := fs.String("theme", "light", "tema: light o dark")
+	speciesFlag := fs.String("species", "moss", "especie: moss (brote de musgo) o mushroom (hongo)")
 	nowFlag := fs.String("now", "", "fecha de referencia en RFC3339 (por defecto, ahora; con --fixture, el último evento)")
 	out := fs.String("out", "commitling.svg", "archivo SVG de salida (- para la salida estándar)")
 	if err := fs.Parse(args); err != nil {
@@ -97,6 +99,10 @@ func runRender(args []string, stdout, stderr io.Writer) error {
 	th, ok := render.ThemeByName(*theme)
 	if !ok {
 		return usageError{fmt.Sprintf("tema no válido %q (usa light o dark)", *theme)}
+	}
+	species, ok := creature.SpeciesByName(*speciesFlag)
+	if !ok {
+		return usageError{fmt.Sprintf("especie no válida %q (usa moss o mushroom)", *speciesFlag)}
 	}
 	if *user == "" && *fixture == "" {
 		return usageError{"indica --user o --fixture"}
@@ -139,6 +145,7 @@ func runRender(args []string, stdout, stderr io.Writer) error {
 	}
 	s := stats.Compute(github.Activities(events), now)
 	card := render.NewCard(login, s, th)
+	card.Creature.Species = species
 	svg := render.SVG(card)
 
 	if *out == "-" {

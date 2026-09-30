@@ -26,7 +26,7 @@ Antes de instalar nada puedes ver todas las fases y ánimos en la web del proyec
 
 https://bertmarti.github.io/commitling/
 
-Ahí verás las 5 fases con los 4 ánimos de cada una (20 tarjetas, en versión clara y oscura), los accesorios, las reglas y las instrucciones de instalación con botones para copiar. También hay una criatura «en vivo» del autor del proyecto, que se actualiza cada día.
+Ahí verás las dos especies, cada una con sus 5 fases y los 4 ánimos de cada una (20 tarjetas por especie, en versión clara y oscura), los accesorios, las reglas y las instrucciones de instalación con botones para copiar. También hay una criatura «en vivo» del autor del proyecto, que se actualiza cada día.
 
 ## 3. Ponerla en tu perfil, paso a paso
 
@@ -126,8 +126,22 @@ Dentro de `with:` puedes ajustar:
 | `user` | el dueño del repositorio | Usuario de GitHub cuya actividad se dibuja |
 | `out` | `commitling.svg` | Nombre del archivo de imagen |
 | `theme` | `light` | `light` (papel) o `dark` (tinta) |
+| `species` | `moss` | Especie de la criatura: `moss` (brote de musgo) o `mushroom` (hongo) |
 | `token` | el token del propio workflow | Suele bastar; no hace falta que lo cambies |
 | `fixture` | vacío | Archivo de eventos de ejemplo para probar sin conexión (solo para desarrollo) |
+
+### Elegir la especie
+
+Por defecto tu criatura es un **brote de musgo**. Si prefieres el **hongo**, añade `species: mushroom` en `with:`:
+
+```yaml
+      - uses: BertMarti/commitling@main
+        with:
+          out: commitling.svg
+          species: mushroom
+```
+
+Las reglas son las mismas; solo cambian el dibujo y el nombre de las fases (Espora, Botón, Seta, Seta grande y Corro de setas). Cualquier otro valor hace fallar el paso con un mensaje claro. Puedes verlas todas en la [galería](https://bertmarti.github.io/commitling/#galeria).
 
 ## 4. Tema oscuro
 
@@ -203,7 +217,7 @@ Ejemplo: en los últimos 90 días has hecho 20 commits (200 XP), abierto 2 pull 
 | Arbusto | 1.000 XP |
 | Árbol ancestral | 2.500 XP |
 
-Con 285 XP estarías en **Brote** (fase 2 de 5) y te faltarían 115 XP para ser Retoño. La tarjeta muestra la XP total, la meta siguiente y una barra de progreso (24 casillas) hasta la próxima fase; en el Árbol ancestral la barra va siempre llena.
+En el hongo, las cinco fases se llaman Espora, Botón, Seta, Seta grande y Corro de setas, con las mismas XP. Con 285 XP estarías en **Brote** (fase 2 de 5) y te faltarían 115 XP para ser Retoño. La tarjeta muestra la XP total, la meta siguiente y una barra de progreso (24 casillas) hasta la próxima fase; en el Árbol ancestral la barra va siempre llena.
 
 ### Ánimos
 
