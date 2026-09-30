@@ -229,6 +229,7 @@ func apiDown(t *testing.T) *int {
 
 func TestKeepOnErrorKeepsThePreviousSVG(t *testing.T) {
 	hits := apiDown(t)
+	t.Setenv("GITHUB_ACTIONS", "") // CI sets it to true
 	out := filepath.Join(t.TempDir(), "commitling.svg")
 	previous := []byte("<svg xmlns=\"http://www.w3.org/2000/svg\"><title>ayer</title></svg>\n")
 	if err := os.WriteFile(out, previous, 0o644); err != nil {
