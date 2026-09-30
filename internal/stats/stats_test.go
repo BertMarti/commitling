@@ -138,3 +138,75 @@ func TestSameDayCountsOnce(t *testing.T) {
 		t.Fatalf("ActiveDays30=%d Streak=%d, want 1 and 1", s.ActiveDays30, s.Streak)
 	}
 }
+
+func TestComputeIgnoresOrder(t *testing.T) {
+	acts := []Activity{
+		commit(0, "a/one", 2), commit(1, "a/two", 1), commit(2, "a/one", 1),
+		commit(5, "a/three", 3), commit(40, "a/one", 1),
+		{At: at(3, 8), Repo: "a/two", Kind: KindPullRequest, Count: 1},
+	}
+	want := Compute(acts, now)
+	reversed := make([]Activity, len(acts))
+	for i, a := range acts {
+		reversed[len(acts)-1-i] = a
+	}
+	shuffled := []Activity{acts[3], acts[0], acts[5], acts[4], acts[2], acts[1]}
+	for name, in := range map[string][]Activity{"reversed": reversed, "shuffled": shuffled} {
+		if got := Compute(in, now); got != want {
+			t.Errorf("%s: got %+v, want %+v", name, got, want)
+		}
+	}
+	if want.Streak != 4 || want.DaysSinceLast != 0 {
+		t.Fatalf("unexpected reference stats: %+v", want)
+	}
+}
+
+func TestComputeIgnoresFutureEvents(t *testing.T) {
+	base := []Activity{commit(1, "r", 1)}
+	withFuture := append([]Activity{
+		{At: now.Add(time.Minute), Repo: "r", Kind: KindCommit, Count: 50}, // later today
+		{At: at(-1, 10), Repo: "r", Kind: KindCommit, Count: 50},           // tomorrow
+		{At: now.AddDate(1, 0, 0), Repo: "x", Kind: KindPullRequest},       // next year
+	}, base...)
+	got, want := Compute(withFuture, now), Compute(base, now)
+	if got != want {
+		t.Fatalf("future events changed the stats: got %+v, want %+v", got, want)
+	}
+	if got.DaysSinceLast != 1 || got.XP != 10 {
+		t.Fatalf("stats = %+v", got)
+	}
+	// An event exactly at "now" is not in the future.
+	if s := Compute([]Activity{{At: now, Repo: "r", Kind: KindCommit}}, now); s.XP != 10 || s.DaysSinceLast != 0 {
+		t.Fatalf("event at now: %+v", s)
+	}
+}
+
+func TestComputeUsesUTCDays(t *testing.T) {
+	// 23:30 in UTC-5 on the 28th is 04:30 UTC on the 29th: today.
+	west := time.FixedZone("west", -5*3600)
+	a := Activity{At: time.Date(2026, 9, 28, 23, 30, 0, 0, west), Repo: "r", Kind: KindCommit}
+	if s := Compute([]Activity{a}, now); s.DaysSinceLast != 0 || s.Streak != 1 {
+		t.Fatalf("stats = %+v, want today", s)
+	}
+}
+
+func TestComputeWindowEdgesAndZeroTime(t *testing.T) {
+	acts := []Activity{
+		commit(89, "r", 1),                      // oldest day still counted
+		commit(90, "r", 1),                      // one day too old
+		{Repo: "r", Kind: KindCommit, Count: 9}, // missing date (zero time)
+	}
+	s := Compute(acts, now)
+	if s.Commits != 1 || s.ActiveDays90 != 1 || s.ActiveDays30 != 0 {
+		t.Fatalf("stats = %+v", s)
+	}
+}
+
+func TestComputeDuplicateActivitiesInSameDay(t *testing.T) {
+	// Many activities on one day are one active day and one streak day.
+	acts := []Activity{commit(0, "r", 1), commit(0, "r", 1), commit(0, "s", 1)}
+	s := Compute(acts, now)
+	if s.ActiveDays30 != 1 || s.Streak != 1 || s.Repos != 2 {
+		t.Fatalf("stats = %+v", s)
+	}
+}

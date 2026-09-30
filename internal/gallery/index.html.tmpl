@@ -3,12 +3,22 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>commitling · una mascota pixel-art para tu perfil de GitHub</title>
-<meta name="description" content="Una mascota pixel-art original que vive en el README de tu perfil de GitHub y crece con tus commits.">
+<title>{{.Title}}</title>
+<meta name="description" content="{{.Description}}">
+<link rel="canonical" href="{{.SiteURL}}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="commitling">
+<meta property="og:locale" content="es_ES">
+<meta property="og:title" content="{{.Title}}">
+<meta property="og:description" content="{{.Description}}">
+<meta property="og:url" content="{{.SiteURL}}">
+<meta property="og:image" content="{{.OGImage}}">
+<meta property="og:image:alt" content="La criatura de commitling, un retoño pixel-art con una flor">
+<meta name="twitter:card" content="summary">
 <link rel="icon" href="{{.Favicon}}" type="image/svg+xml">
 <style>
 :root{
-  --paper:#f3efe6;--ink:#2b2724;--line:#ddd5c6;--muted:#7a7168;
+  --paper:#f3efe6;--ink:#2b2724;--line:#ddd5c6;--muted:#6b6259;
   --moss:#7fb069;--honey:#e6aa68;--accent:#ca3c25;--code:#ebe5d8;
   color-scheme:light dark;
 }
@@ -18,7 +28,7 @@
 *{box-sizing:border-box}
 html{background:var(--paper)}
 body{margin:0;background:var(--paper);color:var(--ink);
-  font:15px/1.7 ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+  font:15px/1.7 ui-monospace,SFMono-Regular,Menlo,Consolas,"DejaVu Sans Mono","Liberation Mono",monospace}
 main,header,footer{max-width:1000px;margin:0 auto;padding:0 20px}
 a{color:inherit;text-decoration-color:var(--accent);text-underline-offset:3px;text-decoration-thickness:2px}
 a:hover{color:var(--accent)}
@@ -58,6 +68,9 @@ pre code,li pre code{background:none;padding:0}
 .copy{position:absolute;top:10px;right:10px;font:inherit;font-size:12px;padding:4px 10px;cursor:pointer;
   background:var(--paper);color:var(--ink);border:1px solid var(--line)}
 .copy:hover{border-color:var(--ink)}
+.copy[hidden]{display:none}
+.copy-msg{margin:6px 0 0}
+.copy-msg:empty{margin:0}
 footer{padding-top:40px;padding-bottom:64px;border-top:2px dashed var(--line);font-size:13px;color:var(--muted)}
 footer p{max-width:none}
 @media (max-width:720px){
@@ -167,16 +180,16 @@ footer p{max-width:none}
     <ol class="steps">
       <li>Abre (o crea) tu repositorio de perfil: el que se llama igual que tu usuario, <code>tu-usuario/tu-usuario</code>.</li>
       <li>Crea el archivo <code>.github/workflows/commitling.yml</code> con este contenido:
-        <div class="code"><button class="copy" type="button" data-copy="wf">Copiar</button><pre><code id="wf">{{.Workflow}}</code></pre></div>
+        <div class="code"><button class="copy" type="button" data-copy="wf" aria-label="Copiar el workflow" hidden>Copiar</button><pre tabindex="0" aria-label="Contenido del workflow"><code id="wf">{{.Workflow}}</code></pre><p class="copy-msg note" role="status" aria-live="polite"></p></div>
       </li>
       <li>Añade la criatura a tu <code>README.md</code>:
-        <div class="code"><button class="copy" type="button" data-copy="rd">Copiar</button><pre><code id="rd">{{.Readme}}</code></pre></div>
+        <div class="code"><button class="copy" type="button" data-copy="rd" aria-label="Copiar la línea del README" hidden>Copiar</button><pre tabindex="0" aria-label="Línea para el README"><code id="rd">{{.Readme}}</code></pre><p class="copy-msg note" role="status" aria-live="polite"></p></div>
       </li>
       <li>Ve a la pestaña <strong>Actions</strong>, elige «commitling» y pulsa <strong>Run workflow</strong>. Después se actualizará sola cada día.</li>
     </ol>
     <h3>Opcional: tema oscuro</h3>
     <p>Añade un segundo paso con <code>theme: dark</code> y <code>out: commitling-dark.svg</code> (y súmalo al <code>git add</code>), y usa esto en el README para que GitHub elija según el tema de quien lo mira:</p>
-    <div class="code"><button class="copy" type="button" data-copy="rdd">Copiar</button><pre><code id="rdd">{{.ReadmeDrk}}</code></pre></div>
+    <div class="code"><button class="copy" type="button" data-copy="rdd" aria-label="Copiar el fragmento del README con tema oscuro" hidden>Copiar</button><pre tabindex="0" aria-label="Fragmento del README con tema oscuro"><code id="rdd">{{.ReadmeDrk}}</code></pre><p class="copy-msg note" role="status" aria-live="polite"></p></div>
   </section>
 
   <section id="privacidad" aria-labelledby="privacidad-t">
@@ -190,13 +203,35 @@ footer p{max-width:none}
 </footer>
 <script>
 document.querySelectorAll('.copy').forEach(function (b) {
+  var box = b.closest('.code');
+  var msg = box.querySelector('.copy-msg');
+  var code = document.getElementById(b.dataset.copy);
+  function say(text) { msg.textContent = text; }
+  function select() {
+    var range = document.createRange();
+    range.selectNodeContents(code);
+    var sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+  function done() {
+    b.textContent = 'Copiado';
+    say('Copiado al portapapeles.');
+    setTimeout(function () { b.textContent = 'Copiar'; say(''); }, 2000);
+  }
+  function failed() {
+    select();
+    say('No se pudo copiar automáticamente. El texto está seleccionado: cópialo con Ctrl+C (o Cmd+C).');
+  }
+  b.hidden = false;
   b.addEventListener('click', function () {
-    var text = document.getElementById(b.dataset.copy).textContent;
-    if (!navigator.clipboard) { return; }
-    navigator.clipboard.writeText(text).then(function () {
-      b.textContent = 'Copiado';
-      setTimeout(function () { b.textContent = 'Copiar'; }, 1600);
-    });
+    var text = code.textContent;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, failed);
+      return;
+    }
+    select();
+    try { document.execCommand('copy') ? done() : failed(); } catch (e) { failed(); }
   });
 });
 </script>

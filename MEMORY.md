@@ -1,8 +1,10 @@
 # MEMORY.md · commitling
-Última actualización: 2026-09-29 por builder
+Última actualización: 2026-09-30 por qa
 
 ## Estado actual
-MVP completo en la rama `agent/builder` (PR abierto a `main`, pendiente de revisión del lead):
+Revisión QA en `agent/qa` (PR #2 hacia `agent/builder`; se fusiona después de #1 y luego hay que reorientarlo a `main`): acciones sin Node 20, texto del SVG que ya no desborda, cliente HTTP endurecido, eventos duplicados descartados, galería con Open Graph y botones de copiar accesibles. Ver «Decisiones» del 2026-09-30.
+
+MVP completo en la rama `agent/builder` (PR #1 abierto a `main`, pendiente de revisión del lead):
 - `internal/stats`: XP, días activos (30 y 90), racha, días desde la última actividad y repos distintos. Puro, con «ahora» inyectable.
 - `internal/github`: cliente de `/users/<u>/events/public` (paginado, hasta 300 eventos, `GITHUB_TOKEN` opcional), parser y conversión a actividades. Fixture ficticio en `testdata/events.json` (usuario «octoexample»).
 - `internal/creature`: 5 fases, 4 ánimos, 3 accesorios y mapas de píxeles 16×16 originales (brote de musgo con ojos).
@@ -30,9 +32,18 @@ MVP completo en la rama `agent/builder` (PR abierto a `main`, pendiente de revis
 - 2026-09-29 (builder): si la API falla en el despliegue, la criatura en vivo se genera con el fixture y muestra «@octoexample» (no se hace pasar por datos reales); queda un aviso en el log y en el resumen del job.
 - 2026-09-29 (builder): un test comprueba que el workflow del README es idéntico a `gallery.WorkflowSnippet`; si se cambia uno, hay que cambiar el otro.
 
+- 2026-09-30 (qa): acciones subidas a `checkout@v7`, `setup-go@v7`, `configure-pages@v6`, `upload-pages-artifact@v5` y `deploy-pages@v5` (workflows, `action.yml`, README y galería; el test que ata README y galería sigue en verde).
+- 2026-09-30 (qa): el texto del panel del SVG se ajusta de forma determinista (`fit` en `internal/render`): tamaño decreciente, redacción más corta («meta: N XP») y, como último recurso, recorte con «…». Anchura estimada a 0,62 em por carácter (cota superior de las fuentes de la pila). Un login de 39 caracteres se muestra entero a 9-10 px y, si es muy largo, se oculta el rótulo «commitling» de la derecha (el `<title>` lo conserva). Tests: nada sale del panel ni se solapa, para todas las fases, ánimos, temas y logins de 0 a 80 caracteres, con XP de 7 cifras y los tres accesorios.
+- 2026-09-30 (qa): pila de fuentes `ui-monospace, SFMono-Regular, Menlo, Consolas, "DejaVu Sans Mono", "Liberation Mono", monospace` (SVG y web; se quitó «SF Mono»).
+- 2026-09-30 (qa): gris atenuado de la tarjeta clara `#8a8178` -> `#6f675e` y `--muted` de la web `#7a7168` -> `#6b6259` para llegar a contraste AA (4,5:1); no es un color de la criatura ni cambia el diseño. Test de contraste.
+- 2026-09-30 (qa): cliente HTTP: `User-Agent: commitling`, `X-GitHub-Api-Version: 2022-11-28`, timeout de 15 s (también si se construye el `Client` a mano). Un 422 pasada la página 1 es fin de datos; en la página 1 sigue siendo error.
+- 2026-09-30 (qa): eventos con el mismo id se cuentan una vez (`github.Dedupe`, en `FetchEvents` y en `Activities`): al llegar un evento nuevo mientras se pagina, la página 2 repetía el último de la 1 y duplicaba su XP. Eventos sin id no se fusionan. `stats.Compute` ya ignoraba el orden y las fechas futuras; se añadieron tests.
+- 2026-09-30 (qa): galería: `og:title`, `og:description`, `og:image` = `https://bertmarti.github.io/commitling/hero.svg`, `og:url`, `og:type`, `twitter:card`, canonical; botones de copiar con `aria-label`, región `aria-live`, texto seleccionado y mensaje si falla el portapapeles, ocultos sin JavaScript; los bloques `pre` son enfocables con teclado.
+
 ## Siguiente paso
 1. lead: revisar y fusionar el PR de `agent/builder`; tras el merge, comprobar el despliegue en https://bertmarti.github.io/commitling/ y la imagen en vivo del README.
-2. qa (`agent/qa`): revisar casos límite (eventos con fechas raras, usuario sin eventos, respuestas 5xx intermitentes, límites de paginación), accesibilidad de la web (contraste de `--muted`, foco, textos alternativos) y del SVG (`<title>`/`<desc>`), y el aspecto de la criatura en todas las combinaciones (galería en `site/`).
+2. lead: fusionar #1, reorientar el PR #2 (qa) a `main` y fusionarlo; comprobar el despliegue.
+2b. qa (pendiente para otra ronda): reintentos ante 5xx intermitentes en el cliente; revisión visual real de la galería en navegador (esta ronda solo se verificó con tests y sintaxis del JS con `node --check`); comprobar el resto de la web (foco, orden de tabulación) en móvil.
 3. docs (`agent/opencode-docs`): escribir `docs/USO.md` a partir de las secciones «Úsalo en tu perfil», «Reglas» y «CLI» del README y de la web; recordar que el workflow del README está atado a `internal/gallery/gallery.go` por un test.
 4. Pendiente: publicar una etiqueta `v1` para que la gente use `BertMarti/commitling@v1` en lugar de `@main`.
 
@@ -41,8 +52,11 @@ MVP completo en la rama `agent/builder` (PR abierto a `main`, pendiente de revis
 - `live/BertMarti.svg` solo existe tras el primer despliegue desde `main`; hasta entonces la imagen del README aparece rota y la web muestra un aviso.
 - La API de eventos solo da 90 días / 300 eventos: perfiles muy activos pueden ver su XP recortada a lo que cabe en esos 300 eventos.
 - La Action compila con `go run` en cada ejecución (unos segundos extra); aceptable para un cron diario.
-- El CI avisa de que `actions/checkout@v4` y `actions/setup-go@v5` usan Node.js 20 (obsoleto, se fuerzan a Node 24). No rompe nada; se mantuvieron las versiones pedidas. Valorar subir a checkout@v5 / setup-go@v6 (también en `action.yml` y el snippet del README y la galería).
+- `og:image` apunta a un SVG (lo pedido): X/Twitter, Facebook y LinkedIn no muestran SVG en las vistas previas; para que salga imagen habría que publicar un PNG 1200×630 (sin dependencias no hay rasterizador en la biblioteca estándar; habría que generarlo aparte).
+- El ancho del texto del SVG se estima (0,62 em por carácter), no se mide: con una fuente más ancha que las de la pila (p. ej. una monoespaciada del sistema fuera de la lista) podría rozar el borde con logins de casi 39 caracteres.
+- El cliente no reintenta ante 5xx: una caída puntual de la API hace fallar la ejecución diaria (se reintenta al día siguiente).
 
 ## Registro de sesiones
 - 2026-09-29 lead (main): creación del repositorio y reparto del equipo.
 - 2026-09-29 builder (agent/builder): MVP completo (stats, cliente GitHub, criatura, SVG, CLI, galería, Action, CI, Pages, README) y PR a main.
+- 2026-09-30 qa · Claude Code Sonnet (agent/qa): versiones de acciones, desbordes del SVG con tests, cliente HTTP (cabeceras, timeout, 422), eventos duplicados, contraste AA y galería (Open Graph, copiar accesible). PR #2 hacia agent/builder.

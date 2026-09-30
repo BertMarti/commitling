@@ -3,7 +3,11 @@ package render
 import (
 	"bytes"
 	"encoding/xml"
+	"html"
 	"io"
+	"math"
+	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -170,5 +174,144 @@ func TestThemeByName(t *testing.T) {
 func TestEscapeDropsInvalidXMLChars(t *testing.T) {
 	if got := Escape("a\x00b\x1fc"); got != "abc" {
 		t.Errorf("Escape = %q", got)
+	}
+}
+
+// textBox is one <text> element with its estimated horizontal extent.
+type textBox struct {
+	content string
+	y       int
+	x0, x1  float64
+}
+
+var textRe = regexp.MustCompile(`<text class="t[^"]*" x="(\d+)" y="(\d+)" font-size="([\d.]+)" fill="[^"]*"( text-anchor="end")?>([^<]*)</text>`)
+
+func textBoxes(t *testing.T, svg []byte) []textBox {
+	t.Helper()
+	var out []textBox
+	for _, m := range textRe.FindAllStringSubmatch(string(svg), -1) {
+		x, _ := strconv.Atoi(m[1])
+		y, _ := strconv.Atoi(m[2])
+		size, _ := strconv.ParseFloat(m[3], 64)
+		content := html.UnescapeString(m[5])
+		w := textWidth(content, size)
+		b := textBox{content: content, y: y, x0: float64(x), x1: float64(x) + w}
+		if m[4] != "" {
+			b.x0, b.x1 = float64(x)-w, float64(x)
+		}
+		out = append(out, b)
+	}
+	if len(out) < 9 {
+		t.Fatalf("found only %d <text> elements, the regexp is out of date:\n%s", len(out), svg)
+	}
+	return out
+}
+
+// checkTextFits fails if any text leaves the right-hand panel or overlaps
+// another text on the same line.
+func checkTextFits(t *testing.T, name string, svg []byte) {
+	t.Helper()
+	boxes := textBoxes(t, svg)
+	for i, a := range boxes {
+		if a.x0 < panelX || a.x1 > panelEnd {
+			t.Errorf("%s: %q spans %.0f-%.0f, outside the panel %d-%d", name, a.content, a.x0, a.x1, panelX, panelEnd)
+		}
+		for _, b := range boxes[i+1:] {
+			if a.y == b.y && a.x0 < b.x1 && b.x0 < a.x1 {
+				t.Errorf("%s: %q and %q overlap", name, a.content, b.content)
+			}
+		}
+	}
+}
+
+func TestLongTextStaysInsideTheCard(t *testing.T) {
+	user39 := strings.Repeat("a", 39)
+	huge := stats.Stats{XP: 1234567, Streak: 90, ActiveDays30: 30, ActiveDays90: 90, Repos: 1234567, DaysSinceLast: 0}
+	all := creature.Accessories{Hat: true, Scarf: true, Flower: true}
+	for _, th := range []Theme{Light, Dark} {
+		for _, st := range creature.Stages {
+			for _, m := range creature.Moods {
+				for _, user := range []string{"", "u", "octoexample", user39, strings.Repeat("W", 80)} {
+					c := Card{User: user, Stats: huge, Theme: th,
+						Creature: creature.Creature{Stage: st, Mood: m, Accessories: all}}
+					checkTextFits(t, th.Name+"/"+st.Name()+"/"+m.Name()+"/"+user, SVG(c))
+				}
+			}
+		}
+	}
+}
+
+func TestLongUserIsShrunkNotCut(t *testing.T) {
+	user39 := strings.Repeat("a", 39)
+	svg := string(SVG(NewCard(user39, stats.Stats{XP: 1234567, DaysSinceLast: 0}, Light)))
+	if !strings.Contains(svg, "@"+user39) {
+		t.Errorf("a 39-character login should be shown in full:\n%s", svg)
+	}
+	if !strings.Contains(svg, "1.234.567 XP") {
+		t.Error("7-digit XP should be shown in full")
+	}
+	// Absurd input is cut with an ellipsis instead of overflowing.
+	long := string(SVG(NewCard(strings.Repeat("W", 80), stats.Stats{DaysSinceLast: 0}, Light)))
+	if !strings.Contains(long, "…") {
+		t.Error("an 80-character login should be truncated with an ellipsis")
+	}
+}
+
+func TestFitAndTruncate(t *testing.T) {
+	if s, sz := fit([]string{"hola"}, []float64{11, 9}, 100); s != "hola" || sz != 11 {
+		t.Errorf("fit = %q, %v", s, sz)
+	}
+	// 10 chars at 11 px do not fit in 60 px, but do at 9 px.
+	if s, sz := fit([]string{"0123456789"}, []float64{11, 9}, 60); s != "0123456789" || sz != 9 {
+		t.Errorf("fit = %q, %v", s, sz)
+	}
+	// The second candidate is used when the first never fits.
+	if s, _ := fit([]string{"muy largo texto", "corto"}, []float64{10}, 40); s != "corto" {
+		t.Errorf("fit = %q", s)
+	}
+	if got := truncate("abcdefghij", 10, 31); got != "abcd…" {
+		t.Errorf("truncate = %q", got)
+	}
+	if got := truncate("abc", 10, 1); got != "…" {
+		t.Errorf("truncate = %q", got)
+	}
+}
+
+func TestFontStackHasFallbacks(t *testing.T) {
+	svg := string(SVG(NewCard("u", sampleStats(), Light)))
+	want := `ui-monospace,SFMono-Regular,Menlo,Consolas,"DejaVu Sans Mono","Liberation Mono",monospace`
+	if !strings.Contains(svg, want) {
+		t.Errorf("font stack not found: %s", want)
+	}
+}
+
+func luminance(hex string) float64 {
+	v, _ := strconv.ParseUint(strings.TrimPrefix(hex, "#"), 16, 32)
+	lin := func(c uint64) float64 {
+		f := float64(c) / 255
+		if f <= 0.03928 {
+			return f / 12.92
+		}
+		return math.Pow((f+0.055)/1.055, 2.4)
+	}
+	return 0.2126*lin(v>>16&0xff) + 0.7152*lin(v>>8&0xff) + 0.0722*lin(v&0xff)
+}
+
+func contrast(a, b string) float64 {
+	la, lb := luminance(a), luminance(b)
+	if la < lb {
+		la, lb = lb, la
+	}
+	return (la + 0.05) / (lb + 0.05)
+}
+
+// The small grey text must be readable (WCAG AA, 4.5:1).
+func TestTextContrast(t *testing.T) {
+	for _, th := range []Theme{Light, Dark} {
+		for name, fg := range map[string]string{"ink": th.Ink, "muted": th.Muted} {
+			if got := contrast(fg, th.Bg); got < 4.5 {
+				t.Errorf("%s theme: %s on background has contrast %.2f, want at least 4.5", th.Name, name, got)
+			}
+		}
 	}
 }

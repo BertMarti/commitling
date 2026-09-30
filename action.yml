@@ -41,7 +41,7 @@ runs:
       shell: bash
       run: echo "gomod=$GITHUB_ACTION_PATH/go.mod" >> "$GITHUB_OUTPUT"
 
-    - uses: actions/setup-go@v5
+    - uses: actions/setup-go@v7
       with:
         go-version-file: ${{ steps.paths.outputs.gomod }}
         cache: false

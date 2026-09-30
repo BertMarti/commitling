@@ -234,3 +234,147 @@ func TestFetchEventsBadJSON(t *testing.T) {
 		t.Fatal("expected error for malformed JSON")
 	}
 }
+
+func TestFetchEventsSendsRequiredHeaders(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		for header, want := range map[string]string{
+			"User-Agent":           "commitling",
+			"X-GitHub-Api-Version": "2022-11-28",
+			"Accept":               "application/vnd.github+json",
+		} {
+			if got := r.Header.Get(header); got != want {
+				t.Errorf("%s = %q, want %q", header, got, want)
+			}
+		}
+		fmt.Fprint(w, eventsJSON(1, 0))
+	}))
+	defer srv.Close()
+
+	c := NewClient("")
+	c.BaseURL = srv.URL
+	if _, err := c.FetchEvents(context.Background(), "octoexample"); err != nil {
+		t.Fatal(err)
+	}
+	// A hand-built client without user agent or HTTP client still works.
+	bare := &Client{BaseURL: srv.URL}
+	if _, err := bare.FetchEvents(context.Background(), "octoexample"); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestNewClientHasTimeout(t *testing.T) {
+	c := NewClient("")
+	if c.HTTPClient == nil || c.HTTPClient.Timeout != 15*time.Second {
+		t.Fatalf("HTTPClient timeout = %v, want 15s", c.HTTPClient)
+	}
+	if c.UserAgent != "commitling" {
+		t.Errorf("UserAgent = %q", c.UserAgent)
+	}
+}
+
+func TestFetchEventsTimesOut(t *testing.T) {
+	release := make(chan struct{})
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case <-release:
+		case <-r.Context().Done():
+		}
+	}))
+	defer srv.Close()
+	defer close(release)
+
+	c := NewClient("")
+	c.BaseURL = srv.URL
+	c.HTTPClient.Timeout = 50 * time.Millisecond
+	start := time.Now()
+	_, err := c.FetchEvents(context.Background(), "octoexample")
+	if err == nil || !strings.Contains(err.Error(), "no se pudo contactar") {
+		t.Fatalf("err = %v, want a connection error", err)
+	}
+	if time.Since(start) > 5*time.Second {
+		t.Fatal("request did not time out")
+	}
+}
+
+func TestFetchEventsPaginationLimitAfterPageTwo(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Query().Get("page") {
+		case "1":
+			fmt.Fprint(w, eventsJSON(100, 0))
+		case "2":
+			fmt.Fprint(w, eventsJSON(100, 100))
+		default:
+			w.WriteHeader(http.StatusUnprocessableEntity)
+			fmt.Fprint(w, `{"message":"pagination is limited for this resource"}`)
+		}
+	}))
+	defer srv.Close()
+
+	c := NewClient("")
+	c.BaseURL = srv.URL
+	events, err := c.FetchEvents(context.Background(), "octoexample")
+	if err != nil {
+		t.Fatalf("a 422 past the last page is the end of the data, got %v", err)
+	}
+	if len(events) != 200 {
+		t.Fatalf("got %d events, want 200", len(events))
+	}
+}
+
+func TestFetchEvents422OnFirstPageIsAnError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		fmt.Fprint(w, `{"message":"Validation Failed"}`)
+	}))
+	defer srv.Close()
+	c := NewClient("")
+	c.BaseURL = srv.URL
+	if _, err := c.FetchEvents(context.Background(), "octoexample"); err == nil {
+		t.Fatal("422 on the first page must not be swallowed")
+	}
+}
+
+func TestDedupeAndActivitiesCountOnce(t *testing.T) {
+	push := json.RawMessage(`{"size": 2}`)
+	at := time.Date(2026, 9, 1, 10, 0, 0, 0, time.UTC)
+	events := []Event{
+		{ID: "1", Type: "PushEvent", CreatedAt: at, Payload: push},
+		{ID: "1", Type: "PushEvent", CreatedAt: at, Payload: push},
+		{ID: "2", Type: "WatchEvent", CreatedAt: at},
+		{ID: "", Type: "WatchEvent", CreatedAt: at}, // no id: never merged
+		{ID: "", Type: "WatchEvent", CreatedAt: at},
+	}
+	if got := Dedupe(events); len(got) != 4 {
+		t.Fatalf("Dedupe left %d events, want 4", len(got))
+	}
+	acts := Activities(events)
+	if len(acts) != 4 {
+		t.Fatalf("got %d activities, want 4", len(acts))
+	}
+	s := stats.Compute(acts, at.Add(time.Hour))
+	if s.Commits != 2 {
+		t.Fatalf("Commits = %d, want 2 (duplicate push counted twice)", s.Commits)
+	}
+}
+
+func TestFetchEventsDropsOverlapBetweenPages(t *testing.T) {
+	// A new event arrives between requests, so page 2 repeats the last
+	// event of page 1.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Query().Get("page") == "1" {
+			fmt.Fprint(w, eventsJSON(100, 0)) // ids 0..99
+			return
+		}
+		fmt.Fprint(w, eventsJSON(5, 99)) // ids 99..103
+	}))
+	defer srv.Close()
+	c := NewClient("")
+	c.BaseURL = srv.URL
+	events, err := c.FetchEvents(context.Background(), "octoexample")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(events) != 104 {
+		t.Fatalf("got %d events, want 104", len(events))
+	}
+}

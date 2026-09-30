@@ -111,3 +111,106 @@ func TestReadmeHasSameSnippets(t *testing.T) {
 		t.Error("README.md does not contain gallery.ReadmeSnippet")
 	}
 }
+
+func buildPage(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	if _, err := Build(dir, "test"); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(filepath.Join(dir, "index.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(data)
+}
+
+// meta returns the content of <meta name|property="key" content="...">.
+func meta(page, key string) string {
+	re := regexp.MustCompile(`<meta (?:name|property)="` + regexp.QuoteMeta(key) + `" content="([^"]*)"`)
+	if m := re.FindStringSubmatch(page); m != nil {
+		return m[1]
+	}
+	return ""
+}
+
+func TestPageHeadForSharing(t *testing.T) {
+	page := buildPage(t)
+	if !strings.HasPrefix(page, "<!doctype html>\n<html lang=\"es\">") {
+		t.Error(`page must start with <!doctype html> and <html lang="es">`)
+	}
+	if !strings.Contains(page, `<meta name="viewport" content="width=device-width, initial-scale=1">`) {
+		t.Error("missing viewport meta")
+	}
+	title := regexp.MustCompile(`<title>([^<]+)</title>`).FindStringSubmatch(page)
+	if title == nil {
+		t.Fatal("missing <title>")
+	}
+	desc := meta(page, "description")
+	if len(desc) < 50 || len(desc) > 200 {
+		t.Errorf("meta description has %d characters: %q", len(desc), desc)
+	}
+	for key, want := range map[string]string{
+		"og:title":       title[1],
+		"og:description": desc,
+		"og:image":       "https://bertmarti.github.io/commitling/hero.svg",
+		"og:url":         "https://bertmarti.github.io/commitling/",
+		"og:type":        "website",
+		"twitter:card":   "summary",
+	} {
+		if got := meta(page, key); got != want {
+			t.Errorf("%s = %q, want %q", key, got, want)
+		}
+	}
+	if meta(page, "og:image:alt") == "" {
+		t.Error("og:image needs an alt text")
+	}
+}
+
+func TestCopyButtonsAreAccessible(t *testing.T) {
+	page := buildPage(t)
+	buttons := regexp.MustCompile(`<button [^>]*class="copy"[^>]*>[^<]*</button>`).FindAllString(page, -1)
+	if len(buttons) != 3 {
+		t.Fatalf("found %d copy buttons, want 3", len(buttons))
+	}
+	labels := map[string]bool{}
+	for _, b := range buttons {
+		m := regexp.MustCompile(`aria-label="([^"]+)"`).FindStringSubmatch(b)
+		if m == nil {
+			t.Errorf("copy button without aria-label: %s", b)
+			continue
+		}
+		// The accessible name must start with the visible text.
+		if !strings.HasPrefix(m[1], "Copiar") {
+			t.Errorf("aria-label %q should start with the visible text", m[1])
+		}
+		if labels[m[1]] {
+			t.Errorf("two copy buttons share the label %q", m[1])
+		}
+		labels[m[1]] = true
+		if !strings.Contains(b, `type="button"`) {
+			t.Errorf("copy button must be type=button: %s", b)
+		}
+	}
+	if got := strings.Count(page, `role="status" aria-live="polite"`); got != 3 {
+		t.Errorf("found %d live regions for copy feedback, want 3", got)
+	}
+	// If the clipboard fails the user gets a message and the text is selected.
+	for _, want := range []string{"No se pudo copiar", "navigator.clipboard", "execCommand", "selectNodeContents"} {
+		if !strings.Contains(page, want) {
+			t.Errorf("copy script does not handle %q", want)
+		}
+	}
+}
+
+func TestPageImagesHaveAltAndSize(t *testing.T) {
+	page := buildPage(t)
+	for _, img := range regexp.MustCompile(`<img [^>]*>`).FindAllString(page, -1) {
+		if !strings.Contains(img, "alt=") {
+			t.Errorf("image without alt: %s", img)
+		}
+		if !strings.Contains(img, "width=") || !strings.Contains(img, "height=") {
+			t.Errorf("image without size (layout shift): %s", img)
+		}
+	}
+}
