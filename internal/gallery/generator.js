@@ -261,7 +261,8 @@
     if (!demo || !demo.playing) return;
     if (demo.t0 === null) demo.t0 = now - demo.elapsed;
     demo.elapsed = now - demo.t0;
-    var day = Math.min(demo.days, Math.floor(demo.elapsed / DEMO_MS * demo.days));
+    // The epsilon keeps a slider position from rounding down a day when playback resumes.
+    var day = Math.min(demo.days, Math.floor(demo.elapsed / DEMO_MS * demo.days + 1e-6));
     if (day !== demo.day) frame(day);
     if (!demo) return;
     if (demo.day >= demo.days) {
@@ -294,6 +295,8 @@
     if (!demo) return;
     cancelAnimationFrame(demo.raf);
     demo = null;
+    // A button that is about to be disabled must not keep the keyboard focus.
+    if (document.activeElement === demoStop || document.activeElement === demoPause) demoGo.focus();
     demoSlider.hidden = true;
     demoDay.textContent = '';
     demoPhase.textContent = '';
@@ -302,6 +305,9 @@
     if (current) {
       redraw();
     } else {
+      if (blobURL) URL.revokeObjectURL(blobURL);
+      blobURL = '';
+      img.removeAttribute('src');
       img.hidden = true;
       empty.hidden = false;
       caption.textContent = '';
@@ -325,9 +331,10 @@
     stopDemo(false);
     say('');
     after.hidden = true;
-    demo = { day: -1, days: 90, phase: '', playing: false, elapsed: 0, t0: null, raf: 0 };
+    demo = { day: -1, days: 0, phase: '', playing: false, elapsed: 0, t0: null, raf: 0 };
     demoSlider.hidden = false;
-    frame(0);
+    frame(0); // fills in demo.days from the wasm
+    if (!demo) return; // frame stopped the demo on an error
     if (reducedMotion()) {
       demoButtons();
       demoRange.focus();
