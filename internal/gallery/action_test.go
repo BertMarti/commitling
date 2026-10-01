@@ -103,7 +103,7 @@ func TestActionInputsAreDocumented(t *testing.T) {
 
 // Every example that uses the Action points at the v1 tag, not at a branch.
 func TestExamplesUseV1(t *testing.T) {
-	for _, f := range []string{"README.md", "docs/USO.md", "internal/gallery/gallery.go"} {
+	for _, f := range []string{"README.md", "docs/USO.md", "internal/generate/generate.go"} {
 		body := readRepoFile(t, f)
 		if !strings.Contains(body, "BertMarti/commitling@v1") {
 			t.Errorf("%s has no example with @v1", f)

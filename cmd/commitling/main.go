@@ -20,12 +20,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/BertMarti/commitling/internal/creature"
 	"github.com/BertMarti/commitling/internal/gallery"
+	"github.com/BertMarti/commitling/internal/generate"
 	"github.com/BertMarti/commitling/internal/github"
 	"github.com/BertMarti/commitling/internal/og"
-	"github.com/BertMarti/commitling/internal/render"
-	"github.com/BertMarti/commitling/internal/stats"
 )
 
 // version is the CLI version; it can be overridden with -ldflags "-X main.version=...".
@@ -101,19 +99,12 @@ func runRender(args []string, stdout, stderr io.Writer) error {
 	if fs.NArg() > 0 {
 		return usageError{fmt.Sprintf("argumentos de más: %s", strings.Join(fs.Args(), " "))}
 	}
-	th, ok := render.ThemeByName(*theme)
-	if !ok {
-		return usageError{fmt.Sprintf("tema no válido %q (usa light o dark)", *theme)}
-	}
-	species, ok := creature.SpeciesByName(*speciesFlag)
-	if !ok {
-		return usageError{fmt.Sprintf("especie no válida %q (usa moss o mushroom)", *speciesFlag)}
+	opts := generate.Options{User: *user, Species: *speciesFlag, Theme: *theme}
+	if err := opts.Check(); err != nil {
+		return usageError{err.Error()}
 	}
 	if *user == "" && *fixture == "" {
 		return usageError{"indica --user o --fixture"}
-	}
-	if *user != "" && !github.ValidLogin(*user) {
-		return usageError{fmt.Sprintf("nombre de usuario no válido: %q", *user)}
 	}
 
 	var events []github.Event
@@ -148,14 +139,12 @@ func runRender(args []string, stdout, stderr io.Writer) error {
 		}
 	}
 
-	login := *user
-	if login == "" {
-		login = github.Login(events)
+	opts.Now = now
+	res, err := generate.RenderEvents(events, opts)
+	if err != nil {
+		return err
 	}
-	s := stats.Compute(github.Activities(events), now)
-	card := render.NewCard(login, s, th)
-	card.Creature.Species = species
-	svg := render.SVG(card)
+	svg, login := res.SVG, res.Login
 
 	if *out == "-" {
 		_, err = stdout.Write(svg)
@@ -164,7 +153,7 @@ func runRender(args []string, stdout, stderr io.Writer) error {
 	if err := writeFile(*out, svg); err != nil {
 		return err
 	}
-	fmt.Fprintf(stderr, "%s → %s (%s)\n", displayName(login), *out, render.Description(card))
+	fmt.Fprintf(stderr, "%s → %s (%s)\n", displayName(login), *out, res.Description)
 	return nil
 }
 

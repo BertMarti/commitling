@@ -1,5 +1,5 @@
 # MEMORY.md · commitling
-Última actualización: 2026-09-30 por builder (agent-project-3, #16)
+Última actualización: 2026-10-01 por builder (agent-project-3, #19)
 
 ## Estado actual
 v0.1.0 está en `main` (MVP, revisión QA y guía de uso ya fusionados). Fase v0.2.0, guiada por issues (ver «Equipo de agentes y ramas» en AGENTS.md): todo el trabajo está hecho y en PR abiertos contra `main` (ninguno fusionado aún), a fusionar en este orden:
@@ -26,6 +26,12 @@ Revisión QA de v0.2.0 (#8, rama `agent/qa/8-revision-v0.2`, PR #14 contra `main
 Documentación de v0.2.0 (#9, PR #15, se fusiona después de #14): `CHANGELOG.md` nuevo (Keep a Changelog, en español, con `[0.2.0]` y `[0.1.0]`), `docs/USO.md` con especies (valores y alias), versiones de la Action y cómo actualizar desde `@main`, comando `og` y reintentos; README con capturas de la galería, reintentos, Marketplace y «Cómo se ha hecho» con el equipo real; `CONTRIBUTING.md` con el flujo por issues y la receta para añadir una especie.
 
 Fase v0.3.0 (#16, rama `agent/builder/16-keep-on-error`, PR contra `main`): `--keep-on-error` en `commitling render` y entrada `keep-on-error` de la Action (por defecto `true`). Si la API falla tras los reintentos por una causa transitoria (red, 5xx, 429, 403 con cabeceras de límite) y el archivo de `--out` ya es un SVG completo, se conserva intacto y se termina con aviso (código 0); 401, 404, 422 y 403 de permisos siguen fallando. Ver decisiones del 2026-09-30 (#16).
+
+Fase v0.4.0 «Pro» (generador en vivo con WebAssembly; spec en `docs/specs/v0.4.md`, hito `v0.4.0`, issues #19 a #22, una rama y un PR por issue, cada rama parte de la anterior, todos contra `main`, se fusionan en este orden):
+1. #19 `agent/builder/19-generate-render`: `internal/generate` (función compartida CLI y wasm) y `internal/events` (parser sin red).
+2. #20 paquete wasm, CI y despliegue. 3. #21 generador en la galería. 4. #22 descarga del SVG, workflow relleno y documentación.
+
+Cambios de #19: `generate.Render(eventsJSON, Options)` / `RenderEvents`, `Options.Check`, `generate.Workflow` (el workflow del README con `user`, y `species` y `theme` si no son los de por defecto) y `generate.FetchError` (mensajes en español del navegador: 404, límite de 60 peticiones por hora con minutos hasta el reinicio, 5xx, red). `commitling render` dibuja con `generate.RenderEvents` (test: mismos bytes que `generate.Render`).
 
 ## Decisiones (por qué)
 - 2026-09-29: Animación con CSS dentro del SVG porque GitHub no ejecuta JavaScript en los README.
@@ -83,6 +89,8 @@ Fase v0.3.0 (#16, rama `agent/builder/16-keep-on-error`, PR contra `main`): `--k
 - 2026-09-30 (builder, #16): el aviso sale por stderr (`commitling: aviso: ...`) y, si `GITHUB_ACTIONS=true`, también como anotación `::warning title=commitling::...` en stdout (una línea, con `%`, CR y LF escapados). Sin salida nueva en la Action: `path` sigue apuntando al archivo conservado.
 - 2026-09-30 (builder, #16): `newClient` (variable de paquete en `cmd/commitling`) permite apuntar la CLI a un `httptest` en los tests; los tests simulan un 503 sin esperas con `Client.Sleep`. `action-test.yml` simula la caída con un token inválido (401 inmediato) y prueba: SVG previo conservado byte a byte, sin previo falla, `keep-on-error: false` falla y un valor inválido falla.
 - 2026-09-30 (builder, #16): en `action_test.go` las regex de entradas admiten guiones (`keep-on-error`).
+- 2026-10-01 (builder, #19): el wasm no pide los eventos desde Go (`net/http` en wasm sumaba 5 MB sin comprimir): lo hace JavaScript con `fetch` y le pasa el JSON a Go. Para no enlazar `net/http` en el wasm, el parser de eventos pasó a `internal/events` (sin red, con `ValidLogin`) y `internal/github` conserva alias (`github.Event`, `ParseEvents`, `Activities`...) con la misma API. Pesos medidos (Go 1.27, `-s -w`): render + JSON 4,5 MB (1,2 MB gzip); con `internal/github` entero 7,1 MB (2,0); con el cliente HTTP 12,4 MB (3,3); con `internal/generate` + `internal/events` 5,1 MB (1,4).
+- 2026-10-01 (builder, #19): el texto del workflow vive en `generate.BaseWorkflow` y `gallery.WorkflowSnippet` es un alias (así el wasm no enlaza `html/template`); el test que ata README y galería sigue valiendo y el de `@v1` mira `internal/generate/generate.go`. `Workflow` valida usuario, especie y tema antes de escribirlos en el YAML.
 
 ## Siguiente paso
 1. Alberto: fusionar los PR en orden (#10, #11, #12, #13, #14 y #15) y, tras cada uno, comprobar el CI (todos van contra `main`).
@@ -115,3 +123,4 @@ Fase v0.3.0 (#16, rama `agent/builder/16-keep-on-error`, PR contra `main`): `--k
 - 2026-09-30 qa · Claude Code Sonnet (agent/qa/8-revision-v0.2): revisión de v0.2.0 (#8): reintentos ante errores de red, espera negativa con cabeceras enormes, CLI 0.2.0, contraste AA y navegación de la galería, tests de `action.yml` y de especie inválida.
 - 2026-09-30 docs · Claude Code Sonnet (agent/docs/9-documentacion-v0.2): documentación de v0.2.0 (#9): `CHANGELOG.md`, `docs/USO.md` (especies, `og`, reintentos, `@v1`), README (capturas, «Cómo se ha hecho» real), `CONTRIBUTING.md` (flujo por issues, receta de especie) y este archivo.
 - 2026-09-30 builder · Claude Code Sonnet (agent/builder/16-keep-on-error): conservar el último SVG ante caídas largas de la API (#16): `--keep-on-error`, entrada `keep-on-error`, tests con `httptest`, paso en `action-test.yml` y documentación.
+- 2026-10-01 builder · Claude Code Sonnet (agent/builder/19-generate-render): v0.4.0 #19: spec `docs/specs/v0.4.md`, `internal/generate` (Render, Workflow, FetchError), `internal/events` (parser sin red) y CLI sobre la función compartida; wasm medido en 5,1 MB (1,4 MB gzip).
