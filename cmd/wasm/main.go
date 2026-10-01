@@ -11,6 +11,7 @@
 //	commitling.render(eventsJSON, user, species, theme, nowMs) -> {svg, description, login} | {error}
 //	commitling.workflow(user, species, theme)                  -> {workflow} | {error}
 //	commitling.explain(status, remaining, reset, nowMs)        -> string
+//	commitling.check(user, species, theme)                     -> "" when valid, else the error
 //
 // Empty or undefined strings mean "the default"; an empty nowMs is the clock.
 package main
@@ -32,6 +33,7 @@ func register() {
 		"render":   js.FuncOf(render),
 		"workflow": js.FuncOf(workflow),
 		"explain":  js.FuncOf(explain),
+		"check":    js.FuncOf(check),
 	})
 }
 
@@ -72,6 +74,13 @@ func workflow(_ js.Value, args []js.Value) any {
 		return map[string]any{"error": err.Error()}
 	}
 	return map[string]any{"workflow": w}
+}
+
+func check(_ js.Value, args []js.Value) any {
+	if err := options(args, 0, 1, 2).Check(); err != nil {
+		return err.Error()
+	}
+	return ""
 }
 
 func explain(_ js.Value, args []js.Value) any {

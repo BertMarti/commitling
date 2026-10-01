@@ -35,8 +35,8 @@ func TestBuild(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Per species, 20 stage×mood cards and 4 accessory cards, light and
-	// dark, plus favicon, hero, og.png and index.
-	if want := 2*(20+4)*2 + 4; n != want {
+	// dark, plus favicon, hero, og.png, generator.js and index.
+	if want := 2*(20+4)*2 + 5; n != want {
 		t.Fatalf("Build wrote %d files, want %d", n, want)
 	}
 
