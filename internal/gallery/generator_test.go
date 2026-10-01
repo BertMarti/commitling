@@ -327,3 +327,53 @@ func TestGeneratorPassesTheSizeToTheWasm(t *testing.T) {
 		t.Errorf("the compact preview keeps the 10:3 shape, got %q", got)
 	}
 }
+
+// The wasm is the heavy part (about 1.3 MB gzipped), so the download starts as
+// early as there is intent and does not wait for anything else: touching the
+// form counts (pointerdown), tabbing past it does not, and the .wasm request
+// goes out at the same time as wasm_exec.js and is the very one handed to
+// instantiateStreaming.
+func TestGeneratorStartsTheWasmEarlyAndInParallel(t *testing.T) {
+	js := readBuilt(t, buildDir(t), "generator.js")
+
+	if !strings.Contains(js, "form.addEventListener('pointerdown', warmUp)") || !regexp.MustCompile(`function warmUp\(\) \{\s*ensureWasm\(\)`).MatchString(js) {
+		t.Error("touching the form must start the download (pointerdown -> warmUp -> ensureWasm)")
+	}
+	if strings.Contains(js, "focusin") || strings.Contains(js, "'focus'") {
+		t.Error("tabbing through the page must not start the download")
+	}
+
+	start := strings.Index(js, "function ensureWasm()")
+	if start < 0 {
+		t.Fatal("no ensureWasm in generator.js")
+	}
+	body := js[start : start+strings.Index(js[start:], "\n  }\n")]
+	fetchAt, scriptAt := strings.Index(body, "fetch(WASM_URL)"), strings.Index(body, "loadScript('wasm_exec.js')")
+	if fetchAt < 0 || scriptAt < 0 || fetchAt > scriptAt {
+		t.Errorf("the .wasm request must start before (so alongside) wasm_exec.js loads:\n%s", body)
+	}
+	if !strings.Contains(body, "instantiate(go, wasm)") {
+		t.Error("ensureWasm does not hand the pending request to instantiate")
+	}
+	inst := js[strings.Index(js, "function instantiate("):start]
+	for _, want := range []string{"instantiateStreaming(res,", "res.clone()", "viaBuffer"} {
+		if !strings.Contains(inst, want) {
+			t.Errorf("instantiate lacks %q: a wrong MIME type must fall back to the same download", want)
+		}
+	}
+	if strings.Count(js, "fetch(WASM_URL") != 1 {
+		t.Error("the .wasm is requested once: the fallback reuses the response (clone), it does not ask again")
+	}
+}
+
+// The live creature is far down the page: its image waits to be near the viewport.
+func TestLiveCreatureIsLazy(t *testing.T) {
+	page := buildPage(t)
+	img := regexp.MustCompile(`<img src="live/[^"]+"[^>]*>`).FindString(page)
+	if img == "" {
+		t.Fatal("no live image")
+	}
+	if !strings.Contains(img, `loading="lazy"`) {
+		t.Errorf("the live image is not lazy: %s", img)
+	}
+}
