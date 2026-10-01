@@ -37,7 +37,7 @@ const (
 )
 
 // DemoUser is the fictitious user of the gallery cards.
-const DemoUser = "octoexample"
+const DemoUser = generate.DemoUser
 
 // WorkflowSnippet is the workflow for a profile repository. The README
 // shows the same text (a test keeps them in sync).

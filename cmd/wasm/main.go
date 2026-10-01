@@ -12,6 +12,7 @@
 //	commitling.workflow(user, species, theme)                  -> {workflow} | {error}
 //	commitling.explain(status, remaining, reset, nowMs)        -> string
 //	commitling.check(user, species, theme)                     -> "" when valid, else the error
+//	commitling.demo(day, species, theme)                       -> {svg, description, day, days, phase} | {error}
 //
 // Empty or undefined strings mean "the default"; an empty nowMs is the clock.
 package main
@@ -34,6 +35,7 @@ func register() {
 		"workflow": js.FuncOf(workflow),
 		"explain":  js.FuncOf(explain),
 		"check":    js.FuncOf(check),
+		"demo":     js.FuncOf(demo),
 	})
 }
 
@@ -74,6 +76,19 @@ func workflow(_ js.Value, args []js.Value) any {
 		return map[string]any{"error": err.Error()}
 	}
 	return map[string]any{"workflow": w}
+}
+
+// demo draws one day (0..days) of the fictitious timelapse of the website.
+func demo(_ js.Value, args []js.Value) any {
+	day := 0
+	if len(args) > 0 && args[0].Type() == js.TypeNumber {
+		day = args[0].Int()
+	}
+	f, err := generate.Demo(day, generate.Options{Species: str(args, 1), Theme: str(args, 2)})
+	if err != nil {
+		return map[string]any{"error": err.Error()}
+	}
+	return map[string]any{"svg": string(f.SVG), "description": f.Description, "day": f.Day, "days": f.Days, "phase": f.Phase}
 }
 
 func check(_ js.Value, args []js.Value) any {
