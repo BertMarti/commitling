@@ -431,8 +431,9 @@ const phone = "(max-width:720px)"
 
 // effective is the value of a property on a phone: the phone rule if there is
 // one, otherwise the general one.
-func (rs ruleSet) effective(sel, property string) string {
-	if v := rs.propIn(phone, sel, property); v != "" {
+func (rs ruleSet) effective(t *testing.T, sel, property string) string {
+	t.Helper()
+	if v := rs.propIn(t, phone, sel, property); v != "" {
 		return v
 	}
 	return rs.prop(sel, property)
@@ -486,7 +487,7 @@ func TestPageDoesNotOverflowOnPhones(t *testing.T) {
 	}
 
 	for _, sel := range []string{".steps", ".gen", ".gen-view", ".grid", ".tables"} {
-		if got := rules.effective(sel, "grid-template-columns"); !strings.Contains(got, "minmax(0,1fr)") {
+		if got := rules.effective(t, sel, "grid-template-columns"); !strings.Contains(got, "minmax(0,1fr)") {
 			t.Errorf("on a phone %q has columns %q, want minmax(0,1fr)", sel, got)
 		}
 	}
@@ -502,7 +503,7 @@ func TestPageDoesNotOverflowOnPhones(t *testing.T) {
 	if got := rules.prop("pre", "overflow-x"); got != "auto" {
 		t.Errorf("code blocks must scroll inside themselves (overflow-x:auto), got %q", got)
 	}
-	if got := rules.propIn(phone, "td:first-child", "white-space"); got != "normal" {
+	if got := rules.propIn(t, phone, "td:first-child", "white-space"); got != "normal" {
 		t.Errorf("on a phone the first column of a table must be able to wrap, white-space = %q", got)
 	}
 
