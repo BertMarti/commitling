@@ -80,7 +80,6 @@ func RenderEvents(evs []events.Event, o Options) (Result, error) {
 	if err := o.Check(); err != nil {
 		return Result{}, err
 	}
-	theme, _ := render.ThemeByName(o.themeName())
 	species, _ := creature.SpeciesByName(o.speciesName())
 	now := o.Now
 	if now.IsZero() {
@@ -90,9 +89,16 @@ func RenderEvents(evs []events.Event, o Options) (Result, error) {
 	if login == "" {
 		login = events.Login(evs)
 	}
-	card := render.NewCard(login, stats.Compute(events.Activities(evs), now), theme)
+	res, _ := draw(login, stats.Compute(events.Activities(evs), now), species, o)
+	return res, nil
+}
+
+// draw is the one place where stats become a card; o is already checked.
+func draw(login string, st stats.Stats, species creature.Species, o Options) (Result, creature.Creature) {
+	theme, _ := render.ThemeByName(o.themeName())
+	card := render.NewCard(login, st, theme)
 	card.Creature.Species = species
-	return Result{SVG: render.SVG(card), Description: render.Description(card), Login: login}, nil
+	return Result{SVG: render.SVG(card), Description: render.Description(card), Login: login}, card.Creature
 }
 
 // BaseWorkflow is the workflow for a profile repository; the README and the

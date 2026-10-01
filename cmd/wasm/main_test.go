@@ -109,3 +109,40 @@ func TestCheck(t *testing.T) {
 		t.Errorf("check = %q, want %q", got, want)
 	}
 }
+
+func TestDemoIsGenerateDemo(t *testing.T) {
+	for _, day := range []int{0, 37, generate.DemoDays} {
+		want, err := generate.Demo(day, generate.Options{Species: "mushroom", Theme: "dark"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := api(t).Call("demo", day, "mushroom", "dark")
+		if e := got.Get("error"); !e.IsUndefined() {
+			t.Fatalf("error: %s", e.String())
+		}
+		if got.Get("svg").String() != string(want.SVG) || got.Get("description").String() != want.Description {
+			t.Errorf("day %d: commitling.demo and generate.Demo draw different cards", day)
+		}
+		if got.Get("day").Int() != day || got.Get("days").Int() != generate.DemoDays || got.Get("phase").String() != want.Phase {
+			t.Errorf("day %d: day %d, days %d, phase %q", day, got.Get("day").Int(), got.Get("days").Int(), got.Get("phase").String())
+		}
+	}
+}
+
+func TestDemoDefaultsAndErrors(t *testing.T) {
+	c := api(t)
+	// No arguments at all: day 0, the default species and theme.
+	if got := c.Call("demo"); got.Get("error").Truthy() || got.Get("day").Int() != 0 || got.Get("phase").String() == "" {
+		t.Errorf("defaults: %v", got)
+	}
+	// A day outside the timelapse is clamped, not an error.
+	if got := c.Call("demo", 9999, js.Undefined(), js.Undefined()); got.Get("day").Int() != generate.DemoDays {
+		t.Errorf("day 9999 drew day %d", got.Get("day").Int())
+	}
+	for name, args := range map[string][]any{"bad species": {5, "dragon", "light"}, "bad theme": {5, "moss", "sepia"}} {
+		got := c.Call("demo", args...)
+		if got.Get("error").IsUndefined() || !got.Get("svg").IsUndefined() {
+			t.Errorf("%s: want only an error, got %v", name, got)
+		}
+	}
+}
