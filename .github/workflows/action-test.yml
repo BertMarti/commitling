@@ -36,6 +36,25 @@ jobs:
           species: mushroom
           out: out/mushroom.svg
 
+      - name: Action con la tarjeta compacta (sin red)
+        id: compact
+        uses: ./
+        with:
+          user: ""
+          fixture: testdata/events.json
+          size: compact
+          out: out/compact.svg
+
+      - name: Un tamaño inválido falla con un error claro
+        id: badsize
+        continue-on-error: true
+        uses: ./
+        with:
+          user: ""
+          fixture: testdata/events.json
+          size: grande
+          out: out/badsize.svg
+
       - name: Una especie inválida falla con un error claro
         id: invalid
         continue-on-error: true
@@ -84,6 +103,8 @@ jobs:
         env:
           FIXTURE_PATH: ${{ steps.fixture.outputs.path }}
           MUSHROOM_PATH: ${{ steps.mushroom.outputs.path }}
+          COMPACT_PATH: ${{ steps.compact.outputs.path }}
+          BADSIZE_OUTCOME: ${{ steps.badsize.outcome }}
           REAL_PATH: ${{ steps.real.outputs.path }}
           INVALID_OUTCOME: ${{ steps.invalid.outcome }}
           UNAUTHORIZED_OUTCOME: ${{ steps.unauthorized.outcome }}
@@ -92,15 +113,19 @@ jobs:
           set -euo pipefail
           test "$INVALID_OUTCOME" = failure || { echo 'species: dragon debería fallar'; exit 1; }
           test ! -e out/invalid.svg
+          test "$BADSIZE_OUTCOME" = failure || { echo 'size: grande debería fallar'; exit 1; }
+          test ! -e out/badsize.svg
           test "$UNAUTHORIZED_OUTCOME" = failure || { echo 'un 401 debería fallar aunque haya SVG previo'; exit 1; }
           test "$BADKEEP_OUTCOME" = failure || { echo 'keep-on-error: quizas debería fallar'; exit 1; }
           test ! -e out/badkeep.svg
           cmp out/keep.svg "$FIXTURE_PATH" || { echo 'el SVG previo cambió'; exit 1; }
-          for f in "$FIXTURE_PATH" "$MUSHROOM_PATH" "$REAL_PATH"; do
+          for f in "$FIXTURE_PATH" "$MUSHROOM_PATH" "$COMPACT_PATH" "$REAL_PATH"; do
             test -s "$f"
             head -c 120 "$f"; echo
             grep -q '</svg>' "$f"
           done
+          grep -q 'width="200" height="60"' "$COMPACT_PATH" || { echo 'size: compact no dibujó la insignia de 200x60'; exit 1; }
+          grep -q 'width="480" height="200"' "$FIXTURE_PATH" || { echo 'sin size, la tarjeta no es la completa'; exit 1; }
           grep -q '@octoexample' "$FIXTURE_PATH"
           grep -q 'Retoño' "$FIXTURE_PATH"
           grep -q 'Seta' "$MUSHROOM_PATH"
