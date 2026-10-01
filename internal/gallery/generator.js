@@ -12,13 +12,15 @@
   var API = 'https://api.github.com/users/';
   var PAGES = 3; // 3 pages of 100: the 300 events the API keeps (about 90 days)
   var TIMEOUT_MS = 15000; // same as the command line client
-  var REUSE_MS = 60000; // the API caches for about a minute: do not ask again sooner
+  var CACHE_MS = 10 * 60 * 1000; // how long the events of a user are reused (memory and sessionStorage)
+  var CACHE_KEY = 'commitling:events:'; // + the login in lower case
   var DEMO_MS = 15000; // the whole timelapse of the demo
   var form = document.getElementById('gen-form');
   var userInput = document.getElementById('gen-user');
   var button = document.getElementById('gen-go');
   var statusEl = document.getElementById('gen-status');
   var errorEl = document.getElementById('gen-error');
+  var demoAlt = document.getElementById('gen-demo-alt'); // «Ver demo», offered when the API limit is spent
   var img = document.getElementById('gen-img');
   var stage = document.getElementById('gen-stage');
   var empty = document.getElementById('gen-empty');
@@ -55,12 +57,62 @@
 
   function say(text) {
     errorEl.textContent = '';
+    demoAlt.hidden = true;
     statusEl.textContent = text;
   }
 
-  function fail(text) {
+  // offerDemo shows «Ver demo» next to the error: the demo needs no requests.
+  function fail(text, offerDemo) {
     statusEl.textContent = '';
     errorEl.textContent = text;
+    demoAlt.hidden = !offerDemo;
+  }
+
+  // The same rules as events.ValidLogin (Go): 1 to 39 letters, digits or
+  // dashes, not starting with a dash. Checked here first so that a typo never
+  // costs a request (or the download of the wasm).
+  function validLogin(s) {
+    return /^[A-Za-z0-9][A-Za-z0-9-]{0,38}$/.test(s);
+  }
+
+  // sessionStorage can be missing, blocked or full (private windows, policies):
+  // every access is guarded and the page works the same without it.
+  function cacheKey(user) {
+    return CACHE_KEY + user.toLowerCase();
+  }
+
+  function cacheGet(user) {
+    try {
+      var raw = sessionStorage.getItem(cacheKey(user));
+      if (!raw) return null;
+      var v = JSON.parse(raw);
+      var age = v && typeof v.at === 'number' ? Date.now() - v.at : -1;
+      if (age >= 0 && age < CACHE_MS && Array.isArray(v.events)) return v;
+      sessionStorage.removeItem(cacheKey(user)); // old, from the future or broken
+    } catch (e) { /* no storage, or not JSON: ask GitHub */ }
+    return null;
+  }
+
+  function cacheDrop(user) {
+    try { sessionStorage.removeItem(cacheKey(user)); } catch (e) { /* nothing to drop */ }
+  }
+
+  function cachePut(user, events, at) {
+    var value = JSON.stringify({ at: at, events: events });
+    try {
+      try {
+        sessionStorage.setItem(cacheKey(user), value);
+      } catch (e) {
+        // Full: the other users' events go (they are only a convenience), then once more.
+        var gone = [];
+        for (var i = 0; i < sessionStorage.length; i++) {
+          var k = sessionStorage.key(i);
+          if (k && k.indexOf(CACHE_KEY) === 0) gone.push(k);
+        }
+        gone.forEach(function (k) { sessionStorage.removeItem(k); });
+        sessionStorage.setItem(cacheKey(user), value);
+      }
+    } catch (e) { /* the cache is an optimisation */ }
   }
 
   function setBusy(on) {
@@ -189,9 +241,10 @@
     var r = window.commitling.render(JSON.stringify(current.events), current.user, checked('species'), checked('theme'), 0, checked('size'));
     if (r.error) {
       fail(r.error);
-      return;
+      return false;
     }
     show(r, current.user, current.events.length === 0);
+    return true;
   }
 
   async function draw() {
@@ -199,6 +252,11 @@
     var user = userInput.value.trim().replace(/^@/, '');
     if (!user) {
       fail('Escribe tu usuario de GitHub.');
+      userInput.focus();
+      return;
+    }
+    if (!validLogin(user)) {
+      fail('«' + user + '» no es un nombre de usuario de GitHub: solo letras, números y guiones (hasta 39 caracteres, sin empezar por guion).');
       userInput.focus();
       return;
     }
@@ -218,21 +276,33 @@
         userInput.focus();
         return;
       }
-      var events;
-      if (current && current.user.toLowerCase() === user.toLowerCase() && Date.now() - current.at < REUSE_MS) {
-        events = current.events; // same user a moment ago: nothing new to ask GitHub
+      var cached = null;
+      if (current && current.user.toLowerCase() === user.toLowerCase() && Date.now() - current.at < CACHE_MS) {
+        cached = current; // same user a moment ago: nothing new to ask GitHub
+      } else {
+        cached = cacheGet(user); // or in this tab's sessionStorage (a reload, another visit)
+      }
+      if (cached) {
+        current = { user: user, events: cached.events, at: cached.at };
       } else {
         say('Buscando la actividad pública de @' + user + '…');
+        var events;
         try {
           events = await fetchEvents(user);
         } catch (f) {
-          fail(window.commitling.explain(f.status, f.remaining, f.reset));
+          // 403 and 429 are the rate limit: the message says when it resets and the demo is offered.
+          fail(window.commitling.explain(f.status, f.remaining, f.reset), f.status === 403 || f.status === 429);
           return;
         }
         current = { user: user, events: events, at: Date.now() };
+        cachePut(user, events, current.at);
       }
       current.user = user;
-      redraw();
+      if (!redraw() && cached) {
+        // What came from the cache did not draw: do not keep it for the next ten minutes.
+        cacheDrop(user);
+        current = null;
+      }
     } finally {
       setBusy(false);
     }
@@ -336,6 +406,9 @@
 
   async function startDemo() {
     if (busy) return;
+    // «Ver demo» of the rate-limit notice disappears when the demo starts: the
+    // keyboard focus moves to the demo's own button instead of falling to <body>.
+    if (document.activeElement === demoAlt) demoGo.focus();
     setBusy(true);
     say('Cargando la demo…');
     try {
@@ -362,6 +435,7 @@
   }
 
   demoGo.addEventListener('click', startDemo);
+  demoAlt.addEventListener('click', startDemo);
   demoPause.addEventListener('click', function () {
     if (!demo) return;
     if (demo.playing) pause(); else play();

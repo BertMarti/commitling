@@ -67,6 +67,7 @@ section{padding:56px 0;border-top:2px dashed var(--line)}
 .go:hover{background:var(--honey)}
 .go[aria-disabled=true]{cursor:progress;background:var(--code);color:var(--muted)}
 .gen-msgs p{margin:0}
+.gen-msgs .go{margin-top:10px}
 .gen-error{color:var(--accent);font-weight:700}
 .gen-stage{margin:0;display:grid;grid-template-columns:minmax(0,1fr);gap:10px;align-content:start}
 .gen-stage img{display:block;width:100%;max-width:480px;height:auto;aspect-ratio:12/5}
@@ -171,7 +172,7 @@ footer p{max-width:none}
         <div>
           <label class="f" for="gen-user">Usuario de GitHub</label>
           <input type="text" id="gen-user" name="user" maxlength="40" placeholder="BertMarti" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" aria-describedby="gen-hint gen-error">
-          <p id="gen-hint" class="note" style="margin:6px 0 0">Solo se usa tu actividad pública de los últimos 90 días.</p>
+          <p id="gen-hint" class="note" style="margin:6px 0 0">Solo se usa tu actividad pública de los últimos 90 días. Para no gastar peticiones, los datos de cada usuario se guardan 10 minutos en esta pestaña: un commit muy reciente puede tardar en verse (abre la web en otra pestaña para empezar de cero).</p>
         </div>
         <fieldset>
           <legend>Especie</legend>
@@ -196,6 +197,7 @@ footer p{max-width:none}
         <div class="gen-msgs">
           <p id="gen-status" class="note" role="status"></p>
           <p id="gen-error" class="gen-error" role="alert"></p>
+          <button type="button" class="go" id="gen-demo-alt" hidden>Ver demo</button>
         </div>
       </form>
       <div class="gen-view">

@@ -181,17 +181,24 @@ func FetchError(status int, remaining, reset string, now time.Time) string {
 	case status == 403 || status == 429:
 		wait := "Vuelve a probar dentro de un rato: el contador se reinicia como mucho en una hora."
 		if secs, err := strconv.ParseInt(reset, 10, 64); err == nil {
-			mins := int((time.Unix(secs, 0).Sub(now) + time.Minute - 1) / time.Minute)
-			if mins < 1 {
-				mins = 1
-			}
+			at := time.Unix(secs, 0)
+			mins := int((at.Sub(now) + time.Minute - 1) / time.Minute)
 			unit := "minutos"
-			if mins == 1 {
+			if mins <= 1 {
 				unit = "minuto"
 			}
-			wait = "Vuelve a probar en " + strconv.Itoa(mins) + " " + unit + "."
+			if mins < 1 {
+				// The reset the server gave is already behind us (or our clock is off).
+				wait = "Ya debería haberse restablecido: vuelve a probar en 1 minuto."
+			} else {
+				// The time goes in the zone of now (the browser's) and rounded up, so
+				// nobody comes back a few seconds too early.
+				at = at.In(now.Location()).Add(59 * time.Second).Truncate(time.Minute)
+				wait = "Se restablece a las " + at.Format("15:04") + " (hora local, dentro de " + strconv.Itoa(mins) + " " + unit + ")."
+			}
 		}
 		return "GitHub deja hacer 60 peticiones por hora sin iniciar sesión y desde tu conexión ya se han gastado. " + wait +
+			" Mientras tanto, pulsa «Ver demo» para ver cómo crece una criatura de ejemplo, que no gasta peticiones." +
 			" La Action, con el token de tu workflow, no tiene este límite."
 	case status >= 500:
 		return "GitHub no responde bien ahora mismo (" + strconv.Itoa(status) + "). Inténtalo de nuevo en unos minutos."

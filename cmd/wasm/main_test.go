@@ -5,6 +5,7 @@ package main
 import (
 	"bytes"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -86,10 +87,13 @@ func TestWorkflow(t *testing.T) {
 
 func TestExplain(t *testing.T) {
 	now := time.Date(2026, 10, 1, 12, 0, 0, 0, time.UTC)
-	want := generate.FetchError(403, "0", "1790856600", now)
+	want := generate.FetchError(403, "0", "1790856600", now.In(time.Local))
 	got := api(t).Call("explain", 403, "0", "1790856600", now.UnixMilli()).String()
 	if got != want {
 		t.Errorf("explain = %q, want %q", got, want)
+	}
+	if !strings.Contains(got, "«Ver demo»") || !strings.Contains(got, "hora local") {
+		t.Errorf("a rate limit must say when it resets and offer the demo: %q", got)
 	}
 	if api(t).Call("explain", 404, js.Undefined(), js.Undefined(), js.Undefined()).String() == "" {
 		t.Error("explain must say something for a 404")

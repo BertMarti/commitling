@@ -115,7 +115,7 @@ func TestGeneratorLoadsWasmLazily(t *testing.T) {
 // and never builds HTML from what comes from outside.
 func TestGeneratorScriptIsSafe(t *testing.T) {
 	js := readBuilt(t, buildDir(t), "generator.js")
-	for _, bad := range []string{"innerHTML", "outerHTML", "insertAdjacentHTML", "document.write", "eval(", "Authorization", "localStorage", "sessionStorage", "document.cookie"} {
+	for _, bad := range []string{"innerHTML", "outerHTML", "insertAdjacentHTML", "document.write", "eval(", "Authorization", "localStorage", "document.cookie", "indexedDB"} {
 		if strings.Contains(js, bad) {
 			t.Errorf("generator.js uses %q", bad)
 		}
@@ -127,6 +127,15 @@ func TestGeneratorScriptIsSafe(t *testing.T) {
 	}
 	if !strings.Contains(js, "https://api.github.com/users/") {
 		t.Error("generator.js does not read the public events of the user")
+	}
+	// The only storage is the tab's own sessionStorage, for the public events
+	// already asked for (see TestGeneratorCachesTheEventsInTheTab).
+	for _, m := range regexp.MustCompile(`sessionStorage\.(\w+)`).FindAllStringSubmatch(js, -1) {
+		switch m[1] {
+		case "getItem", "setItem", "removeItem", "key", "length":
+		default:
+			t.Errorf("generator.js calls sessionStorage.%s", m[1])
+		}
 	}
 }
 
@@ -207,7 +216,7 @@ func TestGeneratorScriptRobustness(t *testing.T) {
 		"TIMEOUT_MS = 15000",
 		"AbortSignal.timeout(TIMEOUT_MS)", // a request that never answers must not hang the button
 		"Array.isArray(",                  // a 200 that is not a list of events
-		"60000",                           // events are reused for a minute for the same user
+		"CACHE_MS = 10 * 60 * 1000",       // events are reused for ten minutes for the same user
 	} {
 		if !strings.Contains(js, want) {
 			t.Errorf("generator.js lacks %q", want)
