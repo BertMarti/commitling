@@ -38,7 +38,7 @@ Una mascota pixel-art **original** que vive en el README de tu perfil de GitHub.
 
 ## Ajustes visuales de v0.5.0
 - La cabecera muestra la tarjeta real (`svg/acc-all.svg`, claro y oscuro) en un `<picture>`; el propio SVG apaga la animación con `prefers-reduced-motion`.
-- Regla anti-desborde: las rejillas de una columna usan `minmax(0,1fr)` y los hijos `min-width:0`; sin `width` fijo en CSS para las imágenes (hay tests).
+- Regla anti-desborde: toda rejilla declara sus columnas con `minmax(0,1fr)` (una columna implícita es `auto` y crece con el contenido) y los hijos `min-width:0`; el código en línea lleva `overflow-wrap:anywhere` (un nombre de archivo largo sin espacios desbordó a 320 px) y la primera columna de las tablas puede envolver en móvil; sin `width` fijo en CSS para las imágenes (hay tests de intención). Medir siempre a 320 px: a 360 y 375 no se veía.
 - El escenario del generador es una tarjeta en blanco 12:5 con marco de 1 px y radio 8 px, como el SVG; sin sombras ni bordes discontinuos.
 - No se toca `render.go` ni los sprites: el contorno es la silueta del cuerpo y se mueve con él a propósito.
 

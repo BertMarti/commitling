@@ -52,7 +52,7 @@ p{margin:0 0 14px;max-width:68ch}
 nav{margin-top:14px;display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px}
 section{padding:56px 0;border-top:2px dashed var(--line)}
 .gen{display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);gap:28px 40px;align-items:start}
-.gen-form{display:grid;gap:20px}
+.gen-form{display:grid;grid-template-columns:minmax(0,1fr);gap:20px}
 .gen-form label.f,.gen-form legend{display:block;font-weight:700;padding:0;margin:0 0 6px}
 .gen-form fieldset{border:0;margin:0;padding:0;min-width:0}
 .gen-form input[type=text]{display:block;width:100%;font:inherit;font-size:16px;padding:9px 12px;background:var(--paper);color:var(--ink);border:2px solid var(--ink);border-radius:0}
@@ -68,14 +68,14 @@ section{padding:56px 0;border-top:2px dashed var(--line)}
 .go[aria-disabled=true]{cursor:progress;background:var(--code);color:var(--muted)}
 .gen-msgs p{margin:0}
 .gen-error{color:var(--accent);font-weight:700}
-.gen-stage{margin:0;display:grid;gap:10px;align-content:start}
+.gen-stage{margin:0;display:grid;grid-template-columns:minmax(0,1fr);gap:10px;align-content:start}
 .gen-stage img{display:block;width:100%;max-width:480px;height:auto;aspect-ratio:12/5}
 .gen-stage img[hidden],.gen-empty[hidden]{display:none}
 .gen-stage[data-size=compact] img{max-width:200px;aspect-ratio:10/3}
 .gen-stage[data-size=compact] .gen-empty{max-width:200px;aspect-ratio:10/3;padding:6px;font-size:12px;line-height:1.4}
-.gen-empty{margin:0;width:100%;max-width:480px;aspect-ratio:12/5;padding:12px;display:grid;place-items:center;text-align:center;color:var(--muted);border:1px solid var(--line);border-radius:8px}
-.gen-view{display:grid;gap:18px;min-width:0}
-.demo{display:grid;gap:10px}
+.gen-empty{margin:0;width:100%;max-width:480px;aspect-ratio:12/5;padding:12px;display:grid;grid-template-columns:minmax(0,1fr);place-items:center;text-align:center;color:var(--muted);border:1px solid var(--line);border-radius:8px}
+.gen-view{display:grid;grid-template-columns:minmax(0,1fr);gap:18px;min-width:0}
+.demo{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
 .demo-t{margin:0;font-size:14px}
 .demo-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
 .demo-bar .go{padding:8px 16px}
@@ -83,7 +83,7 @@ section{padding:56px 0;border-top:2px dashed var(--line)}
 .go.alt:hover{background:var(--honey);color:#2b2724}
 .go:disabled,.go:disabled:hover{cursor:not-allowed;background:var(--code);color:var(--muted)}
 .demo-day{margin-left:auto;font-weight:700}
-.demo-slider{display:grid;gap:4px}
+.demo-slider{display:grid;grid-template-columns:minmax(0,1fr);gap:4px}
 .demo-slider[hidden]{display:none}
 .demo-slider label{font-weight:700}
 .demo-slider input{width:100%;accent-color:var(--moss)}
@@ -94,7 +94,7 @@ section{padding:56px 0;border-top:2px dashed var(--line)}
 .gen-after h3{margin-top:0}
 a.go,a.go:hover{display:inline-block;text-decoration:none;color:#2b2724}
 .gen-stage figcaption{margin:0;max-width:480px;width:100%}
-.live{display:grid;justify-items:start;gap:12px}
+.live{display:grid;grid-template-columns:minmax(0,1fr);justify-items:start;gap:12px}
 .live img,.grid img{display:block;width:100%;max-width:480px;height:auto}
 .badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(200px,100%),1fr));gap:18px 24px}
 .badges img{display:block;width:100%;max-width:200px;height:auto}
@@ -117,7 +117,7 @@ td:last-child{color:var(--muted)}
 .code{position:relative;margin:10px 0 22px}
 pre{margin:0;padding:18px 20px;background:var(--code);overflow-x:auto;font-size:13px;line-height:1.6;border-left:4px solid var(--moss)}
 code{font-family:inherit}
-p code,li code,td code{background:var(--code);padding:1px 5px}
+p code,li code,td code{background:var(--code);padding:1px 5px;overflow-wrap:anywhere}
 pre code,li pre code{background:none;padding:0}
 .copy{position:absolute;top:10px;right:10px;font:inherit;font-size:12px;padding:4px 10px;cursor:pointer;
   background:var(--paper);color:var(--ink);border:1px solid var(--line)}
@@ -136,6 +136,7 @@ footer p{max-width:none}
   .grid,.tables{grid-template-columns:minmax(0,1fr)}
   .gen{grid-template-columns:minmax(0,1fr)}
   section{padding:40px 0}
+  td:first-child{white-space:normal}
 }
 </style>
 </head>
