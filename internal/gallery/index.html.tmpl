@@ -71,6 +71,8 @@ section{padding:56px 0;border-top:2px dashed var(--line)}
 .gen-stage{margin:0;display:grid;gap:10px;align-content:start}
 .gen-stage img{display:block;width:100%;max-width:480px;height:auto;aspect-ratio:12/5}
 .gen-stage img[hidden],.gen-empty[hidden]{display:none}
+.gen-stage[data-size=compact] img{max-width:200px;aspect-ratio:10/3}
+.gen-stage[data-size=compact] .gen-empty{max-width:200px;aspect-ratio:10/3;padding:6px;font-size:12px;line-height:1.4}
 .gen-empty{margin:0;width:100%;max-width:480px;aspect-ratio:12/5;padding:12px;display:grid;place-items:center;text-align:center;color:var(--muted);border:1px solid var(--line);border-radius:8px}
 .gen-view{display:grid;gap:18px;min-width:0}
 .demo{display:grid;gap:10px}
@@ -94,6 +96,8 @@ a.go,a.go:hover{display:inline-block;text-decoration:none;color:#2b2724}
 .gen-stage figcaption{margin:0;max-width:480px;width:100%}
 .live{display:grid;justify-items:start;gap:12px}
 .live img,.grid img{display:block;width:100%;max-width:480px;height:auto}
+.badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(200px,100%),1fr));gap:18px 24px}
+.badges img{display:block;width:100%;max-width:200px;height:auto}
 .note{font-size:13px;color:var(--muted)}
 .steps{counter-reset:s;list-style:none;padding:0;margin:0;display:grid;grid-template-columns:minmax(0,1fr);gap:14px;max-width:72ch}
 .steps li{counter-increment:s;padding-left:44px;position:relative;min-width:0}
@@ -181,6 +185,12 @@ footer p{max-width:none}
             <div class="opt"><input type="radio" name="theme" value="dark" id="gen-th-dark"><label for="gen-th-dark">Oscuro</label></div>
           </div>
         </fieldset>
+        <fieldset>
+          <legend>Tamaño</legend>
+          <div class="opts">{{range $i, $c := .GenSizes}}
+            <div class="opt"><input type="radio" name="size" value="{{$c.Value}}" id="gen-sz-{{$c.Value}}"{{if eq $i 0}} checked{{end}}><label for="gen-sz-{{$c.Value}}">{{$c.Label}}</label></div>{{end}}
+          </div>
+        </fieldset>
         <button type="submit" class="go" id="gen-go">Dibujar</button>
         <div class="gen-msgs">
           <p id="gen-status" class="note" role="status"></p>
@@ -188,7 +198,7 @@ footer p{max-width:none}
         </div>
       </form>
       <div class="gen-view">
-        <figure class="gen-stage">
+        <figure class="gen-stage" id="gen-stage" data-size="full">
           <p class="gen-empty" id="gen-empty">Tu criatura aparecerá aquí.</p>
           <img id="gen-img" width="480" height="200" alt="" hidden>
           <figcaption class="note" id="gen-caption"></figcaption>
@@ -242,7 +252,7 @@ footer p{max-width:none}
   <section id="galeria" aria-labelledby="galeria-t">
     <h2 id="galeria-t">Galería</h2>
     <p>Todas las especies, fases y ánimos, dibujados con estadísticas de ejemplo de un usuario ficticio. La especie se elige con la entrada <code>species</code> de la Action (o <code>--species</code> en la línea de órdenes); si no la indicas, sale el brote de musgo.</p>
-    <nav class="jump" aria-label="Especies">Ir a: {{range $i, $s := .Species}}{{if $i}} · {{end}}<a href="#especie-{{$s.ID}}">{{$s.Name}}</a>{{end}}</nav>
+    <nav class="jump" aria-label="Especies">Ir a: {{range $i, $s := .Species}}{{if $i}} · {{end}}<a href="#especie-{{$s.ID}}">{{$s.Name}}</a>{{end}} · <a href="#compacta">Tarjeta compacta</a></nav>
     {{range .Species}}
     <h3 class="species" id="especie-{{.ID}}">{{.Name}}</h3>
     <p class="note">{{.Intro}}</p>
@@ -269,6 +279,21 @@ footer p{max-width:none}
           <img src="{{.Light}}" width="480" height="200" loading="lazy" alt="{{.Alt}}">
         </picture>
         <figcaption>{{.Caption}}</figcaption>
+      </figure>
+      {{end}}
+    </div>
+    {{end}}
+    <h3 class="species" id="compacta">Tarjeta compacta</h3>
+    <p>Una insignia de 200x60 con la criatura, su fase, su ánimo y una barra de progreso, para firmas, barras laterales o la cabecera de un repositorio. Se pide con <code>size: compact</code> en la Action (o <code>--size compact</code> en la línea de órdenes); sin ella sale la tarjeta de siempre. Mismos dibujos, misma paleta y misma animación.</p>
+    {{range .Badges}}
+    <h4>{{.Name}}</h4>
+    <div class="badges">
+      {{range .Figures}}
+      <figure>
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="{{.Dark}}">
+          <img src="{{.Light}}" width="200" height="60" loading="lazy" alt="{{.Alt}}">
+        </picture>
       </figure>
       {{end}}
     </div>

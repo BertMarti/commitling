@@ -38,8 +38,9 @@ func TestBuild(t *testing.T) {
 	}
 	// Per species, 20 stage×mood cards and 4 accessory cards, light and
 	// dark, plus favicon, og.png, generator.js and index (the hero of the header is
-	// one of the accessory cards).
-	if want := 2*(20+4)*2 + 4; n != want {
+	// one of the accessory cards), plus the compact badges: per species, one
+	// per stage, light and dark.
+	if want := 2*(20+4)*2 + 4 + 2*5*2; n != want {
 		t.Fatalf("Build wrote %d files, want %d", n, want)
 	}
 
@@ -489,5 +490,53 @@ func TestFullCardsAreByteIdenticalToV050(t *testing.T) {
 	}
 	if want := 2 * (20 + 4) * 2; n != want {
 		t.Errorf("the golden list has %d cards, want %d", n, want)
+	}
+}
+
+// The gallery shows the compact badge for every stage of both species, light
+// and dark, at its real size, with its own text alternative.
+func TestGalleryShowsTheCompactBadge(t *testing.T) {
+	dir := buildDir(t)
+	page := readBuilt(t, dir, "index.html")
+	if !strings.Contains(page, `id="compacta"`) || !strings.Contains(page, "size: compact") {
+		t.Error("the gallery has no compact section that says how to ask for it")
+	}
+	if !strings.Contains(page, `href="#compacta"`) {
+		t.Error("nothing links to the compact section")
+	}
+	for _, sp := range creature.AllSpecies {
+		prefix := ""
+		if sp != creature.MossSprout {
+			prefix = sp.Slug() + "-"
+		}
+		for _, st := range creature.Stages {
+			for _, suffix := range []string{".svg", "-dark.svg"} {
+				name := "svg/compact-" + prefix + st.Slug() + suffix
+				svg := readBuilt(t, dir, name)
+				mustBeValidXML(t, name, svg)
+				if !strings.Contains(svg, `width="200" height="60"`) || !strings.Contains(svg, sp.StageName(st)) {
+					t.Errorf("%s is not the compact badge of %s", name, sp.StageName(st))
+				}
+			}
+			img := regexp.MustCompile(`<img src="svg/compact-` + regexp.QuoteMeta(prefix+st.Slug()) + `\.svg" width="200" height="60" loading="lazy" alt="([^"]+)"`).FindStringSubmatch(page)
+			if img == nil {
+				t.Errorf("the page has no 200x60 image of the compact %s", sp.StageName(st))
+			} else if !strings.Contains(img[1], sp.StageName(st)) || !strings.Contains(strings.ToLower(img[1]), "compacta") {
+				t.Errorf("alt of the compact %s: %q", sp.StageName(st), img[1])
+			}
+		}
+	}
+}
+
+func mustBeValidXML(t *testing.T, name string, data string) {
+	t.Helper()
+	dec := xml.NewDecoder(strings.NewReader(data))
+	for {
+		if _, err := dec.Token(); err == io.EOF {
+			return
+		} else if err != nil {
+			t.Errorf("%s is not valid XML: %v", name, err)
+			return
+		}
 	}
 }

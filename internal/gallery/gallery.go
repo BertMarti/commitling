@@ -96,6 +96,12 @@ type speciesSection struct {
 	Extras []Figure
 }
 
+// badgeSection is the compact badges of one species: one per stage.
+type badgeSection struct {
+	Name    string
+	Figures []Figure
+}
+
 type rule struct{ Name, When string }
 
 // choice is one option of a radio group of the generator.
@@ -112,6 +118,8 @@ type page struct {
 	Hero        Figure
 	Species     []speciesSection
 	GenSpecies  []choice
+	GenSizes    []choice
+	Badges      []badgeSection
 	XP          []rule
 	Stages      []rule
 	Moods       []rule
@@ -132,12 +140,12 @@ func Build(dir, version string) (int, error) {
 		n++
 		return os.WriteFile(path, data, 0o644)
 	}
-	card := func(name string, sp creature.Species, s stats.Stats) (Figure, error) {
+	card := func(name string, sp creature.Species, s stats.Stats, size render.Size) (Figure, error) {
 		f := Figure{Light: "svg/" + name + ".svg", Dark: "svg/" + name + "-dark.svg"}
 		lc := render.NewCard(DemoUser, s, render.Light)
-		lc.Creature.Species = sp
+		lc.Creature.Species, lc.Size = sp, size
 		dc := render.NewCard(DemoUser, s, render.Dark)
-		dc.Creature.Species = sp
+		dc.Creature.Species, dc.Size = sp, size
 		if err := write(f.Light, render.SVG(lc)); err != nil {
 			return f, err
 		}
@@ -145,6 +153,9 @@ func Build(dir, version string) (int, error) {
 			return f, err
 		}
 		f.Alt = "commitling: " + render.Description(lc)
+		if size == render.Compact {
+			f.Alt = "commitling, tarjeta compacta: " + render.Description(lc)
+		}
 		return f, nil
 	}
 
@@ -186,7 +197,7 @@ func Build(dir, version string) (int, error) {
 		for _, st := range creature.Stages {
 			r := row{Title: fmt.Sprintf("%s · desde %s XP", sp.StageName(st), render.Thousands(st.MinXP()))}
 			for _, m := range creature.Moods {
-				f, err := card(prefix+st.Slug()+"-"+m.Slug(), sp, Sample(st, m))
+				f, err := card(prefix+st.Slug()+"-"+m.Slug(), sp, Sample(st, m), render.Full)
 				if err != nil {
 					return n, err
 				}
@@ -196,7 +207,7 @@ func Build(dir, version string) (int, error) {
 			sec.Rows = append(sec.Rows, r)
 		}
 		for _, e := range extras {
-			f, err := card(prefix+e.name, sp, e.s)
+			f, err := card(prefix+e.name, sp, e.s, render.Full)
 			if err != nil {
 				return n, err
 			}
@@ -204,6 +215,17 @@ func Build(dir, version string) (int, error) {
 			sec.Extras = append(sec.Extras, f)
 		}
 		p.Species = append(p.Species, sec)
+
+		// The compact badge of every stage, happy and with no accessories.
+		badges := badgeSection{Name: sp.Name()}
+		for _, st := range creature.Stages {
+			f, err := card("compact-"+prefix+st.Slug(), sp, Sample(st, creature.Happy), render.Compact)
+			if err != nil {
+				return n, err
+			}
+			badges.Figures = append(badges.Figures, f)
+		}
+		p.Badges = append(p.Badges, badges)
 	}
 
 	icon := render.SpriteSVG(creature.Creature{Stage: creature.Sprout, Mood: creature.Happy})
@@ -214,6 +236,7 @@ func Build(dir, version string) (int, error) {
 	for _, sp := range creature.AllSpecies {
 		p.GenSpecies = append(p.GenSpecies, choice{sp.Slug(), sp.Name()})
 	}
+	p.GenSizes = []choice{{"full", "Completa"}, {"compact", "Compacta"}}
 	if err := write("generator.js", generatorJS); err != nil {
 		return n, err
 	}

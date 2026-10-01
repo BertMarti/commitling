@@ -42,6 +42,11 @@ Una mascota pixel-art **original** que vive en el README de tu perfil de GitHub.
 - El escenario del generador es una tarjeta en blanco 12:5 con marco de 1 px y radio 8 px, como el SVG; sin sombras ni bordes discontinuos.
 - No se toca `render.go` ni los sprites: el contorno es la silueta del cuerpo y se mueve con él a propósito.
 
+## Tarjeta compacta (v0.6.0)
+- Entrada `size` de la Action (`full` por defecto, `compact`) y `--size` en la CLI: la compacta es una insignia de 200x60 (criatura, fase, ánimo «ánimo · fase n/5» y barra de progreso) con la misma paleta, los mismos sprites y la misma animación a escala; sin zzz ni destellos. `render.Size` tiene `Full` como valor cero: sin `size` el SVG es byte a byte el de v0.5.0 (`testdata/golden/full-sha256.txt` guarda el SHA-256 de las 96 tarjetas de la galería de v0.5.0 y un test las compara; no cambies `fullLayout` ni el dibujo completo sin regenerarlas a propósito).
+- El wasm recibe `size` como último argumento de `render`, `workflow`, `check` y `demo`; el generador de la web tiene el selector «Tamaño» y adapta la vista previa (`data-size` en `#gen-stage`). La galería enseña la compacta en `#compacta` (`svg/compact-*.svg`).
+- Los tests de CSS de la galería no comparan bloques literales: `css_test.go` lee las reglas (`cssRules(...).prop(selector, propiedad)`) y las aserciones nombran regla y propiedad.
+
 ## Reglas de contenido
 - El personaje es **diseño propio**. Prohibido imitar criaturas de videojuegos, anime o marcas.
 - Las reglas de fase y ánimo están documentadas en el README y son deterministas (mismos datos, mismo SVG).

@@ -8,13 +8,15 @@
 //
 // It registers one global object, `commitling`:
 //
-//	commitling.render(eventsJSON, user, species, theme, nowMs) -> {svg, description, login} | {error}
-//	commitling.workflow(user, species, theme)                  -> {workflow} | {error}
-//	commitling.explain(status, remaining, reset, nowMs)        -> string
-//	commitling.check(user, species, theme)                     -> "" when valid, else the error
-//	commitling.demo(day, species, theme)                       -> {svg, description, login, day, days, phase} | {error}
+//	commitling.render(eventsJSON, user, species, theme, nowMs, size) -> {svg, description, login} | {error}
+//	commitling.workflow(user, species, theme, size)                  -> {workflow} | {error}
+//	commitling.explain(status, remaining, reset, nowMs)              -> string
+//	commitling.check(user, species, theme, size)                     -> "" when valid, else the error
+//	commitling.demo(day, species, theme, size)                       -> {svg, description, login, day, days, phase} | {error}
 //
-// Empty or undefined strings mean "the default"; an empty nowMs is the clock.
+// size is "full" or "compact" and always the last argument, so a caller that
+// predates it keeps working. Empty or undefined strings mean "the default"; an
+// empty nowMs is the clock.
 package main
 
 import (
@@ -56,12 +58,18 @@ func millis(args []js.Value, i int) time.Time {
 	return time.UnixMilli(int64(args[i].Float())).UTC()
 }
 
-func options(args []js.Value, user, species, theme int) generate.Options {
-	return generate.Options{User: str(args, user), Species: str(args, species), Theme: str(args, theme)}
+// options reads the user, species, theme and size from the given positions;
+// -1 means that the call has no such argument.
+func options(args []js.Value, user, species, theme, size int) generate.Options {
+	o := generate.Options{Species: str(args, species), Theme: str(args, theme), Size: str(args, size)}
+	if user >= 0 {
+		o.User = str(args, user)
+	}
+	return o
 }
 
 func render(_ js.Value, args []js.Value) any {
-	o := options(args, 1, 2, 3)
+	o := options(args, 1, 2, 3, 5)
 	o.Now = millis(args, 4)
 	res, err := generate.Render([]byte(str(args, 0)), o)
 	if err != nil {
@@ -71,7 +79,7 @@ func render(_ js.Value, args []js.Value) any {
 }
 
 func workflow(_ js.Value, args []js.Value) any {
-	w, err := generate.Workflow(options(args, 0, 1, 2))
+	w, err := generate.Workflow(options(args, 0, 1, 2, 3))
 	if err != nil {
 		return map[string]any{"error": err.Error()}
 	}
@@ -84,7 +92,7 @@ func demo(_ js.Value, args []js.Value) any {
 	if len(args) > 0 && args[0].Type() == js.TypeNumber {
 		day = args[0].Int()
 	}
-	f, err := generate.Demo(day, generate.Options{Species: str(args, 1), Theme: str(args, 2)})
+	f, err := generate.Demo(day, options(args, -1, 1, 2, 3))
 	if err != nil {
 		return map[string]any{"error": err.Error()}
 	}
@@ -92,7 +100,7 @@ func demo(_ js.Value, args []js.Value) any {
 }
 
 func check(_ js.Value, args []js.Value) any {
-	if err := options(args, 0, 1, 2).Check(); err != nil {
+	if err := options(args, 0, 1, 2, 3).Check(); err != nil {
 		return err.Error()
 	}
 	return ""

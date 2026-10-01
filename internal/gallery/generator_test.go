@@ -67,8 +67,19 @@ func TestGeneratorFormIsAccessible(t *testing.T) {
 			t.Errorf("no radio for theme %s", th)
 		}
 	}
-	if got := strings.Count(page, `checked>`); got != 2 {
-		t.Errorf("%d options checked by default, want 2 (one species, one theme)", got)
+	for _, sz := range []string{"full", "compact"} {
+		if !strings.Contains(page, `<input type="radio" name="size" value="`+sz+`"`) {
+			t.Errorf("no radio for size %s", sz)
+		}
+	}
+	if !strings.Contains(page, `<legend>Tamaño</legend>`) || !strings.Contains(page, "Compacta</label>") || !strings.Contains(page, "Completa</label>") {
+		t.Error("the size group needs its legend and visible labels")
+	}
+	if got := strings.Count(page, `checked>`); got != 3 {
+		t.Errorf("%d options checked by default, want 3 (one species, one theme, one size)", got)
+	}
+	if !regexp.MustCompile(`<input type="radio" name="size" value="full"[^>]* checked>`).MatchString(page) {
+		t.Error("the full card must be the default size")
 	}
 	// Loading and success go to a status region; failures to an alert.
 	if !regexp.MustCompile(`id="gen-status"[^>]*role="status"|role="status"[^>]*id="gen-status"`).MatchString(page) {
@@ -280,5 +291,39 @@ func TestDemoAnnouncesOnlyThePhase(t *testing.T) {
 	js := readBuilt(t, buildDir(t), "generator.js")
 	if !strings.Contains(js, "if (r.phase !== demo.phase)") {
 		t.Error("the phase must only be written when it changes")
+	}
+}
+
+// The size reaches every call into the wasm (render, workflow, check and the
+// demo) as its last argument, and the preview takes the shape of the card.
+func TestGeneratorPassesTheSizeToTheWasm(t *testing.T) {
+	js := readBuilt(t, buildDir(t), "generator.js")
+	for _, call := range []string{"commitling.render(", "commitling.workflow(", "commitling.check(", "commitling.demo("} {
+		i := strings.Index(js, call)
+		if i < 0 {
+			t.Errorf("generator.js never calls %s", call)
+			continue
+		}
+		line := js[i : i+strings.Index(js[i:], "\n")]
+		if !strings.Contains(line, "checked('size')") {
+			t.Errorf("%s does not pass the size: %s", call, line)
+		}
+	}
+	for _, want := range []string{"img.width", "img.height", "dataset.size"} {
+		if !strings.Contains(js, want) {
+			t.Errorf("generator.js does not adapt the preview (%q)", want)
+		}
+	}
+	page := buildPage(t)
+	if !strings.Contains(page, `id="gen-stage"`) {
+		t.Error("the stage needs an id so the script can tell its size")
+	}
+	style := regexp.MustCompile(`(?s)<style>(.*?)</style>`).FindStringSubmatch(page)[1]
+	rules := cssRules(style)
+	if got := rules.prop(`.gen-stage[data-size=compact] img`, "max-width"); got != "200px" {
+		t.Errorf("the compact preview must stop at 200px, got %q", got)
+	}
+	if got := rules.prop(`.gen-stage[data-size=compact] img`, "aspect-ratio"); got != "10/3" {
+		t.Errorf("the compact preview keeps the 10:3 shape, got %q", got)
 	}
 }
