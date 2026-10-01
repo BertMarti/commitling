@@ -539,9 +539,10 @@ func TestGeneratorStageMatchesTheCard(t *testing.T) {
 	}
 }
 
-// Adding the compact card must not change a single byte of the full cards of
-// v0.5.0. testdata/golden/full-sha256.txt holds the SHA-256 of each of them
-// (sha256sum format), taken from the v0.5.0 gallery before render.go changed.
+// Neither the compact card nor anything after v0.5.0 may change a single byte
+// of the full cards of v0.5.0 (nor of favicon.svg, the sprout the tab shows).
+// testdata/golden/full-sha256.txt holds the SHA-256 of each of them (sha256sum
+// format), taken from the v0.5.0 gallery before render.go changed.
 func TestFullCardsAreByteIdenticalToV050(t *testing.T) {
 	list, err := os.ReadFile("../../testdata/golden/full-sha256.txt")
 	if err != nil {
@@ -567,8 +568,8 @@ func TestFullCardsAreByteIdenticalToV050(t *testing.T) {
 		}
 		n++
 	}
-	if want := 2 * (20 + 4) * 2; n != want {
-		t.Errorf("the golden list has %d cards, want %d", n, want)
+	if want := 2*(20+4)*2 + 1; n != want { // 96 cards and favicon.svg
+		t.Errorf("the golden list has %d files, want %d (96 cards and favicon.svg)", n, want)
 	}
 }
 
