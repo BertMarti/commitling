@@ -420,43 +420,121 @@ func TestHeaderShowsTheAnimatedCard(t *testing.T) {
 	}
 }
 
-// What made the page scroll sideways on a phone (measured at 375 px: the
-// document was 730 px wide): grid tracks that grow to the width of a <pre>.
-// Every one-column rule must be able to shrink, and images never carry a
-// fixed width in CSS.
+// pageCSS returns the CSS of the page as rules.
+func pageCSS(t *testing.T) ruleSet {
+	t.Helper()
+	return cssRules(regexp.MustCompile(`(?s)<style>(.*?)</style>`).FindStringSubmatch(buildPage(t))[1])
+}
+
+// phone is the @media condition of the phone rules of the page.
+const phone = "(max-width:720px)"
+
+// effective is the value of a property on a phone: the phone rule if there is
+// one, otherwise the general one.
+func (rs ruleSet) effective(sel, property string) string {
+	if v := rs.propIn(phone, sel, property); v != "" {
+		return v
+	}
+	return rs.prop(sel, property)
+}
+
+// withoutMinmax removes every minmax(...) (the parentheses may nest) from a
+// grid-template-columns value.
+func withoutMinmax(v string) string {
+	for {
+		i := strings.Index(v, "minmax(")
+		if i < 0 {
+			return v
+		}
+		depth, j := 0, i+len("minmax")
+		for ; j < len(v); j++ {
+			if v[j] == '(' {
+				depth++
+			} else if v[j] == ')' {
+				if depth--; depth == 0 {
+					break
+				}
+			}
+		}
+		v = v[:i] + v[min(j+1, len(v)):]
+	}
+}
+
+// What made the page scroll sideways on a phone. It was measured twice:
+// at 375 px the document was 730 px wide (the <pre> blocks of "Instálalo" in
+// a grid track that grew with them); at 320 px it was 338 px (an unbreakable
+// <code>.github/workflows/commitling.yml</code> in a list item, plus grids
+// whose implicit column grew with its content and a table that could not
+// wrap its first column). The intent, rule by rule, not the CSS text:
+//
+//  1. a grid track never grows with its content (no plain `fr`: minmax(0,1fr));
+//  2. every grid says its columns (an implicit one is `auto`, which grows);
+//  3. the one-column layouts of the phone can shrink;
+//  4. inline code can wrap anywhere, and tables can wrap their first column;
+//  5. images have no fixed width in CSS.
 func TestPageDoesNotOverflowOnPhones(t *testing.T) {
-	style := regexp.MustCompile(`(?s)<style>(.*?)</style>`).FindStringSubmatch(buildPage(t))[1]
-	for _, want := range []string{
-		".steps{counter-reset:s;list-style:none;padding:0;margin:0;display:grid;grid-template-columns:minmax(0,1fr)",
-		".steps li{counter-increment:s;padding-left:44px;position:relative;min-width:0}",
-		".gen{grid-template-columns:minmax(0,1fr)}",
-		".grid,.tables{grid-template-columns:minmax(0,1fr)}",
-		".gen-view{display:grid;gap:18px;min-width:0}",
-	} {
-		if !strings.Contains(style, want) {
-			t.Errorf("CSS lacks %q", want)
+	rules := pageCSS(t)
+
+	for _, r := range rules {
+		cols := r.props["grid-template-columns"]
+		if left := withoutMinmax(cols); regexp.MustCompile(`\d*\.?\d+fr`).MatchString(left) {
+			t.Errorf("%q has a plain fr track (%s): it grows with its content, use minmax(0,1fr)", r.sel, cols)
+		}
+		if r.props["display"] == "grid" && cols == "" && !strings.Contains(r.sel, "::") {
+			t.Errorf("%q is a grid with no grid-template-columns: its implicit column is auto and grows with its content", r.sel)
 		}
 	}
-	if regexp.MustCompile(`[^-]width:\d+px`).MatchString(regexp.MustCompile(`img[^{]*\{[^}]*\}`).FindString(style)) {
-		t.Error("an image rule has a fixed width in px")
+
+	for _, sel := range []string{".steps", ".gen", ".gen-view", ".grid", ".tables"} {
+		if got := rules.effective(sel, "grid-template-columns"); !strings.Contains(got, "minmax(0,1fr)") {
+			t.Errorf("on a phone %q has columns %q, want minmax(0,1fr)", sel, got)
+		}
 	}
-	if regexp.MustCompile(`\s1fr[;)]`).MatchString(regexp.MustCompile(`@media \(max-width:720px\)\{(?s:.*?)\n\}`).FindString(style)) {
-		t.Error("a plain 1fr track in the phone rules can grow with its content: use minmax(0,1fr)")
+	if rules.prop(".steps li", "min-width") != "0" {
+		t.Error("a list item of .steps must be able to shrink (min-width:0)")
+	}
+
+	for _, sel := range []string{"p code", "li code", "td code"} {
+		if got := rules.prop(sel, "overflow-wrap"); got != "anywhere" {
+			t.Errorf("%q: overflow-wrap = %q; an unbreakable path in code would push the page wider", sel, got)
+		}
+	}
+	if got := rules.prop("pre", "overflow-x"); got != "auto" {
+		t.Errorf("code blocks must scroll inside themselves (overflow-x:auto), got %q", got)
+	}
+	if got := rules.propIn(phone, "td:first-child", "white-space"); got != "normal" {
+		t.Errorf("on a phone the first column of a table must be able to wrap, white-space = %q", got)
+	}
+
+	for _, r := range rules {
+		last := r.sel[strings.LastIndex(r.sel, " ")+1:]
+		if (last == "img" || strings.HasSuffix(last, " img")) && regexp.MustCompile(`^\d+px$`).MatchString(r.props["width"]) {
+			t.Errorf("%q has a fixed width in px: %s", r.sel, r.props["width"])
+		}
 	}
 }
 
 // The preview box is a blank card (same ratio and rounded frame as the SVG),
 // not a dashed box with dead space around the card.
 func TestGeneratorStageMatchesTheCard(t *testing.T) {
-	style := regexp.MustCompile(`(?s)<style>(.*?)</style>`).FindStringSubmatch(buildPage(t))[1]
-	stage := regexp.MustCompile(`\.gen-stage\{[^}]*\}`).FindString(style)
-	if strings.Contains(stage, "dashed") || strings.Contains(stage, "min-height") {
-		t.Errorf("the stage keeps its dashed border or fixed height: %s", stage)
-	}
-	for _, want := range []string{"aspect-ratio:12/5", "border-radius:8px"} {
-		if !strings.Contains(style, want) {
-			t.Errorf("CSS lacks %q", want)
+	rules := pageCSS(t)
+	for _, sel := range []string{".gen-stage", ".gen-stage img", ".gen-empty"} {
+		if v := rules.prop(sel, "min-height"); v != "" {
+			t.Errorf("%q has a minimum height (%s): the box is as tall as the card", sel, v)
 		}
+		for _, p := range []string{"border", "border-style"} {
+			if strings.Contains(rules.prop(sel, p), "dashed") {
+				t.Errorf("%q has a dashed %s: the frame of the card is a plain line", sel, p)
+			}
+		}
+	}
+	if got := rules.prop(".gen-stage img", "aspect-ratio"); got != "12/5" {
+		t.Errorf("the preview image keeps the ratio of the card (12/5), got %q", got)
+	}
+	empty := func(p string) string { return rules.prop(".gen-empty", p) }
+	if empty("aspect-ratio") != "12/5" || empty("border-radius") != "8px" || !strings.HasPrefix(empty("border"), "1px solid") {
+		t.Errorf("the empty stage must look like the card: aspect-ratio 12/5, 1px solid frame, radius 8px (got %q, %q, %q)",
+			empty("aspect-ratio"), empty("border"), empty("border-radius"))
 	}
 }
 
