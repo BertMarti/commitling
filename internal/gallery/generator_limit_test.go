@@ -127,6 +127,8 @@ func TestGeneratorOffersTheDemoWhenTheLimitIsSpent(t *testing.T) {
 	}
 	for _, want := range []string{
 		"demoAlt.addEventListener('click', startDemo)",              // the same demo as the other button
+		"document.activeElement === demoAlt",                        // its focus moves on before it is hidden
+		"cacheDrop(user)",                                           // what came from the cache and did not draw is dropped
 		"f.status === 403 || f.status === 429",                      // only for the limit
 		"window.commitling.explain(f.status, f.remaining, f.reset)", // the wasm writes the message with the raw headers
 		"'X-RateLimit-Reset'",

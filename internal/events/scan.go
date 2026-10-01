@@ -12,7 +12,7 @@ import (
 // (with reflect behind it) weighed about a megabyte in the WebAssembly build,
 // and the shape of a public event is fixed and tiny, so the fields are read
 // by hand. It follows encoding/json where it matters here: strict syntax,
-// null leaves a field untouched, keys match without regard to ASCII case, the
+// null leaves a field untouched, keys match without regard to case (Unicode simple folding, so "ſize" is "size", like encoding/json), the
 // last duplicate key wins and unknown fields are skipped. The differential
 // test in scan_test.go keeps it honest against encoding/json.
 
@@ -75,24 +75,6 @@ func (s *scanner) literal(word string) error {
 	}
 	s.i += len(word)
 	return nil
-}
-
-// fold reports whether a JSON key equals a lower-case field name, ignoring
-// ASCII case like encoding/json does.
-func fold(key, name string) bool {
-	if len(key) != len(name) {
-		return false
-	}
-	for i := 0; i < len(key); i++ {
-		c := key[i]
-		if 'A' <= c && c <= 'Z' {
-			c += 'a' - 'A'
-		}
-		if c != name[i] {
-			return false
-		}
-	}
-	return true
 }
 
 // str reads a string. With keep false it only validates.
@@ -382,7 +364,7 @@ func (s *scanner) nested(name string, dst *string) error {
 		return s.fail("se esperaba un objeto")
 	}
 	return s.object(func(key string) error {
-		if fold(key, name) {
+		if strings.EqualFold(key, name) {
 			return s.text(dst)
 		}
 		return s.skip()
@@ -398,11 +380,11 @@ func (s *scanner) event(e *Event) error {
 	}
 	return s.object(func(key string) error {
 		switch {
-		case fold(key, "id"):
+		case strings.EqualFold(key, "id"):
 			return s.text(&e.ID)
-		case fold(key, "type"):
+		case strings.EqualFold(key, "type"):
 			return s.text(&e.Type)
-		case fold(key, "created_at"):
+		case strings.EqualFold(key, "created_at"):
 			if s.null() {
 				return nil
 			}
@@ -411,11 +393,11 @@ func (s *scanner) event(e *Event) error {
 				return err
 			}
 			return e.CreatedAt.UnmarshalJSON(raw)
-		case fold(key, "actor"):
+		case strings.EqualFold(key, "actor"):
 			return s.nested("login", &e.Actor.Login)
-		case fold(key, "repo"):
+		case strings.EqualFold(key, "repo"):
 			return s.nested("name", &e.Repo.Name)
-		case fold(key, "payload"):
+		case strings.EqualFold(key, "payload"):
 			raw, err := s.raw()
 			e.Payload = raw
 			return err
@@ -468,7 +450,7 @@ func pushInfo(payload []byte) (size int, hasSize bool, commits int) {
 	}
 	_ = s.object(func(key string) error {
 		switch {
-		case fold(key, "size"):
+		case strings.EqualFold(key, "size"):
 			if s.null() { // null resets a pointer, as in encoding/json
 				size, hasSize = 0, false
 				return nil
@@ -480,7 +462,7 @@ func pushInfo(payload []byte) (size int, hasSize bool, commits int) {
 				}
 				return nil
 			}
-		case fold(key, "commits"):
+		case strings.EqualFold(key, "commits"):
 			if s.null() {
 				commits = 0
 				return nil
@@ -502,7 +484,7 @@ func actionOf(payload []byte) (action string) {
 		return
 	}
 	_ = s.object(func(key string) error {
-		if fold(key, "action") && s.peek() == '"' {
+		if strings.EqualFold(key, "action") && s.peek() == '"' {
 			v, err := s.str(true)
 			action = v
 			return err
