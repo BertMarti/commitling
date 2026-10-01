@@ -341,13 +341,13 @@ func writeStyle(b *strings.Builder, c Card, sp creature.Sprite, l layout) {
 	switch c.Creature.Mood {
 	case creature.Radiant:
 		b.WriteString(".bob{animation:hop 1.6s ease-in-out infinite}\n")
-		b.WriteString("@keyframes hop{0%,55%,100%{transform:translateY(0)}25%{transform:translateY(-8px)}}\n")
+		fmt.Fprintf(b, "@keyframes hop{0%%,55%%,100%%{transform:translateY(0)}25%%{transform:translateY(-%dpx)}}\n", l.hop)
 	case creature.Happy:
 		b.WriteString(".bob{animation:breathe 3.2s ease-in-out infinite}\n")
-		b.WriteString("@keyframes breathe{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}\n")
+		fmt.Fprintf(b, "@keyframes breathe{0%%,100%%{transform:translateY(0)}50%%{transform:translateY(-%dpx)}}\n", l.breathe)
 	default:
 		b.WriteString(".bob{animation:breathe 5.6s ease-in-out infinite}\n")
-		b.WriteString("@keyframes breathe{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}\n")
+		fmt.Fprintf(b, "@keyframes breathe{0%%,100%%{transform:translateY(0)}50%%{transform:translateY(-%dpx)}}\n", l.rest)
 	}
 
 	if c.Creature.Mood.Blinks() {
