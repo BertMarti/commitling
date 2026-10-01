@@ -95,3 +95,17 @@ func TestExplain(t *testing.T) {
 		t.Error("explain must say something for a 404")
 	}
 }
+
+func TestCheck(t *testing.T) {
+	c := api(t)
+	if got := c.Call("check", "BertMarti", "mushroom", "dark").String(); got != "" {
+		t.Errorf("valid options: %q", got)
+	}
+	if got := c.Call("check", "BertMarti", js.Undefined(), js.Undefined()).String(); got != "" {
+		t.Errorf("defaults: %q", got)
+	}
+	want := generate.Options{User: "a b"}.Check().Error()
+	if got := c.Call("check", "a b", "moss", "light").String(); got != want {
+		t.Errorf("check = %q, want %q", got, want)
+	}
+}

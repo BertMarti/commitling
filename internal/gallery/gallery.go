@@ -49,6 +49,11 @@ const ReadmeSnippet = `![commitling](./commitling.svg)`
 //go:embed index.html.tmpl
 var indexTmpl string
 
+// generatorJS is the script of the live generator (see index.html.tmpl).
+//
+//go:embed generator.js
+var generatorJS []byte
+
 // Sample returns synthetic stats that produce exactly the given stage and
 // mood with no accessories.
 func Sample(st creature.Stage, m creature.Mood) stats.Stats {
@@ -93,6 +98,9 @@ type speciesSection struct {
 
 type rule struct{ Name, When string }
 
+// choice is one option of a radio group of the generator.
+type choice struct{ Value, Label string }
+
 type page struct {
 	Version     string
 	Title       string
@@ -103,6 +111,7 @@ type page struct {
 	Favicon     string
 	Hero        string
 	Species     []speciesSection
+	GenSpecies  []choice
 	XP          []rule
 	Stages      []rule
 	Moods       []rule
@@ -202,6 +211,12 @@ func Build(dir, version string) (int, error) {
 		return n, err
 	}
 	p.Favicon = "favicon.svg"
+	for _, sp := range creature.AllSpecies {
+		p.GenSpecies = append(p.GenSpecies, choice{sp.Slug(), sp.Name()})
+	}
+	if err := write("generator.js", generatorJS); err != nil {
+		return n, err
+	}
 	hero := render.SpriteSVG(og.Hero)
 	if err := write("hero.svg", hero); err != nil {
 		return n, err

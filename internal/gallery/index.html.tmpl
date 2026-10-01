@@ -51,6 +51,29 @@ p{margin:0 0 14px;max-width:68ch}
 .lead{font-size:17px;margin:0}
 nav{margin-top:14px;display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px}
 section{padding:56px 0;border-top:2px dashed var(--line)}
+.gen{display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);gap:28px 40px;align-items:start}
+.gen-form{display:grid;gap:20px}
+.gen-form label.f,.gen-form legend{display:block;font-weight:700;padding:0;margin:0 0 6px}
+.gen-form fieldset{border:0;margin:0;padding:0;min-width:0}
+.gen-form input[type=text]{display:block;width:100%;font:inherit;font-size:16px;padding:9px 12px;background:var(--paper);color:var(--ink);border:2px solid var(--ink);border-radius:0}
+.gen-form input[type=text]::placeholder{color:var(--muted);opacity:1}
+.opts{display:flex;flex-wrap:wrap;gap:8px}
+.opt{position:relative}
+.opt input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+.opt label{display:block;padding:6px 14px;border:2px solid var(--ink);background:var(--paper)}
+.opt input:checked+label{background:var(--ink);color:var(--paper)}
+.opt input:focus-visible+label{outline:2px solid var(--accent);outline-offset:3px}
+.go{justify-self:start;font:inherit;font-weight:700;padding:10px 22px;cursor:pointer;background:var(--moss);color:#2b2724;border:2px solid var(--ink);border-radius:0}
+.go:hover{background:var(--honey)}
+.go[aria-disabled=true]{cursor:progress;background:var(--code);color:var(--muted)}
+.gen-msgs p{margin:0}
+.gen-msgs p:empty{display:none}
+.gen-error{color:var(--accent);font-weight:700}
+.gen-stage{margin:0;border:2px dashed var(--line);padding:12px;min-height:226px;display:grid;align-content:center;justify-items:center;gap:10px}
+.gen-stage img{display:block;width:100%;max-width:480px;height:auto}
+.gen-stage img[hidden],.gen-empty[hidden]{display:none}
+.gen-empty{margin:0;color:var(--muted);text-align:center}
+.gen-stage figcaption{margin:0;max-width:480px;width:100%}
 .live{display:grid;justify-items:start;gap:12px}
 .live img,.grid img{display:block;width:100%;max-width:480px;height:auto}
 .note{font-size:13px;color:var(--muted)}
@@ -87,6 +110,7 @@ footer p{max-width:none}
   header img{width:80px;height:80px}
   h1{font-size:28px}
   .grid,.tables{grid-template-columns:1fr}
+  .gen{grid-template-columns:1fr}
   section{padding:40px 0}
 }
 </style>
@@ -99,6 +123,7 @@ footer p{max-width:none}
     <h1>commitling</h1>
     <p class="lead">Una mascota pixel-art que vive en el README de tu perfil de GitHub y crece con tus commits.</p>
     <nav aria-label="Secciones">
+      <a href="#generador">Pruébalo</a>
       <a href="#vivo">En vivo</a>
       <a href="#galeria">Galería</a>
       <a href="#reglas">Reglas</a>
@@ -108,6 +133,44 @@ footer p{max-width:none}
   </div>
 </header>
 <main id="contenido">
+  <section id="generador" aria-labelledby="generador-t">
+    <h2 id="generador-t">Pruébalo con tu usuario</h2>
+    <p>Escribe tu usuario de GitHub y mira tu criatura al momento. Se dibuja en tu navegador con el mismo código que la Action; lo único que sale de tu ordenador es la petición pública a GitHub (hasta 60 por hora y por conexión).</p>
+    <noscript><p class="note">El generador necesita JavaScript. Sin él puedes ver la galería de abajo o instalar la Action.</p></noscript>
+    <div class="gen" id="gen" hidden>
+      <form id="gen-form" class="gen-form" novalidate>
+        <div>
+          <label class="f" for="gen-user">Usuario de GitHub</label>
+          <input type="text" id="gen-user" name="user" maxlength="40" placeholder="BertMarti" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" aria-describedby="gen-hint gen-error">
+          <p id="gen-hint" class="note" style="margin:6px 0 0">Solo se usa tu actividad pública de los últimos 90 días.</p>
+        </div>
+        <fieldset>
+          <legend>Especie</legend>
+          <div class="opts">{{range $i, $c := .GenSpecies}}
+            <div class="opt"><input type="radio" name="species" value="{{$c.Value}}" id="gen-sp-{{$c.Value}}"{{if eq $i 0}} checked{{end}}><label for="gen-sp-{{$c.Value}}">{{$c.Label}}</label></div>{{end}}
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Tema</legend>
+          <div class="opts">
+            <div class="opt"><input type="radio" name="theme" value="light" id="gen-th-light" checked><label for="gen-th-light">Claro</label></div>
+            <div class="opt"><input type="radio" name="theme" value="dark" id="gen-th-dark"><label for="gen-th-dark">Oscuro</label></div>
+          </div>
+        </fieldset>
+        <button type="submit" class="go" id="gen-go">Dibujar</button>
+        <div class="gen-msgs">
+          <p id="gen-status" class="note" role="status"></p>
+          <p id="gen-error" class="gen-error" role="alert"></p>
+        </div>
+      </form>
+      <figure class="gen-stage">
+        <p class="gen-empty" id="gen-empty">Tu criatura aparecerá aquí.</p>
+        <img id="gen-img" width="480" height="200" alt="" hidden>
+        <figcaption class="note" id="gen-caption"></figcaption>
+      </figure>
+    </div>
+  </section>
+
   <section id="vivo" aria-labelledby="vivo-t">
     <h2 id="vivo-t">En vivo</h2>
     <div class="live">
@@ -250,5 +313,6 @@ document.querySelectorAll('.copy').forEach(function (b) {
   });
 });
 </script>
+<script src="generator.js" defer></script>
 </body>
 </html>

@@ -1,5 +1,5 @@
 # MEMORY.md · commitling
-Última actualización: 2026-10-01 por builder (agent-project-3, #20)
+Última actualización: 2026-10-01 por builder (agent-project-3, #21)
 
 ## Estado actual
 v0.1.0 está en `main` (MVP, revisión QA y guía de uso ya fusionados). Fase v0.2.0, guiada por issues (ver «Equipo de agentes y ramas» en AGENTS.md): todo el trabajo está hecho y en PR abiertos contra `main` (ninguno fusionado aún), a fusionar en este orden:
@@ -29,11 +29,13 @@ Fase v0.3.0 (#16, rama `agent/builder/16-keep-on-error`, PR contra `main`): `--k
 
 Fase v0.4.0 «Pro» (generador en vivo con WebAssembly; spec en `docs/specs/v0.4.md`, hito `v0.4.0`, issues #19 a #22, una rama y un PR por issue, cada rama parte de la anterior, todos contra `main`, se fusionan en este orden):
 1. #19 `agent/builder/19-generate-render`: `internal/generate` (función compartida CLI y wasm) y `internal/events` (parser sin red).
-2. #20 `agent/builder/20-wasm`: paquete wasm, CI y despliegue (hecho). 3. #21 generador en la galería. 4. #22 descarga del SVG, workflow relleno y documentación.
+2. #20 `agent/builder/20-wasm`: paquete wasm, CI y despliegue (hecho). 3. #21 `agent/builder/21-generador-galeria`: generador en la galería (hecho). 4. #22 descarga del SVG, workflow relleno y documentación.
 
 Cambios de #19: `generate.Render(eventsJSON, Options)` / `RenderEvents`, `Options.Check`, `generate.Workflow` (el workflow del README con `user`, y `species` y `theme` si no son los de por defecto) y `generate.FetchError` (mensajes en español del navegador: 404, límite de 60 peticiones por hora con minutos hasta el reinicio, 5xx, red). `commitling render` dibuja con `generate.RenderEvents` (test: mismos bytes que `generate.Render`).
 
 Cambios de #20: `cmd/wasm` (`//go:build js && wasm`) registra el objeto global `commitling` con `render(eventsJSON, user, species, theme, nowMs)`, `workflow(user, species, theme)` y `explain(status, remaining, reset, nowMs)`; devuelve `{svg, description, login}` o `{error}`. El CI compila el wasm, ejecuta los tests de `cmd/wasm` dentro de Node y muestra el peso; `deploy.yml` genera `site/commitling.wasm` y copia `wasm_exec.js` del mismo `GOROOT`; ambos están en `.gitignore`. **Peso medido del wasm de producción (`-ldflags="-s -w"`, Go 1.27): 5.098.415 bytes (4,86 MiB), 1.379.020 bytes con gzip (1,3 MiB).** Verificado en el navegador del panel: el SVG del wasm es idéntico, byte a byte, al de `commitling render` (hongo, oscuro, fecha fija).
+
+Cambios de #21: sección «Pruébalo con tu usuario» al principio de la galería (`internal/gallery/index.html.tmpl` + `generator.js` embebido y escrito en `site/`). Formulario con usuario, especie y tema (radios nativos con aspecto de ficha), botón «Dibujar», región `role="status"` para carga y éxito y `role="alert"` para errores; sin JavaScript solo se ve un `<noscript>`. El wasm y `wasm_exec.js` se piden al enfocar el formulario, al enviarlo o al cambiar un radio; al abrir la página no. JS pide hasta 3 páginas de eventos a `api.github.com` (solo cabecera `Accept`), se las pasa a `commitling.render` y muestra el SVG como `<img>` con URL `blob:`. Cambiar especie o tema redibuja sin nueva petición. `cmd/wasm` suma `commitling.check(user, species, theme)` (validación con las mismas reglas y mensajes de la CLI). Verificado en el navegador del panel (servidor `python -m http.server` cerrado): `BertMarti` dibuja su criatura (Arbusto, 1.861 XP), el hongo y el tema oscuro redibujan, y los errores de usuario vacío, no válido, 404, límite de peticiones (simulado) y red (simulado) salen en español. CORS de la API comprobado: `Access-Control-Allow-Origin: *` y expone `X-RateLimit-*`.
 
 ## Decisiones (por qué)
 - 2026-09-29: Animación con CSS dentro del SVG porque GitHub no ejecuta JavaScript en los README.
@@ -95,6 +97,9 @@ Cambios de #20: `cmd/wasm` (`//go:build js && wasm`) registra el objeto global `
 - 2026-10-01 (builder, #19): el texto del workflow vive en `generate.BaseWorkflow` y `gallery.WorkflowSnippet` es un alias (así el wasm no enlaza `html/template`); el test que ata README y galería sigue valiendo y el de `@v1` mira `internal/generate/generate.go`. `Workflow` valida usuario, especie y tema antes de escribirlos en el YAML.
 - 2026-10-01 (builder, #20): los tests de `cmd/wasm` corren dentro de un runtime wasm real (Node, con `go_js_wasm_exec`): `GOOS=js GOARCH=wasm go test -exec="$(go env GOROOT)/lib/wasm/go_js_wasm_exec" ./cmd/wasm`. En Windows ese script no se puede ejecutar (ni hay `-exec` con rutas con espacios): copia `wasm_exec.js` y `wasm_exec_node.js` a `out/wasmexec/` y usa `-exec="node <ruta-absoluta-estilo-Windows>/out/wasmexec/wasm_exec_node.js"`. Solo se ejecutan en el CI de Linux.
 - 2026-10-01 (builder, #20): `cmd/wasm` solo convierte argumentos (cadena vacía o `undefined` = valor por defecto; `nowMs` vacío o 0 = reloj) y resultados; no hay lógica propia. `register()` es una función aparte para poder probarla sin `main`.
+- 2026-10-01 (builder, #21): los radios de especie y tema son `input[type=radio]` nativos (teclado y lectores de pantalla gratis) con la etiqueta como ficha; el marcado se invierte (tinta sobre papel) y el foco usa el contorno de acento. El botón usa `aria-disabled` mientras trabaja, no `disabled`, para no perder el foco con el teclado. El texto del botón es tinta fija sobre musgo en los dos temas (test de contraste).
+- 2026-10-01 (builder, #21): ante un error se deja a la vista la última criatura buena (la leyenda dice de quién es) y se explica el fallo aparte; no se reintenta solo (la API limita a 60 peticiones por hora y por IP, y un 403 o 429 muestra los minutos hasta el reinicio si la cabecera es legible). Un 422 en la página 2 o 3 es fin de datos, igual que en el cliente de la CLI.
+- 2026-10-01 (builder, #21): `generator.js` no usa `innerHTML`, `localStorage`, credenciales ni más URL que `https://api.github.com/users/` (test); la página no pide recursos de terceros ni pre-carga el wasm (test).
 
 ## Siguiente paso
 1. Alberto: fusionar los PR en orden (#10, #11, #12, #13, #14 y #15) y, tras cada uno, comprobar el CI (todos van contra `main`).
@@ -129,3 +134,4 @@ Cambios de #20: `cmd/wasm` (`//go:build js && wasm`) registra el objeto global `
 - 2026-09-30 builder · Claude Code Sonnet (agent/builder/16-keep-on-error): conservar el último SVG ante caídas largas de la API (#16): `--keep-on-error`, entrada `keep-on-error`, tests con `httptest`, paso en `action-test.yml` y documentación.
 - 2026-10-01 builder · Claude Code Sonnet (agent/builder/19-generate-render): v0.4.0 #19: spec `docs/specs/v0.4.md`, `internal/generate` (Render, Workflow, FetchError), `internal/events` (parser sin red) y CLI sobre la función compartida; wasm medido en 5,1 MB (1,4 MB gzip).
 - 2026-10-01 builder · Claude Code Sonnet (agent/builder/20-wasm): v0.4.0 #20: `cmd/wasm`, tests en Node, CI y despliegue del wasm; 5,1 MB (1,4 MB gzip).
+- 2026-10-01 builder · Claude Code Sonnet (agent/builder/21-generador-galeria): v0.4.0 #21: generador en la galería con wasm diferido, estados accesibles y errores en español; verificado en el navegador; `commitling.check` en el wasm.
