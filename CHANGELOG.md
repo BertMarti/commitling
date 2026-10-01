@@ -23,6 +23,7 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 - Los tests de CSS de la galería comprueban intenciones (lector de reglas `css_test.go`) en lugar de cadenas exactas de CSS.
 - Versión de la CLI: `0.6.0`.
+- **Generador más rápido de arrancar** (#45): la descarga del wasm empieza también al tocar el formulario (`pointerdown`; tabular no cuenta) y se lanza en paralelo con `wasm_exec.js` en lugar de esperar a que cargue, reutilizando esa misma petición en `instantiateStreaming` (y su copia en el fallback, sin pedirlo dos veces). La criatura en vivo de la galería carga en diferido (`loading="lazy"`).
 
 ## [0.5.0] - 2026-10-01
 

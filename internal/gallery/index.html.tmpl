@@ -233,7 +233,7 @@ footer p{max-width:none}
     <div class="live">
       <picture>
         <source media="(prefers-color-scheme: dark)" srcset="live/{{.LiveUser}}-dark.svg">
-        <img src="live/{{.LiveUser}}.svg" width="480" height="200" alt="La criatura de @{{.LiveUser}}, generada con su actividad pública en GitHub" onerror="this.closest('.live').querySelector('.missing').hidden=false;this.closest('picture').hidden=true">
+        <img src="live/{{.LiveUser}}.svg" width="480" height="200" loading="lazy" alt="La criatura de @{{.LiveUser}}, generada con su actividad pública en GitHub" onerror="this.closest('.live').querySelector('.missing').hidden=false;this.closest('picture').hidden=true">
       </picture>
       <p class="note">La criatura de <a href="https://github.com/{{.LiveUser}}">@{{.LiveUser}}</a>, regenerada cada día con su actividad pública.</p>
       <p class="note missing" hidden>La criatura en vivo aún no está disponible; se genera en el despliegue diario.</p>

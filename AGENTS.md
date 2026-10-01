@@ -45,6 +45,7 @@ Una mascota pixel-art **original** que vive en el README de tu perfil de GitHub.
 ## Tarjeta compacta (v0.6.0)
 - Entrada `size` de la Action (`full` por defecto, `compact`) y `--size` en la CLI: la compacta es una insignia de 200x60 (criatura, fase, ánimo «ánimo · fase n/5» y barra de progreso) con la misma paleta, los mismos sprites y la misma animación a escala; sin zzz ni destellos. `render.Size` tiene `Full` como valor cero: sin `size` el SVG es byte a byte el de v0.5.0 (`testdata/golden/full-sha256.txt` guarda el SHA-256 de las 96 tarjetas de la galería de v0.5.0 y un test las compara; no cambies `fullLayout` ni el dibujo completo sin regenerarlas a propósito).
 - El wasm recibe `size` como último argumento de `render`, `workflow`, `check` y `demo`; el generador de la web tiene el selector «Tamaño» y adapta la vista previa (`data-size` en `#gen-stage`). La galería enseña la compacta en `#compacta` (`svg/compact-*.svg`).
+- Carga del wasm: empieza con `pointerdown` o `input` en el formulario (nunca al tabular ni al abrir la página), con `fetch(WASM_URL)` en paralelo a `wasm_exec.js`; el fallback usa `res.clone()` (hay tests).
 - Los tests de CSS de la galería no comparan bloques literales: `css_test.go` lee las reglas (`cssRules(...).prop(selector, propiedad)`) y las aserciones nombran regla y propiedad.
 
 ## Reglas de contenido

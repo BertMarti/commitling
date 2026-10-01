@@ -83,24 +83,31 @@
     });
   }
 
-  function instantiate(go) {
-    var url = 'commitling.wasm';
-    var viaBuffer = function () {
-      return fetch(url).then(function (r) {
-        if (!r.ok) throw new Error('commitling.wasm: ' + r.status);
-        return r.arrayBuffer();
-      }).then(function (b) { return WebAssembly.instantiate(b, go.importObject); });
+  var WASM_URL = 'commitling.wasm';
+
+  // Instantiates the wasm from a request that is already under way. The same
+  // response serves the fallback (a clone), so a server that does not send
+  // application/wasm costs no second download.
+  function instantiate(go, pending) {
+    var viaBuffer = function (res) {
+      if (!res.ok) throw new Error(WASM_URL + ': ' + res.status);
+      return res.arrayBuffer().then(function (b) { return WebAssembly.instantiate(b, go.importObject); });
     };
-    if (!WebAssembly.instantiateStreaming) return viaBuffer();
-    // Falls back to a plain download when the server does not send application/wasm.
-    return WebAssembly.instantiateStreaming(fetch(url), go.importObject).catch(viaBuffer);
+    return pending.then(function (res) {
+      if (!WebAssembly.instantiateStreaming) return viaBuffer(res);
+      var copy = res.clone();
+      return WebAssembly.instantiateStreaming(res, go.importObject).catch(function () { return viaBuffer(copy); });
+    });
   }
 
   function ensureWasm() {
     if (!loading) {
+      // The .wasm (the heavy part) is requested now, while wasm_exec.js loads.
+      var wasm = fetch(WASM_URL);
+      wasm.catch(function () {}); // if the script fails first, this is not an unhandled rejection
       loading = loadScript('wasm_exec.js').then(function () {
         var go = new Go();
-        return instantiate(go).then(function (result) {
+        return instantiate(go, wasm).then(function (result) {
           go.run(result.instance).catch(function () {});
           if (!window.commitling) throw new Error('el generador no se inició');
         });
@@ -379,11 +386,13 @@
     draw();
   });
 
-  // Start downloading as soon as someone types in the form (submit and change
-  // load it too); merely tabbing through the page does not.
-  form.addEventListener('input', function () {
+  // Start downloading as soon as someone touches or types in the form (submit
+  // and change load it too); merely tabbing through the page does not.
+  function warmUp() {
     ensureWasm().catch(function () {});
-  });
+  }
+  form.addEventListener('pointerdown', warmUp);
+  form.addEventListener('input', warmUp);
 
   // Species, theme and size redraw what is already on screen, without asking GitHub again.
   form.addEventListener('change', function (e) {
