@@ -35,8 +35,9 @@ func TestBuild(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Per species, 20 stage×mood cards and 4 accessory cards, light and
-	// dark, plus favicon, hero, og.png, generator.js and index.
-	if want := 2*(20+4)*2 + 5; n != want {
+	// dark, plus favicon, og.png, generator.js and index (the hero of the header is
+	// one of the accessory cards).
+	if want := 2*(20+4)*2 + 4; n != want {
 		t.Fatalf("Build wrote %d files, want %d", n, want)
 	}
 
@@ -64,7 +65,7 @@ func TestBuild(t *testing.T) {
 	}
 
 	// Every local image referenced by the page exists and is valid XML.
-	re := regexp.MustCompile(`(?:src|srcset|href)="((?:svg/|favicon|hero)[^"]+)"`)
+	re := regexp.MustCompile(`(?:src|srcset|href)="((?:svg/|favicon)[^"]+)"`)
 	refs := re.FindAllStringSubmatch(page, -1)
 	if len(refs) < 96 {
 		t.Fatalf("only %d local images referenced", len(refs))
@@ -390,5 +391,68 @@ func TestGalleryAltsAreUnique(t *testing.T) {
 	}
 	if len(seen) < 40 {
 		t.Errorf("only %d cards with alt, want 2 species x 24", len(seen))
+	}
+}
+
+// The header shows the real card, animated, and respects reduced motion by
+// itself: the SVG carries its own prefers-reduced-motion rule, which also
+// works inside an <img>.
+func TestHeaderShowsTheAnimatedCard(t *testing.T) {
+	dir := buildDir(t)
+	page := readBuilt(t, dir, "index.html")
+	m := regexp.MustCompile(`(?s)<picture class="hero">.*?srcset="(svg/[^"]+-dark\.svg)".*?<img src="(svg/[^"]+\.svg)" width="480" height="200" alt="([^"]+)"`).FindStringSubmatch(page)
+	if m == nil {
+		t.Fatal("the header has no picture with the card (light and dark)")
+	}
+	for _, f := range []string{m[1], m[2]} {
+		svg := readBuilt(t, dir, f)
+		for _, want := range []string{"@keyframes", "prefers-reduced-motion:reduce"} {
+			if !strings.Contains(svg, want) {
+				t.Errorf("%s lacks %q", f, want)
+			}
+		}
+	}
+	if strings.Contains(page, `width="112"`) {
+		t.Error("the old fixed 112 px sprite is still in the header")
+	}
+}
+
+// What made the page scroll sideways on a phone (measured at 375 px: the
+// document was 730 px wide): grid tracks that grow to the width of a <pre>.
+// Every one-column rule must be able to shrink, and images never carry a
+// fixed width in CSS.
+func TestPageDoesNotOverflowOnPhones(t *testing.T) {
+	style := regexp.MustCompile(`(?s)<style>(.*?)</style>`).FindStringSubmatch(buildPage(t))[1]
+	for _, want := range []string{
+		".steps{counter-reset:s;list-style:none;padding:0;margin:0;display:grid;grid-template-columns:minmax(0,1fr)",
+		".steps li{counter-increment:s;padding-left:44px;position:relative;min-width:0}",
+		".gen{grid-template-columns:minmax(0,1fr)}",
+		".grid,.tables{grid-template-columns:minmax(0,1fr)}",
+		".gen-view{display:grid;gap:18px;min-width:0}",
+	} {
+		if !strings.Contains(style, want) {
+			t.Errorf("CSS lacks %q", want)
+		}
+	}
+	if regexp.MustCompile(`[^-]width:\d+px`).MatchString(regexp.MustCompile(`img[^{]*\{[^}]*\}`).FindString(style)) {
+		t.Error("an image rule has a fixed width in px")
+	}
+	if regexp.MustCompile(`\s1fr[;)]`).MatchString(regexp.MustCompile(`@media \(max-width:720px\)\{(?s:.*?)\n\}`).FindString(style)) {
+		t.Error("a plain 1fr track in the phone rules can grow with its content: use minmax(0,1fr)")
+	}
+}
+
+// The preview box is a blank card (same ratio and rounded frame as the SVG),
+// not a dashed box with dead space around the card.
+func TestGeneratorStageMatchesTheCard(t *testing.T) {
+	style := regexp.MustCompile(`(?s)<style>(.*?)</style>`).FindStringSubmatch(buildPage(t))[1]
+	stage := regexp.MustCompile(`\.gen-stage\{[^}]*\}`).FindString(style)
+	if strings.Contains(stage, "dashed") || strings.Contains(stage, "min-height") {
+		t.Errorf("the stage keeps its dashed border or fixed height: %s", stage)
+	}
+	for _, want := range []string{"aspect-ratio:12/5", "border-radius:8px"} {
+		if !strings.Contains(style, want) {
+			t.Errorf("CSS lacks %q", want)
+		}
 	}
 }

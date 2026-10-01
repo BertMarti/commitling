@@ -109,7 +109,7 @@ type page struct {
 	OGImage     string
 	LiveUser    string
 	Favicon     string
-	Hero        string
+	Hero        Figure
 	Species     []speciesSection
 	GenSpecies  []choice
 	XP          []rule
@@ -217,11 +217,9 @@ func Build(dir, version string) (int, error) {
 	if err := write("generator.js", generatorJS); err != nil {
 		return n, err
 	}
-	hero := render.SpriteSVG(og.Hero)
-	if err := write("hero.svg", hero); err != nil {
-		return n, err
-	}
-	p.Hero = "hero.svg"
+	// The header shows the real animated card: the first species with everything unlocked.
+	p.Hero = p.Species[0].Extras[len(p.Species[0].Extras)-1]
+	p.Hero.Alt = "Así se ve tu tarjeta, animada: " + strings.TrimPrefix(p.Hero.Alt, "commitling: ")
 	card1200, err := og.PNG(og.Hero)
 	if err != nil {
 		return n, err
