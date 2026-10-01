@@ -510,3 +510,51 @@ func TestCompactProgressBar(t *testing.T) {
 		t.Errorf("last stage: %d on, %d off; want a full bar", on, off)
 	}
 }
+
+// The compact badge animates at its own scale: the radiant hop is 3 px, not
+// the 8 px of the full card (which would be more than the whole margin above
+// a 3 px-per-pixel sprite).
+func TestCompactAnimationIsScaled(t *testing.T) {
+	for _, tc := range []struct {
+		mood          creature.Mood
+		keyframe      string
+		want, notWant string
+	}{
+		{creature.Radiant, "@keyframes hop", "translateY(-3px)", "translateY(-8px)"},
+		{creature.Happy, "@keyframes breathe", "translateY(-1px)", "translateY(-3px)"},
+		{creature.Bored, "@keyframes breathe", "translateY(-1px)", "translateY(-2px)"},
+		{creature.Sleeping, "@keyframes breathe", "translateY(-1px)", "translateY(-2px)"},
+	} {
+		svg := string(SVG(compactCard("a", Light, creature.MossSprout, creature.Shrub, tc.mood)))
+		line := svg[strings.Index(svg, tc.keyframe):]
+		line = line[:strings.Index(line, "\n")]
+		if !strings.Contains(line, tc.want) || strings.Contains(line, tc.notWant) {
+			t.Errorf("%s: compact %s is %q, want %s and not %s", tc.mood.Name(), tc.keyframe, line, tc.want, tc.notWant)
+		}
+	}
+	// The full card keeps its own amplitudes.
+	full := string(SVG(Card{Stats: sampleStats(), Theme: Light, Creature: creature.Creature{Stage: creature.Shrub, Mood: creature.Radiant}}))
+	if !strings.Contains(full, "translateY(-8px)") {
+		t.Error("the full card must keep its 8 px hop")
+	}
+}
+
+// The highest pixel of any creature, with every accessory, at the top of the
+// hop, is still inside the card: nothing is cut.
+func TestCompactHopDoesNotCutTheHead(t *testing.T) {
+	all := creature.Accessories{Hat: true, Scarf: true, Flower: true}
+	for _, sp := range creature.AllSpecies {
+		for _, st := range creature.Stages {
+			sp := creature.Draw(creature.Creature{Species: sp, Stage: st, Mood: creature.Radiant, Accessories: all})
+			top := compactHeight
+			for _, g := range []*creature.Grid{&sp.Outline, &sp.Body, &sp.Eyes} {
+				if _, y0, _, _, ok := bbox(g); ok {
+					top = min(top, compactLayout.originY+y0*compactLayout.pixel)
+				}
+			}
+			if peak := top - compactLayout.hop; peak < 1 {
+				t.Errorf("%s: the head reaches y=%d at the top of the hop, outside the card", st.Name(), peak)
+			}
+		}
+	}
+}

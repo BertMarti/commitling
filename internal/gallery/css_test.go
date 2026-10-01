@@ -22,7 +22,7 @@ type ruleSet []cssRule
 
 var (
 	spaces     = regexp.MustCompile(`\s+`)
-	aroundPunc = regexp.MustCompile(`\s*([,()])\s*`)
+	aroundPunc = regexp.MustCompile(`\s*([,():])\s*`)
 )
 
 // normalise collapses blanks so "minmax(0, 1fr)" and "minmax(0,1fr)" are the same.
@@ -75,10 +75,31 @@ func cssRules(css string) ruleSet {
 }
 
 // prop is the value of property for sel outside any @media (the last rule wins).
-func (rs ruleSet) prop(sel, property string) string { return rs.propIn("", sel, property) }
+func (rs ruleSet) prop(sel, property string) string { return rs.lookup("", sel, property) }
 
-// propIn is prop inside the given @media condition ("" for none).
-func (rs ruleSet) propIn(media, sel, property string) string {
+// hasMedia reports whether the CSS has any rule inside that @media condition.
+func (rs ruleSet) hasMedia(media string) bool {
+	for _, r := range rs {
+		if r.media == normalise(media) {
+			return true
+		}
+	}
+	return false
+}
+
+// propIn is prop inside the given @media condition. A condition the page does
+// not have is a failure, not an empty value: a renamed breakpoint must not turn
+// a test into one that checks nothing.
+func (rs ruleSet) propIn(t testing.TB, media, sel, property string) string {
+	t.Helper()
+	if media != "" && !rs.hasMedia(media) {
+		t.Fatalf("the page CSS has no @media %s", media)
+	}
+	return rs.lookup(media, sel, property)
+}
+
+func (rs ruleSet) lookup(media, sel, property string) string {
+	media = normalise(media)
 	val := ""
 	for _, r := range rs {
 		if r.media == media && r.sel == normalise(sel) {
@@ -93,7 +114,7 @@ func (rs ruleSet) propIn(media, sel, property string) string {
 func TestCSSRulesReader(t *testing.T) {
 	rs := cssRules(`
 a,b{color:red;margin: 0 }
-@media (max-width:720px){
+@media (max-width: 720px){
   a{color:blue;grid-template-columns: minmax(0, 1fr)}
 }
 @keyframes k{0%{opacity:0}100%{opacity:1}}
@@ -104,8 +125,11 @@ a,b{color:red;margin: 0 }
 	if got := rs.prop("a", "margin"); got != "0" {
 		t.Errorf("trimmed value: %q", got)
 	}
-	if got := rs.propIn("(max-width:720px)", "a", "grid-template-columns"); got != "minmax(0,1fr)" {
+	if got := rs.propIn(t, "(max-width:720px)", "a", "grid-template-columns"); got != "minmax(0,1fr)" {
 		t.Errorf("media rule, normalised: %q", got)
+	}
+	if rs.hasMedia("(max-width:480px)") || !rs.hasMedia("(max-width: 720px)") {
+		t.Error("hasMedia must know the media of the page, ignoring blanks, and only those")
 	}
 	if got := rs.prop("a", "grid-template-columns"); got != "" {
 		t.Errorf("a media rule leaked outside its media: %q", got)
