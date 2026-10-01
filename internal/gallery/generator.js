@@ -19,6 +19,9 @@
   var img = document.getElementById('gen-img');
   var empty = document.getElementById('gen-empty');
   var caption = document.getElementById('gen-caption');
+  var after = document.getElementById('gen-after');
+  var dl = document.getElementById('gen-dl');
+  var wf = document.getElementById('gen-wf');
 
   var busy = false;
   var current = null; // {user, events} of the last successful search
@@ -126,6 +129,13 @@
     img.hidden = false;
     empty.hidden = true;
     caption.textContent = '@' + user + ': ' + result.description;
+    // The file is the SVG on screen; user has passed commitling.check, so the
+    // name only holds letters, digits and dashes.
+    dl.href = url;
+    dl.download = 'commitling-' + user + '.svg';
+    var w = window.commitling.workflow(user, checked('species'), checked('theme'));
+    wf.textContent = w.error ? '' : w.workflow;
+    after.hidden = !!w.error;
     say(noActivity
       ? '@' + user + ' no tiene actividad pública en los últimos 90 días: su criatura duerme.'
       : 'Listo: esta es la criatura de @' + user + '.');

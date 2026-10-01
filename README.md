@@ -10,7 +10,7 @@
 [![Pages](https://github.com/BertMarti/commitling/actions/workflows/deploy.yml/badge.svg)](https://github.com/BertMarti/commitling/actions/workflows/deploy.yml)
 [![Licencia MIT](https://img.shields.io/badge/licencia-MIT-7fb069)](LICENSE)
 
-[Galería de fases y ánimos](https://bertmarti.github.io/commitling/) · [Instalar](#úsalo-en-tu-perfil) · [Reglas](#reglas)
+[Galería y generador en vivo](https://bertmarti.github.io/commitling/) · [Instalar](#úsalo-en-tu-perfil) · [Reglas](#reglas)
 
 </div>
 
@@ -19,6 +19,15 @@ Una GitHub Action lee tu actividad **pública** (commits, pull requests, issues�
 - Animación con CSS dentro del SVG (GitHub no ejecuta JavaScript en los README) y respetuosa con `prefers-reduced-motion`.
 - Determinista: mismos datos, mismo SVG, así que tu repositorio solo recibe un commit cuando la criatura cambia de verdad.
 - Tema claro y oscuro, estética «papel y píxel».
+
+## Pruébalo con tu usuario (generador en vivo)
+
+En la [web del proyecto](https://bertmarti.github.io/commitling/#generador) escribes tu usuario de GitHub, eliges especie y tema, pulsas **Dibujar** y ves tu criatura al momento, sin instalar nada. Puedes **descargar el SVG** y copiar el **workflow ya relleno con tu usuario**.
+
+- Se dibuja **en tu navegador** con el mismo código Go que la CLI y la Action, compilado a WebAssembly (`GOOS=js GOARCH=wasm`, `syscall/js`): para los mismos eventos y la misma fecha, el SVG es idéntico byte a byte (lo comprueba un test).
+- Lo único que sale de tu ordenador es la petición pública a `https://api.github.com/users/<usuario>/events/public` (hasta 3 páginas de 100 eventos, sin token). GitHub deja **60 peticiones por hora y por conexión** sin iniciar sesión; si se agotan, la web dice cuántos minutos faltan. La Action, con el token de tu workflow, no tiene ese límite.
+- El WebAssembly (unos 5 MB, 1,4 MB comprimido) **solo se descarga cuando interactúas con el formulario**, no al abrir la página. El `.wasm` y `wasm_exec.js` los genera el workflow de despliegue; no están en el repositorio.
+- Necesita JavaScript y un navegador con WebAssembly. Sin ellos, la galería sigue funcionando.
 
 ## Úsalo en tu perfil
 
@@ -206,13 +215,17 @@ commitling solo usa la API **pública** de eventos de GitHub: lo mismo que cualq
 
 - Go 1.27, solo biblioteca estándar (`net/http`, `encoding/json`, `html/template`; `encoding/xml` en los tests).
 - SVG escrito a mano, con animación CSS y píxeles nítidos (`shape-rendering="crispEdges"`).
+- WebAssembly (`GOOS=js GOARCH=wasm`, `syscall/js`) para el generador en vivo de la web, sin JavaScript de terceros.
 - GitHub Action compuesta (`action.yml`), CI en Ubuntu y Windows y despliegue a GitHub Pages.
 
 ## Estructura
 
 ```
 cmd/commitling/      CLI (render, gallery, og, version)
-internal/github/     cliente de la API de eventos públicos y parser
+cmd/wasm/            capa fina de syscall/js para el navegador (solo con GOOS=js)
+internal/generate/   eventos a SVG, workflow relleno y mensajes de error; lo usan la CLI y el wasm
+internal/events/     parser de eventos y actividades (sin red)
+internal/github/     cliente de la API de eventos públicos (con reintentos)
 internal/stats/      XP, racha, días activos y repos (puro, con «ahora» inyectable)
 internal/creature/   especies, fases, ánimos, accesorios y mapas de píxeles
 internal/render/     generación del SVG
@@ -228,6 +241,15 @@ action.yml           la GitHub Action
 gofmt -l .      # debe salir vacío
 go vet ./...
 go test ./...
+```
+
+El generador en vivo (el `.wasm` y `wasm_exec.js` no se suben al repositorio):
+
+```sh
+go run ./cmd/commitling gallery --out site
+GOOS=js GOARCH=wasm go build -ldflags="-s -w" -o site/commitling.wasm ./cmd/wasm
+cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" site/
+python -m http.server 8080 --directory site   # http://localhost:8080/
 ```
 
 ## Documentación

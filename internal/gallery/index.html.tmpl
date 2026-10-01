@@ -73,6 +73,9 @@ section{padding:56px 0;border-top:2px dashed var(--line)}
 .gen-stage img{display:block;width:100%;max-width:480px;height:auto}
 .gen-stage img[hidden],.gen-empty[hidden]{display:none}
 .gen-empty{margin:0;color:var(--muted);text-align:center}
+.gen-after{grid-column:1/-1}
+.gen-after h3{margin-top:0}
+a.go,a.go:hover{display:inline-block;text-decoration:none;color:#2b2724}
 .gen-stage figcaption{margin:0;max-width:480px;width:100%}
 .live{display:grid;justify-items:start;gap:12px}
 .live img,.grid img{display:block;width:100%;max-width:480px;height:auto}
@@ -168,6 +171,12 @@ footer p{max-width:none}
         <img id="gen-img" width="480" height="200" alt="" hidden>
         <figcaption class="note" id="gen-caption"></figcaption>
       </figure>
+      <div class="gen-after" id="gen-after" hidden>
+        <p><a class="go" id="gen-dl" download="commitling.svg" href="#">Descargar SVG</a></p>
+        <h3>Tu workflow</h3>
+        <p class="note">Guárdalo como <code>.github/workflows/commitling.yml</code> en tu repositorio de perfil (<code>tu-usuario/tu-usuario</code>) y sigue los pasos de <a href="#instalar">Instálalo en tu perfil</a>. Ya lleva tu usuario y lo que has elegido arriba.</p>
+        <div class="code"><button class="copy" type="button" data-copy="gen-wf" aria-label="Copiar el workflow con tu usuario" hidden>Copiar</button><pre tabindex="0" aria-label="Workflow con tu usuario"><code id="gen-wf"></code></pre><p class="copy-msg note" role="status" aria-live="polite"></p></div>
+      </div>
     </div>
   </section>
 
