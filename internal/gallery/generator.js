@@ -13,6 +13,7 @@
   var PAGES = 3; // 3 pages of 100: the 300 events the API keeps (about 90 days)
   var TIMEOUT_MS = 15000; // same as the command line client
   var REUSE_MS = 60000; // the API caches for about a minute: do not ask again sooner
+  var DEMO_MS = 15000; // the whole timelapse of the demo
   var form = document.getElementById('gen-form');
   var userInput = document.getElementById('gen-user');
   var button = document.getElementById('gen-go');
@@ -24,16 +25,26 @@
   var after = document.getElementById('gen-after');
   var dl = document.getElementById('gen-dl');
   var wf = document.getElementById('gen-wf');
+  var demoGo = document.getElementById('demo-go');
+  var demoPause = document.getElementById('demo-pause');
+  var demoStop = document.getElementById('demo-stop');
+  var demoDay = document.getElementById('demo-day');
+  var demoSlider = document.getElementById('demo-slider');
+  var demoRange = document.getElementById('demo-range');
+  var demoPhase = document.getElementById('demo-phase');
+  var heroDemo = document.getElementById('hero-demo');
 
   var busy = false;
   var current = null; // {user, events, at} of the last successful search
   var blobURL = '';
+  var demo = null; // {day, days, phase, playing, elapsed, t0, raf} while the demo is on screen
 
   root.hidden = false;
 
   if (typeof WebAssembly !== 'object' || typeof fetch !== 'function') {
     errorEl.textContent = 'Tu navegador no admite WebAssembly, que el generador necesita. Prueba con una versión reciente de Firefox, Chrome, Safari o Edge.';
     button.setAttribute('aria-disabled', 'true');
+    demoGo.disabled = true;
     return;
   }
 
@@ -129,14 +140,20 @@
     return all;
   }
 
-  function show(result, user, noActivity) {
-    var url = URL.createObjectURL(new Blob([result.svg], { type: 'image/svg+xml' }));
+  // Puts an SVG on the stage as an image (never as markup) and frees the previous one.
+  function paint(svg) {
+    var url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
     img.src = url;
     if (blobURL) URL.revokeObjectURL(blobURL);
     blobURL = url;
-    img.alt = 'commitling de @' + user;
     img.hidden = false;
     empty.hidden = true;
+    return url;
+  }
+
+  function show(result, user, noActivity) {
+    var url = paint(result.svg);
+    img.alt = 'commitling de @' + user;
     caption.textContent = '@' + user + ': ' + result.description;
     // The file is the SVG on screen; user has passed commitling.check, so the
     // name only holds letters, digits and dashes.
@@ -167,6 +184,7 @@
       userInput.focus();
       return;
     }
+    stopDemo(false);
     setBusy(true);
     say('Cargando el generador…');
     try {
@@ -202,6 +220,142 @@
     }
   }
 
+
+  // The demo: 90 fictitious days drawn by commitling.demo, one card per day,
+  // painted in turn. No network. The day comes from the elapsed time, so a slow
+  // tab skips cards instead of slowing the story down.
+  function reducedMotion() {
+    return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  function demoButtons() {
+    var still = reducedMotion(); // with reduced motion there is no timelapse to pause
+    demoPause.disabled = !demo || still;
+    demoStop.disabled = !demo;
+    demoPause.textContent = !demo || still || demo.playing ? 'Pausa' : demo.day >= demo.days ? 'Repetir' : 'Reanudar';
+  }
+
+  function frame(day) {
+    var r = window.commitling.demo(day, checked('species'), checked('theme'));
+    if (r.error) {
+      stopDemo(false);
+      fail(r.error);
+      return;
+    }
+    paint(r.svg);
+    img.alt = 'Demo de commitling: una criatura de ejemplo';
+    demo.day = r.day;
+    demo.days = r.days;
+    demoRange.max = r.days;
+    demoRange.value = r.day;
+    demoDay.textContent = 'Día ' + r.day + ' de ' + r.days;
+    caption.textContent = 'Demo con @' + r.login + ' (usuario ficticio), día ' + r.day + ': ' + r.description;
+    // Only a new phase is announced; the rest of the text is not a live region.
+    if (r.phase !== demo.phase) {
+      demo.phase = r.phase;
+      demoPhase.textContent = 'Fase: ' + r.phase + ' (día ' + r.day + ')';
+    }
+  }
+
+  function tick(now) {
+    if (!demo || !demo.playing) return;
+    if (demo.t0 === null) demo.t0 = now - demo.elapsed;
+    demo.elapsed = now - demo.t0;
+    var day = Math.min(demo.days, Math.floor(demo.elapsed / DEMO_MS * demo.days));
+    if (day !== demo.day) frame(day);
+    if (!demo) return;
+    if (demo.day >= demo.days) {
+      demo.playing = false;
+      demoButtons();
+      return;
+    }
+    demo.raf = requestAnimationFrame(tick);
+  }
+
+  function play() {
+    if (demo.day >= demo.days) {
+      demo.elapsed = 0;
+      frame(0);
+    }
+    demo.playing = true;
+    demo.t0 = null;
+    demoButtons();
+    demo.raf = requestAnimationFrame(tick);
+  }
+
+  function pause() {
+    demo.playing = false;
+    cancelAnimationFrame(demo.raf);
+    demoButtons();
+  }
+
+  // Leaves the demo. With restore, the stage goes back to what the person had.
+  function stopDemo(restore) {
+    if (!demo) return;
+    cancelAnimationFrame(demo.raf);
+    demo = null;
+    demoSlider.hidden = true;
+    demoDay.textContent = '';
+    demoPhase.textContent = '';
+    demoButtons();
+    if (!restore) return;
+    if (current) {
+      redraw();
+    } else {
+      img.hidden = true;
+      empty.hidden = false;
+      caption.textContent = '';
+      after.hidden = true;
+      say('Demo detenida.');
+    }
+  }
+
+  async function startDemo() {
+    if (busy) return;
+    setBusy(true);
+    say('Cargando la demo…');
+    try {
+      await ensureWasm();
+    } catch (e) {
+      fail('No se pudo cargar la demo. Comprueba tu conexión e inténtalo de nuevo.');
+      return;
+    } finally {
+      setBusy(false);
+    }
+    stopDemo(false);
+    say('');
+    after.hidden = true;
+    demo = { day: -1, days: 90, phase: '', playing: false, elapsed: 0, t0: null, raf: 0 };
+    demoSlider.hidden = false;
+    frame(0);
+    if (reducedMotion()) {
+      demoButtons();
+      demoRange.focus();
+    } else {
+      play();
+    }
+  }
+
+  demoGo.addEventListener('click', startDemo);
+  demoPause.addEventListener('click', function () {
+    if (!demo) return;
+    if (demo.playing) pause(); else play();
+  });
+  demoStop.addEventListener('click', function () { stopDemo(true); });
+  demoRange.addEventListener('input', function () {
+    if (!demo) return;
+    if (demo.playing) pause();
+    demo.elapsed = Number(demoRange.value) / demo.days * DEMO_MS;
+    frame(Number(demoRange.value));
+    demoButtons();
+  });
+  // A tab nobody is looking at does not keep playing (and does not jump ahead on return).
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden && demo && demo.playing) pause();
+  });
+  heroDemo.hidden = false;
+  heroDemo.addEventListener('click', startDemo);
+
   form.addEventListener('submit', function (e) {
     e.preventDefault();
     draw();
@@ -217,7 +371,8 @@
   form.addEventListener('change', function (e) {
     if (e.target.type !== 'radio' || busy) return;
     ensureWasm().then(function () {
-      if (current) redraw();
+      if (demo) frame(demo.day);
+      else if (current) redraw();
     }, function () {
       fail('No se pudo cargar el generador. Comprueba tu conexión e inténtalo de nuevo.');
     });

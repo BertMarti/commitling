@@ -12,7 +12,7 @@
 //	commitling.workflow(user, species, theme)                  -> {workflow} | {error}
 //	commitling.explain(status, remaining, reset, nowMs)        -> string
 //	commitling.check(user, species, theme)                     -> "" when valid, else the error
-//	commitling.demo(day, species, theme)                       -> {svg, description, day, days, phase} | {error}
+//	commitling.demo(day, species, theme)                       -> {svg, description, login, day, days, phase} | {error}
 //
 // Empty or undefined strings mean "the default"; an empty nowMs is the clock.
 package main
@@ -88,7 +88,7 @@ func demo(_ js.Value, args []js.Value) any {
 	if err != nil {
 		return map[string]any{"error": err.Error()}
 	}
-	return map[string]any{"svg": string(f.SVG), "description": f.Description, "day": f.Day, "days": f.Days, "phase": f.Phase}
+	return map[string]any{"svg": string(f.SVG), "description": f.Description, "login": f.Login, "day": f.Day, "days": f.Days, "phase": f.Phase}
 }
 
 func check(_ js.Value, args []js.Value) any {

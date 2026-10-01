@@ -72,6 +72,22 @@ section{padding:56px 0;border-top:2px dashed var(--line)}
 .gen-stage img{display:block;width:100%;max-width:480px;height:auto}
 .gen-stage img[hidden],.gen-empty[hidden]{display:none}
 .gen-empty{margin:0;color:var(--muted);text-align:center}
+.gen-view{display:grid;gap:18px;min-width:0}
+.demo{display:grid;gap:10px}
+.demo-t{margin:0;font-size:14px}
+.demo-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.demo-bar .go{padding:8px 16px}
+.go.alt{background:var(--paper);color:var(--ink)}
+.go.alt:hover{background:var(--honey);color:#2b2724}
+.go:disabled,.go:disabled:hover{cursor:not-allowed;background:var(--code);color:var(--muted)}
+.demo-day{margin-left:auto;font-weight:700}
+.demo-slider{display:grid;gap:4px}
+.demo-slider[hidden]{display:none}
+.demo-slider label{font-weight:700}
+.demo-slider input{width:100%;accent-color:var(--moss)}
+.demo-phase{margin:0;min-height:1.7em;font-weight:700}
+.cta{margin:18px 0 0}
+.cta .go[hidden]{display:none}
 .gen-after{grid-column:1/-1}
 .gen-after h3{margin-top:0}
 a.go,a.go:hover{display:inline-block;text-decoration:none;color:#2b2724}
@@ -124,6 +140,7 @@ footer p{max-width:none}
   <div>
     <h1>commitling</h1>
     <p class="lead">Una mascota pixel-art que vive en el README de tu perfil de GitHub y crece con tus commits.</p>
+    <p class="cta"><a class="go" href="#generador" id="hero-demo" hidden>Ver demo: míralo crecer</a></p>
     <nav aria-label="Secciones">
       <a href="#generador">Pruébalo</a>
       <a href="#vivo">En vivo</a>
@@ -165,11 +182,27 @@ footer p{max-width:none}
           <p id="gen-error" class="gen-error" role="alert"></p>
         </div>
       </form>
-      <figure class="gen-stage">
-        <p class="gen-empty" id="gen-empty">Tu criatura aparecerá aquí.</p>
-        <img id="gen-img" width="480" height="200" alt="" hidden>
-        <figcaption class="note" id="gen-caption"></figcaption>
-      </figure>
+      <div class="gen-view">
+        <figure class="gen-stage">
+          <p class="gen-empty" id="gen-empty">Tu criatura aparecerá aquí.</p>
+          <img id="gen-img" width="480" height="200" alt="" hidden>
+          <figcaption class="note" id="gen-caption"></figcaption>
+        </figure>
+        <div class="demo" role="group" aria-labelledby="demo-t">
+          <p class="demo-t" id="demo-t">¿Sin usuario a mano? Mira cómo crece una criatura de ejemplo (90 días en 15 segundos, sin pedir nada a GitHub).</p>
+          <div class="demo-bar">
+            <button type="button" class="go" id="demo-go">Ver demo</button>
+            <button type="button" class="go alt" id="demo-pause" disabled>Pausa</button>
+            <button type="button" class="go alt" id="demo-stop" disabled>Detener</button>
+            <span class="demo-day" id="demo-day" aria-hidden="true"></span>
+          </div>
+          <div class="demo-slider" id="demo-slider" hidden>
+            <label for="demo-range">Día de la demo</label>
+            <input type="range" id="demo-range" min="0" max="90" value="0" step="1">
+          </div>
+          <p class="note demo-phase" id="demo-phase" role="status" aria-live="polite"></p>
+        </div>
+      </div>
       <div class="gen-after" id="gen-after" hidden>
         <p><a class="go" id="gen-dl" download="commitling.svg" href="#">Descargar SVG</a></p>
         <h3>Tu workflow</h3>
