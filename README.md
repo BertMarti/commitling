@@ -93,6 +93,7 @@ La Action declara su nombre, descripción y `branding` (icono `feather`, color `
 | `out` | `commitling.svg` | Ruta del SVG, relativa al repositorio |
 | `theme` | `light` | `light` (papel) o `dark` (tinta) |
 | `species` | `moss` | Especie: `moss` (brote de musgo) o `mushroom` (hongo); un valor desconocido hace fallar el paso |
+| `size` | `full` | Tamaño de la tarjeta: `full` (480x200, la de siempre) o `compact` (insignia de 200x60); un valor desconocido hace fallar el paso |
 | `token` | `${{ github.token }}` | Token para la API; basta con el del propio workflow |
 | `fixture` | vacío | Archivo JSON de eventos para probar sin red |
 | `keep-on-error` | `true` | Ante una caída transitoria de la API de GitHub (red, errores 5xx o límite de peticiones), si el SVG de `out` ya existe lo conserva y termina con un aviso en vez de fallar; `false` para que falle siempre. Un token caducado (401) o un usuario inexistente (404) siguen fallando |
@@ -119,6 +120,17 @@ Hay dos especies, las dos de diseño propio y con las mismas reglas (fases, áni
 </table>
 
 Capturas de la [galería](https://bertmarti.github.io/commitling/), generada por el propio binario (`commitling gallery`). `species` acepta también `musgo`, `hongo` y `seta`, sin distinguir mayúsculas.
+
+### Tarjeta compacta (opcional)
+
+Con `size: compact` (o `--size compact` en la CLI) la tarjeta es una **insignia de 200x60** con la criatura, su fase, su ánimo (y el número de fase) y una barra de progreso: pensada para firmas, barras laterales o la cabecera de un repositorio. Misma paleta, mismos sprites y misma animación (a escala); la XP, la racha y los accesorios no caben y se quedan en la descripción accesible (`<desc>`). Sin `size`, o con `size: full`, la tarjeta es exactamente la de siempre.
+
+```yaml
+      - uses: BertMarti/commitling@v1
+        with:
+          out: commitling-compact.svg
+          size: compact
+```
 
 ### Tema oscuro (opcional)
 

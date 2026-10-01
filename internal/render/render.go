@@ -29,6 +29,57 @@ const (
 	groundY = originY + creature.Size*pixel
 )
 
+// Size is the format of the card: Full (480×200, the zero value, so a Card
+// that does not say anything keeps drawing what it always drew) or Compact
+// (a 200×60 badge for signatures and sidebars).
+type Size int
+
+// Card sizes.
+const (
+	Full Size = iota
+	Compact
+)
+
+// SizeByName returns the size called name ("full" or "compact"; empty is full).
+func SizeByName(name string) (Size, bool) {
+	switch strings.ToLower(strings.TrimSpace(name)) {
+	case "", "full":
+		return Full, true
+	case "compact":
+		return Compact, true
+	}
+	return Full, false
+}
+
+// Compact badge: the same 16×16 map with 3 px pixels on the left, then the
+// stage, the mood and a progress bar in the 130 px that are left.
+const (
+	compactWidth   = 200
+	compactHeight  = 60
+	compactMargin  = 8
+	compactPixel   = 3
+	compactOrigin  = 6
+	compactTextX   = 62
+	compactCells   = 16
+	compactCellW   = 6
+	compactCellGap = 2
+	compactCellH   = 4
+	compactBarY    = 44
+)
+
+// layout is where the creature goes and how far it moves: the full card and
+// the compact badge draw the same sprite at different scales.
+type layout struct {
+	pixel, originX, originY int
+	hop, breathe, rest      int  // translateY of the animations, in px
+	extras                  bool // zzz and sparkles (they do not fit in the badge)
+}
+
+var (
+	fullLayout    = layout{pixel: pixel, originX: originX, originY: originY, hop: 8, breathe: 3, rest: 2, extras: true}
+	compactLayout = layout{pixel: compactPixel, originX: compactOrigin, originY: compactOrigin, hop: 3, breathe: 1, rest: 1}
+)
+
 // Right-hand panel.
 const (
 	panelX    = 222
@@ -115,6 +166,7 @@ type Card struct {
 	Stats    stats.Stats
 	Creature creature.Creature
 	Theme    Theme
+	Size     Size // Full unless set
 }
 
 // NewCard derives the creature from the stats.
@@ -192,6 +244,9 @@ func SVG(c Card) []byte {
 	if t.Bg == "" {
 		t = Light
 	}
+	if c.Size == Compact {
+		return compactSVG(c, t)
+	}
 	cr := c.Creature
 	sp := creature.Draw(cr)
 	var b strings.Builder
@@ -205,7 +260,7 @@ func SVG(c Card) []byte {
 	b.WriteString("\n")
 	fmt.Fprintf(&b, "<title id=\"cl-title\">%s</title>\n", Escape(title))
 	fmt.Fprintf(&b, "<desc id=\"cl-desc\">%s</desc>\n", Escape(Description(c)))
-	writeStyle(&b, c, sp)
+	writeStyle(&b, c, sp, fullLayout)
 
 	// Paper and frame.
 	fmt.Fprintf(&b, "<rect x=\"0.5\" y=\"0.5\" width=\"%d\" height=\"%d\" rx=\"8\" fill=\"%s\" stroke=\"%s\"/>\n", Width-1, Height-1, t.Bg, t.Line)
@@ -216,9 +271,9 @@ func SVG(c Card) []byte {
 
 	// Creature.
 	b.WriteString("<g class=\"bob\" shape-rendering=\"crispEdges\">\n")
-	writeGrid(&b, &sp.Outline, "", t.Outline)
-	writeGrid(&b, &sp.Body, "", "")
-	writeGrid(&b, &sp.Eyes, "eyes", "")
+	writeGrid(&b, &sp.Outline, "", t.Outline, fullLayout)
+	writeGrid(&b, &sp.Body, "", "", fullLayout)
+	writeGrid(&b, &sp.Eyes, "eyes", "", fullLayout)
 	b.WriteString("</g>\n")
 
 	switch cr.Mood {
@@ -254,9 +309,9 @@ func SpriteSVG(cr creature.Creature) []byte {
 	var b strings.Builder
 	fmt.Fprintf(&b, "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"%d %d %d %d\" shape-rendering=\"crispEdges\">\n", vx, vy, side, side)
 	fmt.Fprintf(&b, "<style>.o path{fill:%s}@media (prefers-color-scheme:dark){.o path{fill:%s}}</style>\n", creature.Ink, creature.Paper)
-	writeGrid(&b, &sp.Outline, "o", "")
-	writeGrid(&b, &sp.Body, "", "")
-	writeGrid(&b, &sp.Eyes, "", "")
+	writeGrid(&b, &sp.Outline, "o", "", fullLayout)
+	writeGrid(&b, &sp.Body, "", "", fullLayout)
+	writeGrid(&b, &sp.Eyes, "", "", fullLayout)
 	b.WriteString("</svg>\n")
 	return []byte(b.String())
 }
@@ -277,7 +332,7 @@ func bbox(g *creature.Grid) (minX, minY, maxX, maxY int, ok bool) {
 	return minX, minY, maxX, maxY, maxX >= 0
 }
 
-func writeStyle(b *strings.Builder, c Card, sp creature.Sprite) {
+func writeStyle(b *strings.Builder, c Card, sp creature.Sprite, l layout) {
 	b.WriteString("<style>\n")
 	b.WriteString(`.t{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"DejaVu Sans Mono","Liberation Mono",monospace}` + "\n")
 	b.WriteString(".b{font-weight:700}\n")
@@ -286,29 +341,35 @@ func writeStyle(b *strings.Builder, c Card, sp creature.Sprite) {
 	switch c.Creature.Mood {
 	case creature.Radiant:
 		b.WriteString(".bob{animation:hop 1.6s ease-in-out infinite}\n")
-		b.WriteString("@keyframes hop{0%,55%,100%{transform:translateY(0)}25%{transform:translateY(-8px)}}\n")
+		fmt.Fprintf(b, "@keyframes hop{0%%,55%%,100%%{transform:translateY(0)}25%%{transform:translateY(-%dpx)}}\n", l.hop)
 	case creature.Happy:
 		b.WriteString(".bob{animation:breathe 3.2s ease-in-out infinite}\n")
-		b.WriteString("@keyframes breathe{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}\n")
+		fmt.Fprintf(b, "@keyframes breathe{0%%,100%%{transform:translateY(0)}50%%{transform:translateY(-%dpx)}}\n", l.breathe)
 	default:
 		b.WriteString(".bob{animation:breathe 5.6s ease-in-out infinite}\n")
-		b.WriteString("@keyframes breathe{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}\n")
+		fmt.Fprintf(b, "@keyframes breathe{0%%,100%%{transform:translateY(0)}50%%{transform:translateY(-%dpx)}}\n", l.rest)
 	}
 
 	if c.Creature.Mood.Blinks() {
 		if x0, y0, x1, y1, ok := bbox(&sp.Eyes); ok {
-			cx := originX + (x0+x1+1)*pixel/2
-			cy := originY + (y0+y1+1)*pixel/2
+			cx := l.originX + (x0+x1+1)*l.pixel/2
+			cy := l.originY + (y0+y1+1)*l.pixel/2
 			fmt.Fprintf(b, ".eyes{transform-origin:%dpx %dpx;animation:blink 4.8s infinite}\n", cx, cy)
 			b.WriteString("@keyframes blink{0%,91%,97%,100%{transform:scaleY(1)}94%{transform:scaleY(.1)}}\n")
 		}
 	}
 	switch c.Creature.Mood {
 	case creature.Sleeping:
+		if !l.extras {
+			break
+		}
 		b.WriteString(".z{animation:zz 3.6s ease-in-out infinite;opacity:.9}\n")
 		b.WriteString(".z2{animation-delay:1.2s}.z3{animation-delay:2.4s}\n")
 		b.WriteString("@keyframes zz{0%{opacity:0;transform:translate(0,6px)}35%{opacity:.9}100%{opacity:0;transform:translate(6px,-10px)}}\n")
 	case creature.Radiant:
+		if !l.extras {
+			break
+		}
 		b.WriteString(".sp{animation:tw 1.8s ease-in-out infinite}.sp2{animation-delay:.9s}\n")
 		b.WriteString("@keyframes tw{0%,100%{opacity:.2}50%{opacity:1}}\n")
 	}
@@ -318,7 +379,7 @@ func writeStyle(b *strings.Builder, c Card, sp creature.Sprite) {
 
 // writeGrid emits one <path> per colour, merging horizontal runs. If ink is
 // not empty it replaces the colour of ink pixels.
-func writeGrid(b *strings.Builder, g *creature.Grid, class, ink string) {
+func writeGrid(b *strings.Builder, g *creature.Grid, class, ink string, l layout) {
 	var paths []string
 	for _, p := range creature.PaletteOrder {
 		var d strings.Builder
@@ -332,7 +393,7 @@ func writeGrid(b *strings.Builder, g *creature.Grid, class, ink string) {
 				for x < creature.Size && g[y][x] == p {
 					x++
 				}
-				fmt.Fprintf(&d, "M%d %dh%dv%dh-%dz", originX+start*pixel, originY+y*pixel, (x-start)*pixel, pixel, (x-start)*pixel)
+				fmt.Fprintf(&d, "M%d %dh%dv%dh-%dz", l.originX+start*l.pixel, l.originY+y*l.pixel, (x-start)*l.pixel, l.pixel, (x-start)*l.pixel)
 			}
 		}
 		if d.Len() > 0 {
@@ -515,4 +576,69 @@ func writePanel(b *strings.Builder, c Card, t Theme) {
 		acc = "accesorios: " + strings.Join(names, " · ")
 	}
 	fitted(b, panelX, 188, panelWidth, []float64{10, 9, 8}, t.Muted, "", "", acc)
+}
+
+// compactSVG draws the 200×60 badge: the creature, its stage, its mood and
+// phase number, and a progress bar. It is deliberately the same card in less
+// room: same paper, ink and creature palette, same animation (at scale) and
+// the same description in <desc> for whoever cannot see the pixels.
+func compactSVG(c Card, t Theme) []byte {
+	cr := c.Creature
+	sp := creature.Draw(cr)
+	l := compactLayout
+	var b strings.Builder
+
+	title := "commitling"
+	if c.User != "" {
+		title = "commitling de @" + c.User
+	}
+
+	fmt.Fprintf(&b, `<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d" role="img" aria-labelledby="cl-title cl-desc">`, compactWidth, compactHeight, compactWidth, compactHeight)
+	b.WriteString("\n")
+	fmt.Fprintf(&b, "<title id=\"cl-title\">%s</title>\n", Escape(title))
+	fmt.Fprintf(&b, "<desc id=\"cl-desc\">%s</desc>\n", Escape(Description(c)))
+	writeStyle(&b, c, sp, l)
+
+	fmt.Fprintf(&b, "<rect x=\"0.5\" y=\"0.5\" width=\"%d\" height=\"%d\" rx=\"8\" fill=\"%s\" stroke=\"%s\"/>\n", compactWidth-1, compactHeight-1, t.Bg, t.Line)
+	groundY := l.originY + creature.Size*l.pixel
+	fmt.Fprintf(&b, "<path d=\"M%d %d.5h%d\" stroke=\"%s\" stroke-dasharray=\"4 2\" shape-rendering=\"crispEdges\"/>\n", l.originX, groundY, creature.Size*l.pixel, t.Line)
+
+	b.WriteString("<g class=\"bob\" shape-rendering=\"crispEdges\">\n")
+	writeGrid(&b, &sp.Outline, "", t.Outline, l)
+	writeGrid(&b, &sp.Body, "", "", l)
+	writeGrid(&b, &sp.Eyes, "eyes", "", l)
+	b.WriteString("</g>\n")
+
+	room := float64(compactWidth - compactMargin - compactTextX)
+	fitted(&b, compactTextX, 23, room, []float64{14, 13, 12, 11}, t.Ink, "", " b", cr.StageName())
+
+	// The mood: a square of its colour, its name and the number of the phase.
+	fmt.Fprintf(&b, "<rect x=\"%d\" y=\"31\" width=\"6\" height=\"6\" fill=\"%s\" shape-rendering=\"crispEdges\"/>\n", compactTextX, moodColor(cr.Mood, t))
+	fitted(&b, compactTextX+10, 37, room-10, []float64{10, 9}, t.Muted, "", "",
+		fmt.Sprintf("%s · fase %d/%d", cr.Mood.Name(), int(cr.Stage)+1, len(creature.Stages)))
+
+	filled := int(creature.Progress(c.Stats.XP) * compactCells)
+	if cr.Stage == creature.Ancient {
+		filled = compactCells
+	}
+	var on, off strings.Builder
+	for i := 0; i < compactCells; i++ {
+		x := compactTextX + i*(compactCellW+compactCellGap)
+		seg := fmt.Sprintf("M%d %dh%dv%dh-%dz", x, compactBarY, compactCellW, compactCellH, compactCellW)
+		if i < filled {
+			on.WriteString(seg)
+		} else {
+			off.WriteString(seg)
+		}
+	}
+	b.WriteString("<g shape-rendering=\"crispEdges\">")
+	if off.Len() > 0 {
+		fmt.Fprintf(&b, "<path fill=\"%s\" d=\"%s\"/>", t.Line, off.String())
+	}
+	if on.Len() > 0 {
+		fmt.Fprintf(&b, "<path fill=\"%s\" d=\"%s\"/>", creature.Moss, on.String())
+	}
+	b.WriteString("</g>\n")
+	b.WriteString("</svg>\n")
+	return []byte(b.String())
 }

@@ -1,7 +1,7 @@
 // Command commitling draws a pixel-art creature that grows with your public
 // GitHub activity.
 //
-//	commitling render --user <login> [--theme light|dark] [--species moss|mushroom] [--keep-on-error] [--now RFC3339] --out commitling.svg
+//	commitling render --user <login> [--theme light|dark] [--species moss|mushroom] [--size full|compact] [--keep-on-error] [--now RFC3339] --out commitling.svg
 //	commitling render --fixture testdata/events.json --out commitling.svg
 //	commitling gallery --out site/
 //	commitling og --out og.png
@@ -32,8 +32,8 @@ var version = "0.5.0"
 const usage = `commitling: una mascota pixel-art que crece con tus commits.
 
 Uso:
-  commitling render --user <usuario> [--theme light|dark] [--species moss|mushroom] [--keep-on-error] [--now RFC3339] --out <archivo.svg>
-  commitling render --fixture <eventos.json> [--user <nombre>] [--theme light|dark] [--species moss|mushroom] [--now RFC3339] --out <archivo.svg>
+  commitling render --user <usuario> [--theme light|dark] [--species moss|mushroom] [--size full|compact] [--keep-on-error] [--now RFC3339] --out <archivo.svg>
+  commitling render --fixture <eventos.json> [--user <nombre>] [--theme light|dark] [--species moss|mushroom] [--size full|compact] [--now RFC3339] --out <archivo.svg>
   commitling gallery --out <directorio>
   commitling og --out <archivo.png>
   commitling version
@@ -90,6 +90,7 @@ func runRender(args []string, stdout, stderr io.Writer) error {
 	fixture := fs.String("fixture", "", "archivo JSON de eventos para trabajar sin red")
 	theme := fs.String("theme", "light", "tema: light o dark")
 	speciesFlag := fs.String("species", "moss", "especie: moss (brote de musgo) o mushroom (hongo)")
+	sizeFlag := fs.String("size", "full", "tamaño: full (480x200) o compact (insignia de 200x60)")
 	nowFlag := fs.String("now", "", "fecha de referencia en RFC3339 (por defecto, ahora; con --fixture, el último evento)")
 	out := fs.String("out", "commitling.svg", "archivo SVG de salida (- para la salida estándar)")
 	keep := fs.Bool("keep-on-error", false, "si la API falla de forma pasajera (red, 5xx, límite de peticiones) y --out ya es un SVG, conservarlo y terminar con un aviso")
@@ -99,7 +100,7 @@ func runRender(args []string, stdout, stderr io.Writer) error {
 	if fs.NArg() > 0 {
 		return usageError{fmt.Sprintf("argumentos de más: %s", strings.Join(fs.Args(), " "))}
 	}
-	opts := generate.Options{User: *user, Species: *speciesFlag, Theme: *theme}
+	opts := generate.Options{User: *user, Species: *speciesFlag, Theme: *theme, Size: *sizeFlag}
 	if err := opts.Check(); err != nil {
 		return usageError{err.Error()}
 	}

@@ -426,3 +426,40 @@ func TestRenderMatchesGenerateRender(t *testing.T) {
 		}
 	}
 }
+
+func renderToString(t *testing.T, extra ...string) string {
+	t.Helper()
+	var stdout, stderr bytes.Buffer
+	args := append([]string{"render", "--fixture", fixture, "--out", "-"}, extra...)
+	if err := run(args, &stdout, &stderr); err != nil {
+		t.Fatalf("render %v: %v\n%s", extra, err, stderr.String())
+	}
+	return stdout.String()
+}
+
+// Without --size (or with --size full) the card is the one of v0.5.0.
+func TestRenderSize(t *testing.T) {
+	plain := renderToString(t)
+	if renderToString(t, "--size", "full") != plain {
+		t.Error("--size full draws something different from no --size")
+	}
+	small := renderToString(t, "--size", "compact")
+	if !strings.Contains(small, `width="200" height="60"`) || strings.Contains(small, `width="480"`) {
+		t.Errorf("--size compact is not the compact card: %.160s", small)
+	}
+}
+
+func TestRenderInvalidSizeFailsEarly(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	err := run([]string{"render", "--fixture", fixture, "--size", "grande", "--out", filepath.Join(t.TempDir(), "x.svg")}, &stdout, &stderr)
+	var ue usageError
+	if !errors.As(err, &ue) || !strings.Contains(err.Error(), `tamaño no válido "grande" (usa full o compact)`) {
+		t.Fatalf("err = %v, want a usage error about the size", err)
+	}
+}
+
+func TestUsageMentionsSize(t *testing.T) {
+	if !strings.Contains(usage, "--size full|compact") {
+		t.Error("the usage text does not mention --size")
+	}
+}

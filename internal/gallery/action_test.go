@@ -83,7 +83,7 @@ func TestActionInputsAreDocumented(t *testing.T) {
 		t.Fatal("no inputs block")
 	}
 	names := regexp.MustCompile(`(?m)^  ([a-z_-]+):\n`).FindAllStringSubmatch(inputs[1], -1)
-	want := []string{"user", "out", "theme", "token", "species", "fixture", "keep-on-error"}
+	want := []string{"user", "out", "theme", "token", "species", "size", "fixture", "keep-on-error"}
 	if len(names) != len(want) {
 		t.Fatalf("inputs = %v, want %v", names, want)
 	}
@@ -156,6 +156,9 @@ func TestActionInputDefaultsMatchTheCLI(t *testing.T) {
 	if got := def("theme"); got != "light" {
 		t.Errorf("theme default = %q, want light", got)
 	}
+	if got := def("size"); got != "full" {
+		t.Errorf("size default = %q, want full (the card of always)", got)
+	}
 	if got := def("keep-on-error"); got != `"true"` {
 		t.Errorf("keep-on-error default = %s, want \"true\" (on by default)", got)
 	}
@@ -164,6 +167,9 @@ func TestActionInputDefaultsMatchTheCLI(t *testing.T) {
 	}
 	if !strings.Contains(yml, "--species \"$CL_SPECIES\"") {
 		t.Error("the species input is not passed to the CLI")
+	}
+	if !strings.Contains(yml, "--size \"$CL_SIZE\"") || !strings.Contains(yml, "CL_SIZE: ${{ inputs.size }}") {
+		t.Error("the size input is not passed to the CLI")
 	}
 	// The description names every species so nobody has to guess the slug.
 	spec := regexp.MustCompile(`(?ms)^  species:\n(.*?)^  [\w-]+:\n`).FindStringSubmatch(yml)
@@ -174,7 +180,7 @@ func TestActionInputDefaultsMatchTheCLI(t *testing.T) {
 	}
 	// The user-facing docs list every input too.
 	uso := readRepoFile(t, "docs/USO.md")
-	for _, in := range []string{"user", "out", "theme", "token", "species", "fixture", "keep-on-error"} {
+	for _, in := range []string{"user", "out", "theme", "token", "species", "size", "fixture", "keep-on-error"} {
 		if !strings.Contains(uso, "| `"+in+"` |") {
 			t.Errorf("docs/USO.md does not document the %q input", in)
 		}

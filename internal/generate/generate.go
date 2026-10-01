@@ -18,11 +18,12 @@ import (
 )
 
 // Options say what to draw. The zero value means: the login found in the
-// events, the moss sprout, the light theme and "now".
+// events, the moss sprout, the light theme, the full card and "now".
 type Options struct {
 	User    string    // GitHub login; empty takes the most common actor of the events
 	Species string    // moss or mushroom (or an alias); empty is moss
 	Theme   string    // light or dark; empty is light
+	Size    string    // full or compact; empty is full
 	Now     time.Time // reference date; zero is the current time
 }
 
@@ -41,6 +42,9 @@ func (o Options) Check() error {
 	}
 	if _, ok := creature.SpeciesByName(o.speciesName()); !ok {
 		return fmt.Errorf("especie no válida %q (usa moss o mushroom)", o.Species)
+	}
+	if _, ok := render.SizeByName(o.Size); !ok {
+		return fmt.Errorf("tamaño no válido %q (usa full o compact)", o.Size)
 	}
 	if o.User != "" && !events.ValidLogin(o.User) {
 		return fmt.Errorf("nombre de usuario no válido: %q", o.User)
@@ -97,6 +101,7 @@ func RenderEvents(evs []events.Event, o Options) (Result, error) {
 func draw(login string, st stats.Stats, species creature.Species, o Options) (Result, creature.Creature) {
 	theme, _ := render.ThemeByName(o.themeName())
 	card := render.NewCard(login, st, theme)
+	card.Size, _ = render.SizeByName(o.Size)
 	card.Creature.Species = species
 	return Result{SVG: render.SVG(card), Description: render.Description(card), Login: login}, card.Creature
 }
@@ -135,7 +140,7 @@ jobs:
 `
 
 // Workflow returns BaseWorkflow with the inputs of the Action filled in:
-// user, and species and theme when they are not the defaults. Everything is
+// user, and species, theme and size when they are not the defaults. Everything is
 // validated first, so nothing that is not a plain login or a known value is
 // ever pasted into the YAML.
 func Workflow(o Options) (string, error) {
@@ -156,6 +161,9 @@ func Workflow(o Options) (string, error) {
 	// The canonical name, not the raw text (spaces, capitals, line breaks).
 	if theme, _ := render.ThemeByName(o.themeName()); theme.Name != render.Light.Name {
 		line("theme", theme.Name)
+	}
+	if size, _ := render.SizeByName(o.Size); size == render.Compact {
+		line("size", "compact")
 	}
 	return strings.Replace(BaseWorkflow, "        with:\n", "        with:\n"+inputs.String(), 1), nil
 }
