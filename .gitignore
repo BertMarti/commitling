@@ -4,3 +4,5 @@ site/
 *.exe
 .env
 graphify-out/
+*.wasm
+wasm_exec.js

@@ -33,6 +33,15 @@ jobs:
       - name: Galería
         run: go run ./cmd/commitling gallery --out site
 
+      # The live generator: the same Go code as the CLI, compiled to WebAssembly.
+      # wasm_exec.js must come from the same Go that compiles the wasm. Neither
+      # file is in the repository.
+      - name: Generador (WebAssembly)
+        run: |
+          GOOS=js GOARCH=wasm go build -ldflags="-s -w" -o site/commitling.wasm ./cmd/wasm
+          cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" site/wasm_exec.js
+          echo "commitling.wasm: $(wc -c < site/commitling.wasm) bytes, $(gzip -9 -c site/commitling.wasm | wc -c) gzipped" | tee -a "$GITHUB_STEP_SUMMARY"
+
       - name: Criatura en vivo
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
