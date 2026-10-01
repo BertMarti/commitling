@@ -26,8 +26,8 @@ En la [web del proyecto](https://bertmarti.github.io/commitling/#generador) escr
 
 - **¿Sin usuario a mano? «Ver demo: míralo crecer».** Un timelapse de unos 15 segundos (90 días ficticios de `octoexample`) en el que la criatura nace como semilla, pasa por las cinco fases y los cuatro ánimos y desbloquea gorro, bufanda y flor, redibujada en vivo por el mismo código. No escribes nada y no se pide nada a GitHub. Tiene **Pausa** y **Detener**, un control deslizante para recorrer los días y no arranca sola; con `prefers-reduced-motion` no hay timelapse, solo el deslizante.
 - Se dibuja **en tu navegador** con el mismo código Go que la CLI y la Action, compilado a WebAssembly (`GOOS=js GOARCH=wasm`, `syscall/js`): para los mismos eventos y la misma fecha, el SVG es idéntico byte a byte (lo comprueba un test).
-- Lo único que sale de tu ordenador es la petición pública a `https://api.github.com/users/<usuario>/events/public` (hasta 3 páginas de 100 eventos, sin token). GitHub deja **60 peticiones por hora y por conexión** sin iniciar sesión; si se agotan, la web dice cuántos minutos faltan. La Action, con el token de tu workflow, no tiene ese límite.
-- El WebAssembly (unos 4,6 MB, 1,3 MB comprimido) **solo se descarga cuando interactúas con el formulario o pulsas «Ver demo»**, no al abrir la página. El `.wasm` y `wasm_exec.js` los genera el workflow de despliegue; no están en el repositorio.
+- Lo único que sale de tu ordenador es la petición pública a `https://api.github.com/users/<usuario>/events/public` (hasta 3 páginas de 100 eventos, sin token). GitHub deja **60 peticiones por hora y por conexión** sin iniciar sesión; si se agotan, la web dice **a qué hora se restablece** (en tu hora local) y te ofrece «Ver demo», que no gasta ninguna. Los eventos de cada usuario se guardan unos 10 minutos en la pestaña (`sessionStorage`), así que redibujar, cambiar tamaño, especie o tema, o recargar la página no vuelve a pedir nada; el nombre de usuario se comprueba en tu navegador antes de pedir nada. La Action, con el token de tu workflow, no tiene ese límite.
+- El WebAssembly (unos 2,6 MB, 0,73 MB comprimido; eran 4,6 y 1,26 antes de v0.7.0) **solo se descarga cuando interactúas con el formulario o pulsas «Ver demo»**, no al abrir la página. El `.wasm` y `wasm_exec.js` los genera el workflow de despliegue; no están en el repositorio.
 - Necesita JavaScript y un navegador con WebAssembly. Sin ellos, la galería sigue funcionando.
 
 ## Úsalo en tu perfil
@@ -269,7 +269,7 @@ El generador en vivo (el `.wasm` y `wasm_exec.js` no se suben al repositorio):
 
 ```sh
 go run ./cmd/commitling gallery --out site
-GOOS=js GOARCH=wasm go build -ldflags="-s -w" -o site/commitling.wasm ./cmd/wasm
+GOOS=js GOARCH=wasm go build -trimpath -ldflags="-s -w" -o site/commitling.wasm ./cmd/wasm
 cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" site/
 python -m http.server 8080 --directory site   # http://localhost:8080/
 ```

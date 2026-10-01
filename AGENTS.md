@@ -12,6 +12,7 @@ Una mascota pixel-art **original** que vive en el README de tu perfil de GitHub.
 
 ## Comandos
 - Tests: `go test ./...`
+- Generador (comportamiento, Node): `node internal/gallery/testdata/generator.test.js <generator.js construido por la galería>`
 - Análisis: `go vet ./...` y `gofmt -l .` (debe salir vacío)
 - Generar: `go run ./cmd/commitling render --user BertMarti --out out/commitling.svg`
 - Sin red: `go run ./cmd/commitling render --fixture testdata/events.json --out out/commitling.svg`
@@ -47,6 +48,14 @@ Una mascota pixel-art **original** que vive en el README de tu perfil de GitHub.
 - El wasm recibe `size` como último argumento de `render`, `workflow`, `check` y `demo`; el generador de la web tiene el selector «Tamaño» y adapta la vista previa (`data-size` en `#gen-stage`). La galería enseña la compacta en `#compacta` (`svg/compact-*.svg`).
 - Carga del wasm: empieza con `pointerdown` o `input` en el formulario (nunca al tabular ni al abrir la página), con `fetch(WASM_URL)` en paralelo a `wasm_exec.js`; el fallback usa `res.clone()` (hay tests).
 - Los tests de CSS de la galería no comparan bloques literales: `css_test.go` lee las reglas (`cssRules(...).prop(selector, propiedad)`) y las aserciones nombran regla y propiedad.
+
+## Ligero (v0.7.0)
+- **Lo que entra en el wasm no puede importar `encoding/json`, `fmt`, `reflect`, `regexp`, `net/http`, `os` ni plantillas** (`TestWasmPackagesAvoidHeavyImports` lee los imports de `events`, `generate`, `render`, `stats`, `creature` y `cmd/wasm`; el CI falla si el wasm pasa de 3 MB). Texto: `strconv` y concatenación; errores: `errors.New`; eventos: `internal/events/scan.go` (lector a mano que sigue a `encoding/json`; `scan_test.go` lo compara con él, y ahí sí se puede importar `encoding/json`). `Event.Payload` es `[]byte`. CLI, galería y cliente HTTP (`internal/github`, `gallery`, `og`) pueden usar lo que quieran: no entran en el wasm.
+- Medir antes de optimizar: `go tool nm` no lee wasm; el desglose por paquete sale de leer las secciones de código y de nombres de un wasm sin recortar (ver `docs/specs/v0.7.md`). Pesos (Go 1.27, `-trimpath -ldflags="-s -w"`): 4.624.571 B (1.261.906 gzip) en v0.6.0 y 2.569.892 B (735.538 gzip) en v0.7.0; el resto es el `runtime` de Go.
+- Cualquier reescritura que toque `render` o `generate` se comprueba con las huellas (`testdata/golden/full-sha256.txt`: 96 tarjetas de v0.5.0 y `favicon.svg`) y comparando la galería entera y la CLI con las de `main` (`diff -r`).
+- Generador y límite de la API: `generator.js` valida el login con la regla de `events.ValidLogin` (un test compara la regexp de JS con la función de Go), cachea los eventos 10 min en `sessionStorage` (`commitling:events:<login en minúsculas>`; todo con `try/catch`; no hay más almacenamiento, ni `localStorage` ni cookies) y, con un 403 o 429, enseña `generate.FetchError` (hora local de `X-RateLimit-Reset`) y el botón «Ver demo» (`#gen-demo-alt`).
+- Tests de comportamiento del generador en Node: `node internal/gallery/testdata/generator.test.js <generator.js>` (DOM, `fetch`, `sessionStorage` y wasm simulados, sin dependencias); lo lanza `TestGeneratorBehaviourInNode`, que en el CI falla si no hay `node` y en otros sitios se salta.
+- El lector de CSS de los tests (`css_test.go`) ignora comentarios y cadenas y entiende `@media` y `@supports`; sigue siendo un lector mínimo, no un analizador completo.
 
 ## Reglas de contenido
 - El personaje es **diseño propio**. Prohibido imitar criaturas de videojuegos, anime o marcas.
