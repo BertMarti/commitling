@@ -55,8 +55,10 @@ jobs:
         run: |
           GOOS=js GOARCH=wasm go vet ./cmd/wasm
           GOOS=js GOARCH=wasm go test -exec="$(go env GOROOT)/lib/wasm/go_js_wasm_exec" ./cmd/wasm
-          GOOS=js GOARCH=wasm go build -ldflags="-s -w" -o out/commitling.wasm ./cmd/wasm
+          GOOS=js GOARCH=wasm go build -trimpath -ldflags="-s -w" -o out/commitling.wasm ./cmd/wasm
           echo "commitling.wasm: $(wc -c < out/commitling.wasm) bytes, $(gzip -9 -c out/commitling.wasm | wc -c) gzipped"
+          # Budget: v0.7.0 left it at about 2.56 MB; the 4.6 MB of v0.6.0 must not come back.
+          test "$(wc -c < out/commitling.wasm)" -lt 3000000
 
       - name: render con el fixture
         run: |

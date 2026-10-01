@@ -4,7 +4,7 @@
 // hands internal/generate to the JavaScript of the website. It has no logic of
 // its own, so what the browser draws is what `commitling render` draws.
 //
-//	GOOS=js GOARCH=wasm go build -ldflags="-s -w" -o commitling.wasm ./cmd/wasm
+//	GOOS=js GOARCH=wasm go build -trimpath -ldflags="-s -w" -o commitling.wasm ./cmd/wasm
 //
 // It registers one global object, `commitling`:
 //

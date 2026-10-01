@@ -4,8 +4,7 @@
 package events
 
 import (
-	"encoding/json"
-	"fmt"
+	"errors"
 	"io"
 	"sort"
 	"time"
@@ -24,25 +23,22 @@ type Event struct {
 	Repo struct {
 		Name string `json:"name"`
 	} `json:"repo"`
-	Payload json.RawMessage `json:"payload"`
-}
-
-type pushPayload struct {
-	Size         *int              `json:"size"`
-	DistinctSize *int              `json:"distinct_size"`
-	Commits      []json.RawMessage `json:"commits"`
-}
-
-type actionPayload struct {
-	Action string `json:"action"`
+	// Payload is the raw JSON of the event payload (what encoding/json calls
+	// a RawMessage; it is a plain []byte so that the browser build does not
+	// link encoding/json).
+	Payload []byte `json:"payload"`
 }
 
 // ParseEvents decodes a JSON array of events, like the one returned by
 // GET /users/{user}/events/public or stored in testdata/events.json.
 func ParseEvents(r io.Reader) ([]Event, error) {
-	var events []Event
-	if err := json.NewDecoder(r).Decode(&events); err != nil {
-		return nil, fmt.Errorf("no se pudieron leer los eventos: %w", err)
+	data, err := io.ReadAll(r)
+	if err != nil {
+		return nil, errors.New("no se pudieron leer los eventos: " + err.Error())
+	}
+	events, err := parseEvents(data)
+	if err != nil {
+		return nil, errors.New("no se pudieron leer los eventos: " + err.Error())
 	}
 	return events, nil
 }
@@ -51,27 +47,18 @@ func ParseEvents(r io.Reader) ([]Event, error) {
 // "size" field, then the length of "commits". GitHub has been trimming push
 // payloads, so a push without either still counts as one commit.
 func CommitCount(e Event) int {
-	var p pushPayload
-	if len(e.Payload) > 0 {
-		_ = json.Unmarshal(e.Payload, &p)
-	}
+	size, hasSize, commits := pushInfo(e.Payload)
 	switch {
-	case p.Size != nil && *p.Size > 0:
-		return *p.Size
-	case len(p.Commits) > 0:
-		return len(p.Commits)
+	case hasSize && size > 0:
+		return size
+	case commits > 0:
+		return commits
 	default:
 		return 1
 	}
 }
 
-func action(e Event) string {
-	var p actionPayload
-	if len(e.Payload) > 0 {
-		_ = json.Unmarshal(e.Payload, &p)
-	}
-	return p.Action
-}
+func action(e Event) string { return actionOf(e.Payload) }
 
 // Dedupe drops repeated events (same non-empty id), keeping the first one.
 // Pages of the events API can overlap when new events arrive while paging.
