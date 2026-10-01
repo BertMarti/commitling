@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/BertMarti/commitling/internal/creature"
+	"github.com/BertMarti/commitling/internal/generate"
 	"github.com/BertMarti/commitling/internal/og"
 	"github.com/BertMarti/commitling/internal/render"
 	"github.com/BertMarti/commitling/internal/stats"
@@ -40,36 +41,7 @@ const DemoUser = "octoexample"
 
 // WorkflowSnippet is the workflow for a profile repository. The README
 // shows the same text (a test keeps them in sync).
-const WorkflowSnippet = `name: commitling
-
-on:
-  schedule:
-    - cron: "23 5 * * *" # cada día a las 05:23 UTC
-  workflow_dispatch:
-
-permissions:
-  contents: write
-
-jobs:
-  commitling:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: BertMarti/commitling@v1
-        with:
-          out: commitling.svg
-      - name: Guardar el SVG si ha cambiado
-        run: |
-          git add commitling.svg
-          if git diff --cached --quiet; then
-            echo "Sin cambios."
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "chore: actualiza commitling"
-          git push
-`
+const WorkflowSnippet = generate.BaseWorkflow
 
 // ReadmeSnippet is the line to paste in the profile README.
 const ReadmeSnippet = `![commitling](./commitling.svg)`

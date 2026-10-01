@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/BertMarti/commitling/internal/generate"
 	"github.com/BertMarti/commitling/internal/github"
 )
 
@@ -396,5 +397,32 @@ func TestHasSVG(t *testing.T) {
 	}
 	if hasSVG(filepath.Join(dir, "no-existe")) {
 		t.Error("a missing file is not an SVG")
+	}
+}
+
+// The website draws with generate.Render compiled to WebAssembly: the CLI must
+// give the very same bytes for the same events and the same date.
+func TestRenderMatchesGenerateRender(t *testing.T) {
+	data, err := os.ReadFile(fixture)
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Date(2026, 9, 29, 12, 0, 0, 0, time.UTC)
+	for _, sp := range []string{"moss", "mushroom"} {
+		for _, th := range []string{"light", "dark"} {
+			var stdout, stderr bytes.Buffer
+			args := []string{"render", "--fixture", fixture, "--user", "octoexample", "--species", sp, "--theme", th,
+				"--now", now.Format(time.RFC3339), "--out", "-"}
+			if err := run(args, &stdout, &stderr); err != nil {
+				t.Fatalf("%s/%s: %v", sp, th, err)
+			}
+			want, err := generate.Render(data, generate.Options{User: "octoexample", Species: sp, Theme: th, Now: now})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !bytes.Equal(stdout.Bytes(), want.SVG) {
+				t.Errorf("%s/%s: the CLI and generate.Render draw different SVGs", sp, th)
+			}
+		}
 	}
 }

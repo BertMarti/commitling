@@ -9,10 +9,11 @@ import (
 	"math"
 	"net/http"
 	"net/url"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/BertMarti/commitling/internal/events"
 )
 
 // DefaultBaseURL is the public GitHub REST API.
@@ -46,10 +47,8 @@ const (
 	maxPages = 3
 )
 
-var loginRe = regexp.MustCompile(`^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$`)
-
 // ValidLogin reports whether s looks like a GitHub username.
-func ValidLogin(s string) bool { return loginRe.MatchString(s) }
+func ValidLogin(s string) bool { return events.ValidLogin(s) }
 
 // Client fetches public events. The zero value is not usable; use NewClient.
 type Client struct {
