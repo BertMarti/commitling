@@ -8,7 +8,7 @@ Una mascota pixel-art **original** que vive en el README de tu perfil de GitHub.
 - SVG generado a mano con animación **CSS dentro del SVG** (GitHub no ejecuta JavaScript en los README).
 - Tests con `go test`; formato con `gofmt` y análisis con `go vet`.
 - **GitHub Action compuesta** (`action.yml`) reutilizable desde cualquier repositorio.
-- Web del proyecto en **GitHub Pages**: galería de fases y ánimos generada por el propio binario (`commitling gallery`) más una criatura en vivo de BertMarti regenerada a diario.
+- Web del proyecto en **GitHub Pages**: galería de fases y ánimos generada por el propio binario (`commitling gallery`), un generador en vivo (wasm), un **modo demo** («Ver demo») y una criatura en vivo de BertMarti regenerada a diario.
 
 ## Comandos
 - Tests: `go test ./...`
@@ -21,13 +21,26 @@ Una mascota pixel-art **original** que vive en el README de tu perfil de GitHub.
 ## Estructura
 - `cmd/commitling/` CLI.
 - `cmd/wasm/` capa fina para el navegador (`syscall/js`) sobre `internal/generate`.
-- `internal/generate/` función compartida CLI y wasm: eventos a SVG, workflow relleno y mensajes de error de la API.
+- `internal/generate/` función compartida CLI y wasm: eventos a SVG, workflow relleno, mensajes de error de la API y `Demo` (timelapse sintético de 90 días de `octoexample`).
 - `internal/events/` parser de eventos y actividades (sin red).
 - `internal/github/` cliente de la API pública de eventos (token opcional por `GITHUB_TOKEN`).
 - `internal/stats/` cálculo de experiencia, racha y días activos.
 - `internal/creature/` fases, ánimos, accesorios y mapas de píxeles (cuadrículas ASCII).
 - `internal/render/` generación del SVG.
 - `testdata/` datos de ejemplo sin información personal real.
+
+## Demo en tiempo real (v0.5.0)
+- `generate.Demo(day, Options)` dibuja el día 0..90 de un usuario ficticio (`octoexample`) con `stats.Compute` y el render de siempre; `commitling.demo(day, species, theme)` es la capa fina del wasm. Datos sintéticos y deterministas: nada de personas reales, nada de red.
+- En `generator.js`: «Ver demo» (y el enlace de la cabecera) es una acción de la persona, nunca autoarranca; el día sale del tiempo transcurrido (15 s), no del número de cuadros; Pausa/Reanudar/Repetir y Detener están siempre en la página (deshabilitados, no ocultos); se pausa si la pestaña se oculta.
+- Con `prefers-reduced-motion: reduce` no hay timelapse: solo el control deslizante de día.
+- Solo `#demo-phase` es región viva (`aria-live`): el contador y el pie cambian en cada cuadro y no lo son (nada de `<output>`).
+- Para probarla en el navegador del panel (que puede estar oculto y pausa `requestAnimationFrame`), sustituye `requestAnimationFrame` por un temporizador solo en la prueba.
+
+## Ajustes visuales de v0.5.0
+- La cabecera muestra la tarjeta real (`svg/acc-all.svg`, claro y oscuro) en un `<picture>`; el propio SVG apaga la animación con `prefers-reduced-motion`.
+- Regla anti-desborde: las rejillas de una columna usan `minmax(0,1fr)` y los hijos `min-width:0`; sin `width` fijo en CSS para las imágenes (hay tests).
+- El escenario del generador es una tarjeta en blanco 12:5 con marco de 1 px y radio 8 px, como el SVG; sin sombras ni bordes discontinuos.
+- No se toca `render.go` ni los sprites: el contorno es la silueta del cuerpo y se mueve con él a propósito.
 
 ## Reglas de contenido
 - El personaje es **diseño propio**. Prohibido imitar criaturas de videojuegos, anime o marcas.

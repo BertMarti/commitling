@@ -39,10 +39,12 @@ Arriba de todo, en la sección **Pruébalo con tu usuario**, puedes ver tu propi
 3. Pulsa **Dibujar** (o Intro). En unos segundos aparece tu criatura. Si cambias la especie o el tema, se redibuja sola, sin volver a preguntar a GitHub.
 4. Con **Descargar SVG** te llevas la imagen (`commitling-<usuario>.svg`), y debajo tienes el **workflow ya relleno** con tu usuario, la especie y el tema que has elegido, con botón de copiar. Pégalo en `.github/workflows/commitling.yml` de tu repositorio de perfil y sigue los pasos de la sección 3.
 
-Cómo funciona: tu navegador pide a GitHub tus eventos públicos (los que cualquiera puede ver en tu perfil, sin token) y los dibuja con el mismo programa que la Action, convertido a WebAssembly. No se envía nada a ningún servidor de commitling. Detalles que conviene saber:
+**¿Sin usuario a mano? Mira la demo.** Pulsa **Ver demo** (debajo de la vista previa, o en la cabecera): en unos 15 segundos ves pasar 90 días de un usuario ficticio, `octoexample`, desde la semilla dormida hasta el árbol ancestral, con sus cambios de ánimo y sus tres accesorios. No se pide nada a GitHub ni se necesita usuario. Mientras corre tienes **Pausa** (que pasa a **Reanudar** y, al terminar, **Repetir**) y **Detener** (vuelve a como estaba la vista previa), un contador de días y un **control deslizante** para ir al día que quieras. La demo no arranca sola y se pausa si cambias de pestaña. Si tu sistema pide menos movimiento (`prefers-reduced-motion`), no hay timelapse: solo el deslizante. Los lectores de pantalla oyen únicamente el cambio de fase. La especie y el tema también se aplican a la demo.
+
+Cómo funciona el generador: tu navegador pide a GitHub tus eventos públicos (los que cualquiera puede ver en tu perfil, sin token) y los dibuja con el mismo programa que la Action, convertido a WebAssembly. No se envía nada a ningún servidor de commitling. Detalles que conviene saber:
 
 - **Límite de peticiones.** GitHub permite 60 peticiones por hora y por conexión sin iniciar sesión, y cada intento gasta entre 1 y 3. Si se agotan, la web te dice cuántos minutos faltan; espera y vuelve a probar. La Action no tiene este problema porque usa el token de tu workflow.
-- **La primera vez tarda un poco más**, porque descarga unos 4,6 MB (1,3 MB comprimidos) de WebAssembly. Solo ocurre cuando interactúas con el formulario, y el navegador lo guarda para la próxima vez.
+- **La primera vez tarda un poco más**, porque descarga unos 4,6 MB (1,3 MB comprimidos) de WebAssembly. Solo ocurre cuando interactúas con el formulario o pulsas «Ver demo», y el navegador lo guarda para la próxima vez.
 - **Puede diferir un poco de lo que dibuje la Action**: GitHub publica los eventos con unos minutos de retraso y la Action usa la hora a la que se ejecuta; con los mismos eventos y la misma fecha, el resultado es idéntico.
 - Necesita JavaScript y un navegador reciente con WebAssembly (Firefox, Chrome, Safari o Edge).
 

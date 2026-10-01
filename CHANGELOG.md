@@ -6,6 +6,21 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ## [Sin publicar]
 
+## [0.5.0] - 2026-10-01
+
+### Añadido
+
+- **Modo demo «Míralo crecer»** (#28 y #29): el botón «Ver demo» de la galería (y un enlace en la cabecera) reproduce un timelapse de unos 15 s con 90 días ficticios de `octoexample`: la criatura nace como semilla, pasa por las cinco fases y los cuatro ánimos y desbloquea los tres accesorios, con contador de días y la tarjeta SVG redibujada en vivo por el mismo código Go (wasm). Sin red, sin datos de personas reales y sin autoarranque; con Pausa/Reanudar/Repetir y Detener siempre visibles, un control deslizante de día (único mando con `prefers-reduced-motion`) y `aria-live` solo para los cambios de fase.
+- `generate.Demo` (actividades sintéticas deterministas calculadas con `stats.Compute` y el render de siempre) y `commitling.demo(day, species, theme)` en el wasm, probados en Go y en Node.
+- `docs/specs/v0.5.md`: especificación de la versión, con la auditoría de UX de OpenCode verificada contra el código.
+
+### Cambiado
+
+- **Cabecera** (#30): muestra la tarjeta real animada (clara y oscura) en lugar del sprite quieto de 112 px; se deja de generar `hero.svg`.
+- **Galería sin desborde en móvil**: a 375 px el documento medía 730 px por los bloques `<pre>` de «Instálalo» en una rejilla sin `minmax(0,1fr)`; ahora no hay desplazamiento horizontal a 360 y 375 px.
+- El escenario del generador es una tarjeta en blanco (proporción 12:5 y marco redondeado como el SVG) en lugar de una caja discontinua con hueco.
+- La versión de la CLI pasa a `0.5.0`. Las entradas y salidas de `action.yml` no cambian.
+
 ## [0.4.0] - 2026-10-01
 
 ### Añadido
@@ -79,7 +94,8 @@ Primera versión: el MVP.
 
 - Las acciones de los workflows suben de versión para evitar Node 20 (`checkout@v7`, `setup-go@v7`, `configure-pages@v6`, `upload-pages-artifact@v5` y `deploy-pages@v5`) (PR #2).
 
-[Sin publicar]: https://github.com/BertMarti/commitling/compare/v0.4.0...HEAD
+[Sin publicar]: https://github.com/BertMarti/commitling/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/BertMarti/commitling/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/BertMarti/commitling/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/BertMarti/commitling/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/BertMarti/commitling/compare/v0.1.0...v0.2.0

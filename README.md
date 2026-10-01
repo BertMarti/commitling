@@ -24,9 +24,10 @@ Una GitHub Action lee tu actividad **pública** (commits, pull requests, issues�
 
 En la [web del proyecto](https://bertmarti.github.io/commitling/#generador) escribes tu usuario de GitHub, eliges especie y tema, pulsas **Dibujar** y ves tu criatura al momento, sin instalar nada. Puedes **descargar el SVG** y copiar el **workflow ya relleno con tu usuario**.
 
+- **¿Sin usuario a mano? «Ver demo: míralo crecer».** Un timelapse de unos 15 segundos (90 días ficticios de `octoexample`) en el que la criatura nace como semilla, pasa por las cinco fases y los cuatro ánimos y desbloquea gorro, bufanda y flor, redibujada en vivo por el mismo código. No escribes nada y no se pide nada a GitHub. Tiene **Pausa** y **Detener**, un control deslizante para recorrer los días y no arranca sola; con `prefers-reduced-motion` no hay timelapse, solo el deslizante.
 - Se dibuja **en tu navegador** con el mismo código Go que la CLI y la Action, compilado a WebAssembly (`GOOS=js GOARCH=wasm`, `syscall/js`): para los mismos eventos y la misma fecha, el SVG es idéntico byte a byte (lo comprueba un test).
 - Lo único que sale de tu ordenador es la petición pública a `https://api.github.com/users/<usuario>/events/public` (hasta 3 páginas de 100 eventos, sin token). GitHub deja **60 peticiones por hora y por conexión** sin iniciar sesión; si se agotan, la web dice cuántos minutos faltan. La Action, con el token de tu workflow, no tiene ese límite.
-- El WebAssembly (unos 4,6 MB, 1,3 MB comprimido) **solo se descarga cuando interactúas con el formulario**, no al abrir la página. El `.wasm` y `wasm_exec.js` los genera el workflow de despliegue; no están en el repositorio.
+- El WebAssembly (unos 4,6 MB, 1,3 MB comprimido) **solo se descarga cuando interactúas con el formulario o pulsas «Ver demo»**, no al abrir la página. El `.wasm` y `wasm_exec.js` los genera el workflow de despliegue; no están en el repositorio.
 - Necesita JavaScript y un navegador con WebAssembly. Sin ellos, la galería sigue funcionando.
 
 ## Úsalo en tu perfil
@@ -223,7 +224,7 @@ commitling solo usa la API **pública** de eventos de GitHub: lo mismo que cualq
 ```
 cmd/commitling/      CLI (render, gallery, og, version)
 cmd/wasm/            capa fina de syscall/js para el navegador (solo con GOOS=js)
-internal/generate/   eventos a SVG, workflow relleno y mensajes de error; lo usan la CLI y el wasm
+internal/generate/   eventos a SVG, workflow relleno, mensajes de error y la demo sintética (`Demo`); lo usan la CLI y el wasm
 internal/events/     parser de eventos y actividades (sin red)
 internal/github/     cliente de la API de eventos públicos (con reintentos)
 internal/stats/      XP, racha, días activos y repos (puro, con «ahora» inyectable)
