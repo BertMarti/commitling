@@ -16,9 +16,13 @@ Una mascota pixel-art **original** que vive en el README de tu perfil de GitHub.
 - Generar: `go run ./cmd/commitling render --user BertMarti --out out/commitling.svg`
 - Sin red: `go run ./cmd/commitling render --fixture testdata/events.json --out out/commitling.svg`
 - Galería: `go run ./cmd/commitling gallery --out site/`
+- wasm (generador en vivo): `GOOS=js GOARCH=wasm go build -ldflags="-s -w" -o site/commitling.wasm ./cmd/wasm` y copiar `wasm_exec.js` de `$(go env GOROOT)/lib/wasm/` a `site/` (no se suben al repositorio)
 
 ## Estructura
 - `cmd/commitling/` CLI.
+- `cmd/wasm/` capa fina para el navegador (`syscall/js`) sobre `internal/generate`.
+- `internal/generate/` función compartida CLI y wasm: eventos a SVG, workflow relleno y mensajes de error de la API.
+- `internal/events/` parser de eventos y actividades (sin red).
 - `internal/github/` cliente de la API pública de eventos (token opcional por `GITHUB_TOKEN`).
 - `internal/stats/` cálculo de experiencia, racha y días activos.
 - `internal/creature/` fases, ánimos, accesorios y mapas de píxeles (cuadrículas ASCII).

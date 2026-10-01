@@ -47,6 +47,17 @@ jobs:
       - name: go test
         run: go test ./...
 
+      # The browser build: it must compile, its layer over internal/generate is
+      # tested inside a real WebAssembly runtime (Node, preinstalled on the
+      # runner) and its weight is shown in the log.
+      - name: wasm
+        if: runner.os == 'Linux'
+        run: |
+          GOOS=js GOARCH=wasm go vet ./cmd/wasm
+          GOOS=js GOARCH=wasm go test -exec="$(go env GOROOT)/lib/wasm/go_js_wasm_exec" ./cmd/wasm
+          GOOS=js GOARCH=wasm go build -ldflags="-s -w" -o out/commitling.wasm ./cmd/wasm
+          echo "commitling.wasm: $(wc -c < out/commitling.wasm) bytes, $(gzip -9 -c out/commitling.wasm | wc -c) gzipped"
+
       - name: render con el fixture
         run: |
           go run ./cmd/commitling render --fixture testdata/events.json --out out/commitling.svg
