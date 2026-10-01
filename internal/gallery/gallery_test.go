@@ -2,7 +2,9 @@ package gallery
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/xml"
+	"fmt"
 	"image/png"
 	"io"
 	"math"
@@ -454,5 +456,38 @@ func TestGeneratorStageMatchesTheCard(t *testing.T) {
 		if !strings.Contains(style, want) {
 			t.Errorf("CSS lacks %q", want)
 		}
+	}
+}
+
+// Adding the compact card must not change a single byte of the full cards of
+// v0.5.0. testdata/golden/full-sha256.txt holds the SHA-256 of each of them
+// (sha256sum format), taken from the v0.5.0 gallery before render.go changed.
+func TestFullCardsAreByteIdenticalToV050(t *testing.T) {
+	list, err := os.ReadFile("../../testdata/golden/full-sha256.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	if _, err := Build(dir, "test"); err != nil {
+		t.Fatal(err)
+	}
+	n := 0
+	for _, line := range strings.Split(strings.TrimSpace(strings.ReplaceAll(string(list), "\r\n", "\n")), "\n") {
+		sum, name, ok := strings.Cut(line, "  ")
+		if !ok {
+			t.Fatalf("bad line in the golden list: %q", line)
+		}
+		data, err := os.ReadFile(filepath.Join(dir, filepath.FromSlash(name)))
+		if err != nil {
+			t.Errorf("%s: %v", name, err)
+			continue
+		}
+		if got := fmt.Sprintf("%x", sha256.Sum256(data)); got != sum {
+			t.Errorf("%s changed: sha256 %s, v0.5.0 had %s", name, got, sum)
+		}
+		n++
+	}
+	if want := 2 * (20 + 4) * 2; n != want {
+		t.Errorf("the golden list has %d cards, want %d", n, want)
 	}
 }

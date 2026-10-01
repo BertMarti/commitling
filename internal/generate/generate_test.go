@@ -275,3 +275,53 @@ func TestWorkflowWritesTheNormalisedTheme(t *testing.T) {
 		t.Errorf("the default theme is not written:\n%s", got)
 	}
 }
+
+func TestSizeOption(t *testing.T) {
+	if err := (Options{Size: "grande"}).Check(); err == nil || err.Error() != `tamaño no válido "grande" (usa full o compact)` {
+		t.Errorf("size: %v", err)
+	}
+	for _, ok := range []string{"", "full", "compact", " Compact "} {
+		if err := (Options{Size: ok}).Check(); err != nil {
+			t.Errorf("size %q: %v", ok, err)
+		}
+	}
+	data, err := os.ReadFile(fixture)
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Date(2026, 9, 29, 12, 0, 0, 0, time.UTC)
+	full, _ := Render(data, Options{Now: now})
+	same, _ := Render(data, Options{Now: now, Size: "full"})
+	small, err := Render(data, Options{Now: now, Size: "compact"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(full.SVG, same.SVG) {
+		t.Error("size full must draw exactly what no size draws")
+	}
+	if !bytes.Contains(small.SVG, []byte(`width="200" height="60"`)) || bytes.Equal(small.SVG, full.SVG) {
+		t.Errorf("size compact does not draw the compact card:\n%.200s", small.SVG)
+	}
+	if small.Description != full.Description {
+		t.Error("both sizes describe the creature in the same words")
+	}
+}
+
+func TestWorkflowWritesSizeOnlyWhenCompact(t *testing.T) {
+	got, err := Workflow(Options{User: "octocat", Size: " COMPACT "})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(got, "          size: compact\n") {
+		t.Errorf("workflow lacks size: compact:\n%s", got)
+	}
+	for _, s := range []string{"", "full", " Full\n"} {
+		got, _ := Workflow(Options{User: "octocat", Size: s})
+		if strings.Contains(got, "size:") {
+			t.Errorf("the default size %q is not written:\n%s", s, got)
+		}
+	}
+	if _, err := Workflow(Options{Size: "xl\nrun: evil"}); err == nil {
+		t.Error("an invalid size must be rejected before it reaches the YAML")
+	}
+}

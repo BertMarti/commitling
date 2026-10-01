@@ -147,6 +147,7 @@ Dentro de `with:` puedes ajustar:
 | `out` | `commitling.svg` | Nombre del archivo de imagen |
 | `theme` | `light` | `light` (papel) o `dark` (tinta) |
 | `species` | `moss` | Especie de la criatura: `moss` (brote de musgo) o `mushroom` (hongo) |
+| `size` | `full` | Tamaño de la tarjeta: `full` (480x200, la de siempre) o `compact` (insignia de 200x60 para firmas y barras laterales) |
 | `token` | el token del propio workflow | Suele bastar; no hace falta que lo cambies |
 | `fixture` | vacío | Archivo de eventos de ejemplo para probar sin conexión (solo para desarrollo) |
 | `keep-on-error` | `true` | Ante una caída transitoria de la API de GitHub (red, errores 5xx o límite de peticiones), si el SVG (`out`) ya existe lo deja como está y termina con un aviso en vez de fallar (`true` o `false`); un token caducado o un usuario inexistente siguen fallando |
@@ -182,6 +183,19 @@ Valores que acepta `species` (sin distinguir mayúsculas ni espacios alrededor):
 Cualquier otro valor (por ejemplo `dragon`) hace fallar el paso a propósito, con el mensaje `especie no válida "dragon" (usa moss o mushroom)`, para que un error tipográfico no pase desapercibido, y no escribe ningún archivo. Puedes ver todas las fases de las dos especies en la [galería](https://bertmarti.github.io/commitling/#galeria).
 
 ¿Las dos a la vez? Sí: usa la Action dos veces con `out` distinto (por ejemplo `commitling.svg` y `commitling-hongo.svg`, cada uno con su `species`), suma el segundo archivo al `git add` y enseña la imagen que quieras en el README.
+
+### Elegir el tamaño: tarjeta compacta
+
+Por defecto la tarjeta mide 480x200 (`size: full`). Si la quieres más pequeña, para una firma, una barra lateral o la cabecera de un repositorio, pide la **compacta**: una insignia de 200x60 con la criatura, su fase, su ánimo (con el número de fase, por ejemplo «Contento · fase 3/5») y una barra de progreso. Usa la misma paleta, los mismos dibujos y la misma animación que la completa; lo que no cabe (XP, racha, repos y accesorios) sigue en el texto alternativo de la imagen. Añade `size: compact` en `with:`:
+
+```yaml
+      - uses: BertMarti/commitling@v1
+        with:
+          out: commitling-compact.svg
+          size: compact
+```
+
+Sin `size`, o con `size: full`, el dibujo es exactamente el de siempre, byte a byte. Cualquier otro valor (por ejemplo `grande`) hace fallar el paso a propósito, con el mensaje `tamaño no válido "grande" (usa full o compact)`. Puedes usar la Action dos veces (una con cada tamaño) con `out` distinto y suma los dos archivos al `git add`.
 
 ## 4. Tema oscuro
 
@@ -327,6 +341,9 @@ go run ./cmd/commitling render --user tu-usuario --out out/commitling.svg
 # El hongo en tema oscuro
 go run ./cmd/commitling render --user tu-usuario --species mushroom --theme dark --out out/hongo-dark.svg
 
+# La insignia compacta de 200x60
+go run ./cmd/commitling render --user tu-usuario --size compact --out out/compacta.svg
+
 # Sin red, con datos de ejemplo de un usuario ficticio
 go run ./cmd/commitling render --fixture testdata/events.json --out out/commitling.svg
 
@@ -339,7 +356,7 @@ go run ./cmd/commitling og --out out/og.png
 go run ./cmd/commitling version
 ```
 
-`--species` acepta los mismos valores que `species` en la Action (sección 3) y `--out -` escribe en la salida estándar.
+`--species` y `--size` aceptan los mismos valores que `species` y `size` en la Action (sección 3) y `--out -` escribe en la salida estándar.
 
 **Conservar el SVG ante una caída de la API (`--keep-on-error`).** Con esta opción, si la API de GitHub sigue fallando tras los reintentos por una causa **transitoria** (error de red, 5xx o límite de peticiones: 429, o 403 con cabeceras de límite) y el archivo de `--out` ya existe y es un SVG completo, commitling lo deja intacto, escribe un aviso («la API de GitHub no responde… se conserva … sin cambios») y termina con código 0. Los fallos **permanentes** siguen siendo un error aunque haya archivo previo: 401 (token inválido o caducado), 404 (usuario inexistente), 422 y 403 sin cabeceras de límite (permisos). Sin archivo previo, con un archivo vacío o cortado, o con `--out -`, el error también se mantiene, y no afecta a otros errores (un `--fixture` que no existe, una especie no válida…). En la Action equivale a la entrada `keep-on-error`, que está activada por defecto.
 

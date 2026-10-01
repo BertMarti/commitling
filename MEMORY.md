@@ -1,7 +1,10 @@
 # MEMORY.md · commitling
-Última actualización: 2026-10-01 por builder (agent-project-3, v0.5.0 demo y estética)
+Última actualización: 2026-10-01 por builder (agent-project-3, v0.6.0 tarjeta compacta)
 
 ## Estado actual
+**v0.6.0 (hito `v0.6.0`, spec `docs/specs/v0.6.md`)**: v0.5.0 está publicada y `v1` apunta a ella. Cuatro PR encadenados contra `main`: #37 (tarjeta compacta: `render.Size`, `generate.Options.Size`, `--size`, entrada `size` de la Action, huellas de retrocompatibilidad), #38 (galería y generador wasm), #39 (deuda: desborde a 320 px y tests de CSS por intención) y #40 (documentación, CLI 0.6.0 y CHANGELOG). La release y las etiquetas las hace Alberto. Sin `size`, la tarjeta es byte a byte la de v0.5.0 (`testdata/golden/full-sha256.txt` guarda el SHA-256 de las 96 tarjetas de la galería de v0.5.0).
+
+(Histórico:)
 **v0.5.0 (hito `v0.5.0`, spec `docs/specs/v0.5.md`)**: v0.4.0 está publicada y `v1` apunta a ella. Cuatro PR encadenados (ya fusionados; queda un PR de pulido tras la revisión): #32 (#28 `generate.Demo` y `commitling.demo`), #33 (#29 demo «Ver demo» en la galería), #34 (#30 cabecera animada, móvil y escenario del generador) y el último (#31 documentación, CLI 0.5.0 y CHANGELOG `[0.5.0] - 2026-10-01`). Tras fusionar todos, la release la hace Alberto (etiqueta `v0.5.0`; no mover `v1` salvo que quiera). Las entradas y salidas de `action.yml` no cambian.
 
 (Histórico, v0.2.0 en adelante:)
@@ -119,7 +122,12 @@ Pulido de v0.4.0 (rama `agent/builder/v0.4-pulido`, un PR contra `main`, tras la
 
 - 2026-10-01 (builder, v0.5-pulido): tras la revisión de #32-#35 (fusionados): la cabecera pasa a una columna a 860 px (entre 721 y 860 px la columna de texto quedaba en 153-200 px); Detener devuelve el foco a «Ver demo» antes de deshabilitarse; `startDemo` toma `days` del wasm y sale si el primer cuadro falló; el día del deslizante lleva épsilon para no retroceder al reanudar; Detener sin criatura previa revoca el blob y quita el `src`.
 
+- 2026-10-01 (builder, v0.6.0 #37): **la compacta es otro diseño, no una escala**: 200x60, el mismo mapa 16x16 con píxel de 3 px a la izquierda y, a la derecha (62..192, 130 px), la fase en negrita, el ánimo con su cuadrado de color + «ánimo · fase n/5» y una barra de 16 celdas (la misma lógica de progreso). Sin zzz ni destellos (no caben), saltos del ánimo radiante de 3 px; XP, racha, repos y accesorios solo en el `<desc>`. `render.go` se parametriza con `layout` (píxel, origen y amplitud de las animaciones) y la completa sigue pasando por `fullLayout`: el test `TestFullCardsAreByteIdenticalToV050` compara las 96 tarjetas de la galería con las huellas tomadas **antes** de tocar `render.go`.
+- 2026-10-01 (builder, v0.6.0 #37): `render.Size` tiene `Full` como valor cero para que una `Card` sin `Size` siga dibujando lo de siempre; `size` aparece en el workflow relleno solo si es `compact`. En la Action es la entrada `size` (por defecto `full`), tras `species`.
+- 2026-10-01 (builder, v0.6.0 #37): ojo con Python en Windows al editar archivos del repositorio: `open(p,'w')` escribe CRLF y `gofmt -l` lista el archivo; usar `newline=''`.
+
 ## Siguiente paso
+-2. v0.6.0: fusionar #37, #38, #39 y #40 en ese orden y, tras el despliegue, mirar a 320 y 375 px que no hay desplazamiento lateral y probar el selector «Tamaño» del generador; preparar la etiqueta `v0.6.0`.
 -1. v0.5.0: #32 a #35 ya están fusionados; fusionar el PR de pulido (`agent/builder/v0.5-pulido`); tras el despliegue, pulsar «Ver demo» en la web real y mirar a 375 px que no hay desplazamiento lateral; preparar la etiqueta `v0.5.0`.
 0. v0.4.0: #23 a #26 ya están fusionados; fusionar el PR de pulido, y tras el despliegue de Pages comprobar el generador en https://bertmarti.github.io/commitling/#generador (escribir un usuario real), mirar el peso del wasm en el resumen del job de despliegue y preparar la release 0.4.0 (versión de la CLI, fecha del CHANGELOG, etiqueta).
 1. Alberto: fusionar los PR en orden (#10, #11, #12, #13, #14 y #15) y, tras cada uno, comprobar el CI (todos van contra `main`).
@@ -158,3 +166,4 @@ Pulido de v0.4.0 (rama `agent/builder/v0.4-pulido`, un PR contra `main`, tras la
 - 2026-10-01 builder · Claude Code Sonnet (agent/builder/22-descarga-docs): v0.4.0 #22: descarga del SVG, workflow relleno con copiar y documentación (README, USO, CHANGELOG); verificado en el navegador.
 - 2026-10-01 builder · Claude Code Sonnet (agent/builder/28-demo-datos, 29-demo-galeria, 30-estetica, 31-docs-version): v0.5.0: spec con la auditoría de UX verificada, `generate.Demo`/`commitling.demo`, demo «Míralo crecer» accesible, cabecera animada, galería sin desborde en móvil, escenario del generador, CLI 0.5.0 y documentación.
 - 2026-10-01 builder · Claude Code Sonnet (agent/builder/v0.4-pulido): pulido de v0.4.0 tras la revisión: `user` entre comillas y tema normalizado en el workflow, regiones accesibles, `ValidLogin` sin regexp (wasm 4,6 MB), robustez de `generator.js`, versión 0.4.0 y CHANGELOG.
+- 2026-10-01 builder · Claude Code Sonnet (agent/builder/37-tarjeta-compacta): v0.6.0 #37: spec y huellas de retrocompatibilidad, `render.Size` y tarjeta compacta de 200x60, `--size`, entrada `size` de la Action y documentación.

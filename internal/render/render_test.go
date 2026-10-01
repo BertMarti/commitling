@@ -349,3 +349,164 @@ func TestMushroomCard(t *testing.T) {
 		t.Error("last mushroom stage not named")
 	}
 }
+
+func TestSizeByName(t *testing.T) {
+	for name, want := range map[string]Size{"": Full, "full": Full, " FULL ": Full, "compact": Compact, "Compact\n": Compact} {
+		if got, ok := SizeByName(name); !ok || got != want {
+			t.Errorf("SizeByName(%q) = %v, %v; want %v", name, got, ok, want)
+		}
+	}
+	for _, bad := range []string{"small", "compacta", "480x200"} {
+		if _, ok := SizeByName(bad); ok {
+			t.Errorf("SizeByName(%q) should be rejected", bad)
+		}
+	}
+	if Full != 0 {
+		t.Error("Full must be the zero value so an old Card keeps drawing the full card")
+	}
+}
+
+func compactCard(user string, th Theme, sp creature.Species, st creature.Stage, m creature.Mood) Card {
+	return Card{User: user, Stats: sampleStats(), Theme: th, Size: Compact,
+		Creature: creature.Creature{Species: sp, Stage: st, Mood: m, Accessories: creature.Accessories{Hat: true, Scarf: true, Flower: true}}}
+}
+
+func TestCompactCardIsAValidSmallBadge(t *testing.T) {
+	for _, th := range []Theme{Light, Dark} {
+		for _, sp := range creature.AllSpecies {
+			for _, st := range creature.Stages {
+				for _, m := range creature.Moods {
+					svg := SVG(compactCard("octoexample", th, sp, st, m))
+					mustParseXML(t, svg)
+					s := string(svg)
+					for _, want := range []string{
+						`width="200" height="60" viewBox="0 0 200 60"`,
+						`<title id="cl-title">commitling de @octoexample</title>`,
+						`<desc id="cl-desc">` + sp.StageName(st),
+						"prefers-reduced-motion:reduce",
+						`role="img"`,
+						"fase " + strconv.Itoa(int(st)+1) + "/" + strconv.Itoa(len(creature.Stages)),
+						">" + sp.StageName(st) + "<",
+						">" + m.Name() + " · ",
+					} {
+						if !strings.Contains(s, want) {
+							t.Errorf("%s/%s/%s/%s: compact card lacks %q", th.Name, sp.Slug(), st.Name(), m.Name(), want)
+						}
+					}
+					// The full card's extras do not fit in 200x60.
+					for _, no := range []string{`class="z `, `class="sp`, "XP", "racha", "repos"} {
+						if strings.Contains(strings.ReplaceAll(s, `<desc id="cl-desc">`+Description(compactCard("octoexample", th, sp, st, m)), ""), no) {
+							t.Errorf("%s/%s/%s/%s: compact card should not draw %q", th.Name, sp.Slug(), st.Name(), m.Name(), no)
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+func TestCompactCardKeepsTheStyle(t *testing.T) {
+	light := string(SVG(compactCard("a", Light, creature.MossSprout, creature.Shrub, creature.Happy)))
+	dark := string(SVG(compactCard("a", Dark, creature.MossSprout, creature.Shrub, creature.Happy)))
+	if light == dark {
+		t.Fatal("themes draw the same compact card")
+	}
+	for _, want := range []string{Light.Bg, Light.Line, `rx="8"`, `shape-rendering="crispEdges"`, "@keyframes", "<path"} {
+		if !strings.Contains(light, want) {
+			t.Errorf("light compact card lacks %q", want)
+		}
+	}
+	if !strings.Contains(dark, Dark.Bg) {
+		t.Error("dark compact card lacks the dark background")
+	}
+	// Only the five colours of the creature plus the theme's own.
+	for _, hex := range regexp.MustCompile(`#[0-9a-fA-F]{6}`).FindAllString(light, -1) {
+		switch strings.ToLower(hex) {
+		case Light.Bg, Light.Ink, Light.Muted, Light.Line, creature.Ink, creature.Paper, creature.Moss, creature.Honey, creature.Accent:
+		default:
+			t.Errorf("unexpected colour %s in the compact card", hex)
+		}
+	}
+	if strings.Contains(light, "gradient") || strings.Contains(light, "filter") {
+		t.Error("the style has no gradients or shadows")
+	}
+	// The same input, the same bytes; and it is not the full card.
+	if again := string(SVG(compactCard("a", Light, creature.MossSprout, creature.Shrub, creature.Happy))); again != light {
+		t.Error("the compact card is not deterministic")
+	}
+	full := compactCard("a", Light, creature.MossSprout, creature.Shrub, creature.Happy)
+	full.Size = Full
+	if string(SVG(full)) == light {
+		t.Error("compact and full cards are the same")
+	}
+}
+
+// Every text of the compact card stays inside the card, right of the sprite,
+// and no two texts overlap.
+func TestCompactTextStaysInsideTheBadge(t *testing.T) {
+	huge := stats.Stats{XP: 1234567, Streak: 90, ActiveDays30: 30, ActiveDays90: 90, Repos: 1234567}
+	for _, th := range []Theme{Light, Dark} {
+		for _, sp := range creature.AllSpecies {
+			for _, st := range creature.Stages {
+				for _, m := range creature.Moods {
+					c := compactCard(strings.Repeat("W", 80), th, sp, st, m)
+					c.Stats = huge
+					boxes := compactTextBoxes(t, SVG(c))
+					for i, a := range boxes {
+						if a.x0 < compactTextX || a.x1 > compactWidth-compactMargin {
+							t.Errorf("%s/%s/%s/%s: %q spans %.0f-%.0f, outside %d-%d", th.Name, sp.Slug(), st.Name(), m.Name(), a.content, a.x0, a.x1, compactTextX, compactWidth-compactMargin)
+						}
+						for _, b := range boxes[i+1:] {
+							if a.y == b.y && a.x0 < b.x1 && b.x0 < a.x1 {
+								t.Errorf("%s/%s/%s/%s: %q and %q overlap", th.Name, sp.Slug(), st.Name(), m.Name(), a.content, b.content)
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+func compactTextBoxes(t *testing.T, svg []byte) []textBox {
+	t.Helper()
+	var out []textBox
+	for _, m := range textRe.FindAllStringSubmatch(string(svg), -1) {
+		x, _ := strconv.Atoi(m[1])
+		y, _ := strconv.Atoi(m[2])
+		size, _ := strconv.ParseFloat(m[3], 64)
+		content := html.UnescapeString(m[5])
+		out = append(out, textBox{content: content, y: y, x0: float64(x), x1: float64(x) + textWidth(content, size)})
+	}
+	if len(out) != 2 {
+		t.Fatalf("the compact card has %d texts, want 2 (phase and mood):\n%s", len(out), svg)
+	}
+	return out
+}
+
+func TestCompactProgressBar(t *testing.T) {
+	cells := func(xp int, stage creature.Stage) (on, off int) {
+		c := compactCard("a", Light, creature.MossSprout, stage, creature.Happy)
+		c.Stats = stats.Stats{XP: xp}
+		svg := string(SVG(c))
+		for _, m := range regexp.MustCompile(`<path fill="([^"]+)" d="((?:M\d+ \d+h6v4h-6z)+)"/>`).FindAllStringSubmatch(svg, -1) {
+			n := strings.Count(m[2], "z")
+			if m[1] == Light.Line {
+				off += n
+			} else if m[1] == creature.Moss {
+				on += n
+			}
+		}
+		return
+	}
+	if on, off := cells(0, creature.Seed); on != 0 || off != compactCells {
+		t.Errorf("empty bar: %d on, %d off; want 0 and %d", on, off, compactCells)
+	}
+	next, _ := creature.Seed.Next()
+	if on, off := cells((creature.Seed.MinXP()+next.MinXP())/2, creature.Seed); on+off != compactCells || on != compactCells/2 {
+		t.Errorf("half bar: %d on, %d off", on, off)
+	}
+	if on, off := cells(99999, creature.Ancient); on != compactCells || off != 0 {
+		t.Errorf("last stage: %d on, %d off; want a full bar", on, off)
+	}
+}
