@@ -132,6 +132,15 @@ Con `size: compact` (o `--size compact` en la CLI) la tarjeta es una **insignia 
           size: compact
 ```
 
+<table>
+  <tr>
+    <td align="center"><img alt="Arbusto contento, tarjeta compacta (brote de musgo)" src="https://bertmarti.github.io/commitling/svg/compact-shrub.svg" width="200" height="60"></td>
+    <td align="center"><img alt="Seta grande contenta, tarjeta compacta (hongo)" src="https://bertmarti.github.io/commitling/svg/compact-mushroom-shrub.svg" width="200" height="60"></td>
+  </tr>
+</table>
+
+La [galería](https://bertmarti.github.io/commitling/#compacta) enseña la compacta en las cinco fases de cada especie, y el generador de la web tiene un selector «Tamaño».
+
 ### Tema oscuro (opcional)
 
 Añade un segundo paso con `theme: dark` y `out: commitling-dark.svg`, súmalo al `git add` y usa esto en el README para que GitHub elija según el tema de quien lo mira:

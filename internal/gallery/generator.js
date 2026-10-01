@@ -20,6 +20,7 @@
   var statusEl = document.getElementById('gen-status');
   var errorEl = document.getElementById('gen-error');
   var img = document.getElementById('gen-img');
+  var stage = document.getElementById('gen-stage');
   var empty = document.getElementById('gen-empty');
   var caption = document.getElementById('gen-caption');
   var after = document.getElementById('gen-after');
@@ -140,9 +141,19 @@
     return all;
   }
 
+  // The preview takes the shape of the card that is asked for: 480x200 or the
+  // 200x60 badge. Called when the size changes, even before anything is drawn.
+  function sizeStage() {
+    var compact = checked('size') === 'compact';
+    stage.dataset.size = compact ? 'compact' : 'full';
+    img.width = compact ? 200 : 480;
+    img.height = compact ? 60 : 200;
+  }
+
   // Puts an SVG on the stage as an image (never as markup) and frees the previous one.
   function paint(svg) {
     var url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+    sizeStage();
     img.src = url;
     if (blobURL) URL.revokeObjectURL(blobURL);
     blobURL = url;
@@ -159,7 +170,7 @@
     // name only holds letters, digits and dashes.
     dl.href = url;
     dl.download = 'commitling-' + user + '.svg';
-    var w = window.commitling.workflow(user, checked('species'), checked('theme'));
+    var w = window.commitling.workflow(user, checked('species'), checked('theme'), checked('size'));
     wf.textContent = w.error ? '' : w.workflow;
     after.hidden = !!w.error;
     say(noActivity
@@ -168,7 +179,7 @@
   }
 
   function redraw() {
-    var r = window.commitling.render(JSON.stringify(current.events), current.user, checked('species'), checked('theme'));
+    var r = window.commitling.render(JSON.stringify(current.events), current.user, checked('species'), checked('theme'), 0, checked('size'));
     if (r.error) {
       fail(r.error);
       return;
@@ -194,7 +205,7 @@
         fail('No se pudo cargar el generador. Comprueba tu conexión e inténtalo de nuevo.');
         return;
       }
-      var invalid = window.commitling.check(user, checked('species'), checked('theme'));
+      var invalid = window.commitling.check(user, checked('species'), checked('theme'), checked('size'));
       if (invalid) {
         fail(invalid);
         userInput.focus();
@@ -236,7 +247,7 @@
   }
 
   function frame(day) {
-    var r = window.commitling.demo(day, checked('species'), checked('theme'));
+    var r = window.commitling.demo(day, checked('species'), checked('theme'), checked('size'));
     if (r.error) {
       stopDemo(false);
       fail(r.error);
@@ -374,9 +385,11 @@
     ensureWasm().catch(function () {});
   });
 
-  // Species and theme redraw what is already on screen, without asking GitHub again.
+  // Species, theme and size redraw what is already on screen, without asking GitHub again.
   form.addEventListener('change', function (e) {
-    if (e.target.type !== 'radio' || busy) return;
+    if (e.target.type !== 'radio') return;
+    sizeStage();
+    if (busy) return;
     ensureWasm().then(function () {
       if (demo) frame(demo.day);
       else if (current) redraw();

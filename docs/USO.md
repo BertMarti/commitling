@@ -195,6 +195,8 @@ Por defecto la tarjeta mide 480x200 (`size: full`). Si la quieres más pequeña,
           size: compact
 ```
 
+Verás la compacta en las cinco fases de las dos especies en la [galería](https://bertmarti.github.io/commitling/#compacta), y en el generador de la web (sección «Pruébalo con tu usuario») el selector **Tamaño** te la enseña con tu usuario y rellena el workflow con `size: compact`.
+
 Sin `size`, o con `size: full`, el dibujo es exactamente el de siempre, byte a byte. Cualquier otro valor (por ejemplo `grande`) hace fallar el paso a propósito, con el mensaje `tamaño no válido "grande" (usa full o compact)`. Puedes usar la Action dos veces (una con cada tamaño) con `out` distinto y suma los dos archivos al `git add`.
 
 ## 4. Tema oscuro

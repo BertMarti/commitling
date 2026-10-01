@@ -146,3 +146,55 @@ func TestDemoDefaultsAndErrors(t *testing.T) {
 		}
 	}
 }
+
+// The size is the last argument of every call; without it, the full card.
+func TestSizeIsTheLastArgument(t *testing.T) {
+	c := api(t)
+	data, err := os.ReadFile("../../testdata/events.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Date(2026, 9, 29, 12, 0, 0, 0, time.UTC)
+	small, err := generate.Render(data, generate.Options{User: "octoexample", Species: "mushroom", Theme: "dark", Size: "compact", Now: now})
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := c.Call("render", string(data), "octoexample", "mushroom", "dark", now.UnixMilli(), "compact")
+	if got.Get("svg").String() != string(small.SVG) {
+		t.Error("commitling.render with size compact and generate.Render draw different SVGs")
+	}
+	full := c.Call("render", string(data), "octoexample", "mushroom", "dark", now.UnixMilli())
+	same := c.Call("render", string(data), "octoexample", "mushroom", "dark", now.UnixMilli(), "full")
+	if full.Get("svg").String() != same.Get("svg").String() || full.Get("svg").String() == got.Get("svg").String() {
+		t.Error("without a size, or with full, the card is the full one")
+	}
+	// A 0 for "now" (the clock) and a size is how the website asks.
+	if r := c.Call("render", `[]`, "newcomer", "", "", 0, "compact"); r.Get("error").Truthy() || !bytes.Contains([]byte(r.Get("svg").String()), []byte(`width="200"`)) {
+		t.Errorf("clock + compact: %v", r)
+	}
+
+	wf, _ := generate.Workflow(generate.Options{User: "octocat", Size: "compact"})
+	if c.Call("workflow", "octocat", "", "", "compact").Get("workflow").String() != wf {
+		t.Error("workflow with size compact differs from generate.Workflow")
+	}
+	demo, _ := generate.Demo(40, generate.Options{Size: "compact"})
+	if c.Call("demo", 40, "", "", "compact").Get("svg").String() != string(demo.SVG) {
+		t.Error("demo with size compact differs from generate.Demo")
+	}
+	if got := c.Call("check", "BertMarti", "", "", "compact").String(); got != "" {
+		t.Errorf("check with a valid size: %q", got)
+	}
+	want := generate.Options{Size: "grande"}.Check().Error()
+	if got := c.Call("check", "BertMarti", "", "", "grande").String(); got != want {
+		t.Errorf("check = %q, want %q", got, want)
+	}
+	for name, v := range map[string]js.Value{
+		"render":   c.Call("render", `[]`, "ana", "", "", 0, "grande"),
+		"workflow": c.Call("workflow", "ana", "", "", "grande"),
+		"demo":     c.Call("demo", 3, "", "", "grande"),
+	} {
+		if v.Get("error").IsUndefined() {
+			t.Errorf("%s: an invalid size must be an error", name)
+		}
+	}
+}
