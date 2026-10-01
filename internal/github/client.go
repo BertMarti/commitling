@@ -1,3 +1,7 @@
+// Package github is the client of the public events API of GitHub: pagination,
+// retries with backoff, rate-limit headers and clear errors. Decoding events
+// and turning them into activities lives in internal/events (no networking, so
+// the WebAssembly build does not link net/http); this package keeps aliases.
 package github
 
 import (

@@ -175,7 +175,7 @@ func TestWorkflow(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := strings.Replace(BaseWorkflow, "        with:\n", "        with:\n          user: octocat\n", 1)
+	want := strings.Replace(BaseWorkflow, "        with:\n", "        with:\n          user: \"octocat\"\n", 1)
 	if got != want {
 		t.Errorf("workflow with user:\n%s", got)
 	}
@@ -184,7 +184,7 @@ func TestWorkflow(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, line := range []string{"          user: octocat\n", "          species: mushroom\n", "          theme: dark\n", "          out: commitling.svg\n"} {
+	for _, line := range []string{"          user: \"octocat\"\n", "          species: mushroom\n", "          theme: dark\n", "          out: commitling.svg\n"} {
 		if !strings.Contains(got, line) {
 			t.Errorf("workflow lacks %q:\n%s", line, got)
 		}
@@ -238,5 +238,40 @@ func TestFetchError(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// YAML would read user: 007 as a number, 1e3 as a float and null or true as
+// nothing or a boolean: the login is always written as a quoted string.
+func TestWorkflowQuotesTheUser(t *testing.T) {
+	for _, u := range []string{"007", "1e3", "null", "true", "no", "0x1f", "octocat", "a-b"} {
+		got, err := Workflow(Options{User: u})
+		if err != nil {
+			t.Fatalf("%q: %v", u, err)
+		}
+		if want := "          user: \"" + u + "\"\n"; !strings.Contains(got, want) {
+			t.Errorf("user %q is not quoted:\n%s", u, got)
+		}
+	}
+}
+
+// The theme is written as its canonical name, never as the raw text (which
+// may carry spaces, capitals or even a line break).
+func TestWorkflowWritesTheNormalisedTheme(t *testing.T) {
+	for _, th := range []string{"dark", "Dark", " dark ", "\ndark", "DARK\t"} {
+		got, err := Workflow(Options{User: "octocat", Theme: th})
+		if err != nil {
+			t.Fatalf("%q: %v", th, err)
+		}
+		if !strings.Contains(got, "          theme: dark\n") {
+			t.Errorf("theme %q is not written as dark:\n%s", th, got)
+		}
+		if strings.Contains(got, "theme: \n") || strings.Contains(got, "\ndark") {
+			t.Errorf("theme %q leaked into the YAML:\n%s", th, got)
+		}
+	}
+	got, _ := Workflow(Options{User: "octocat", Theme: " LIGHT "})
+	if strings.Contains(got, "theme:") {
+		t.Errorf("the default theme is not written:\n%s", got)
 	}
 }
