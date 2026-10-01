@@ -6,7 +6,6 @@
 package render
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -229,9 +228,7 @@ func plural(n int, one, many string) string {
 // Description is a plain-text summary used for <desc> and alt texts.
 func Description(c Card) string {
 	cr := c.Creature
-	s := fmt.Sprintf("%s, %s. %s XP, racha de %s, %d días activos en los últimos 30",
-		cr.StageName(), strings.ToLower(cr.Mood.Name()), Thousands(c.Stats.XP),
-		plural(c.Stats.Streak, "día", "días"), c.Stats.ActiveDays30)
+	s := cr.StageName() + ", " + strings.ToLower(cr.Mood.Name()) + ". " + Thousands(c.Stats.XP) + " XP, racha de " + plural(c.Stats.Streak, "día", "días") + ", " + strconv.Itoa(c.Stats.ActiveDays30) + " días activos en los últimos 30"
 	if acc := cr.Accessories.Names(); len(acc) > 0 {
 		s += ". Accesorios: " + strings.Join(acc, ", ")
 	}
@@ -256,18 +253,18 @@ func SVG(c Card) []byte {
 		title = "commitling de @" + c.User
 	}
 
-	fmt.Fprintf(&b, `<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d" role="img" aria-labelledby="cl-title cl-desc">`, Width, Height, Width, Height)
+	b.WriteString(`<svg xmlns="http://www.w3.org/2000/svg" width="` + strconv.Itoa(Width) + `" height="` + strconv.Itoa(Height) + `" viewBox="0 0 ` + strconv.Itoa(Width) + ` ` + strconv.Itoa(Height) + `" role="img" aria-labelledby="cl-title cl-desc">`)
 	b.WriteString("\n")
-	fmt.Fprintf(&b, "<title id=\"cl-title\">%s</title>\n", Escape(title))
-	fmt.Fprintf(&b, "<desc id=\"cl-desc\">%s</desc>\n", Escape(Description(c)))
+	b.WriteString("<title id=\"cl-title\">" + Escape(title) + "</title>\n")
+	b.WriteString("<desc id=\"cl-desc\">" + Escape(Description(c)) + "</desc>\n")
 	writeStyle(&b, c, sp, fullLayout)
 
 	// Paper and frame.
-	fmt.Fprintf(&b, "<rect x=\"0.5\" y=\"0.5\" width=\"%d\" height=\"%d\" rx=\"8\" fill=\"%s\" stroke=\"%s\"/>\n", Width-1, Height-1, t.Bg, t.Line)
+	b.WriteString("<rect x=\"0.5\" y=\"0.5\" width=\"" + strconv.Itoa(Width-1) + "\" height=\"" + strconv.Itoa(Height-1) + "\" rx=\"8\" fill=\"" + t.Bg + "\" stroke=\"" + t.Line + "\"/>\n")
 
 	// Ground and divider.
-	fmt.Fprintf(&b, "<path d=\"M28 %dh144\" stroke=\"%s\" stroke-width=\"2\" stroke-dasharray=\"8 4\" shape-rendering=\"crispEdges\"/>\n", groundY+1, t.Line)
-	fmt.Fprintf(&b, "<path d=\"M202.5 28v144\" stroke=\"%s\" stroke-dasharray=\"2 4\" shape-rendering=\"crispEdges\"/>\n", t.Line)
+	b.WriteString("<path d=\"M28 " + strconv.Itoa(groundY+1) + "h144\" stroke=\"" + t.Line + "\" stroke-width=\"2\" stroke-dasharray=\"8 4\" shape-rendering=\"crispEdges\"/>\n")
+	b.WriteString("<path d=\"M202.5 28v144\" stroke=\"" + t.Line + "\" stroke-dasharray=\"2 4\" shape-rendering=\"crispEdges\"/>\n")
 
 	// Creature.
 	b.WriteString("<g class=\"bob\" shape-rendering=\"crispEdges\">\n")
@@ -307,8 +304,8 @@ func SpriteSVG(cr creature.Creature) []byte {
 	vx := originX + x0*pixel - (side-w)/2
 	vy := originY + y0*pixel - (side-h)/2
 	var b strings.Builder
-	fmt.Fprintf(&b, "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"%d %d %d %d\" shape-rendering=\"crispEdges\">\n", vx, vy, side, side)
-	fmt.Fprintf(&b, "<style>.o path{fill:%s}@media (prefers-color-scheme:dark){.o path{fill:%s}}</style>\n", creature.Ink, creature.Paper)
+	b.WriteString("<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"" + strconv.Itoa(vx) + " " + strconv.Itoa(vy) + " " + strconv.Itoa(side) + " " + strconv.Itoa(side) + "\" shape-rendering=\"crispEdges\">\n")
+	b.WriteString("<style>.o path{fill:" + creature.Ink + "}@media (prefers-color-scheme:dark){.o path{fill:" + creature.Paper + "}}</style>\n")
 	writeGrid(&b, &sp.Outline, "o", "", fullLayout)
 	writeGrid(&b, &sp.Body, "", "", fullLayout)
 	writeGrid(&b, &sp.Eyes, "", "", fullLayout)
@@ -341,20 +338,20 @@ func writeStyle(b *strings.Builder, c Card, sp creature.Sprite, l layout) {
 	switch c.Creature.Mood {
 	case creature.Radiant:
 		b.WriteString(".bob{animation:hop 1.6s ease-in-out infinite}\n")
-		fmt.Fprintf(b, "@keyframes hop{0%%,55%%,100%%{transform:translateY(0)}25%%{transform:translateY(-%dpx)}}\n", l.hop)
+		b.WriteString("@keyframes hop{0%,55%,100%{transform:translateY(0)}25%{transform:translateY(-" + strconv.Itoa(l.hop) + "px)}}\n")
 	case creature.Happy:
 		b.WriteString(".bob{animation:breathe 3.2s ease-in-out infinite}\n")
-		fmt.Fprintf(b, "@keyframes breathe{0%%,100%%{transform:translateY(0)}50%%{transform:translateY(-%dpx)}}\n", l.breathe)
+		b.WriteString("@keyframes breathe{0%,100%{transform:translateY(0)}50%{transform:translateY(-" + strconv.Itoa(l.breathe) + "px)}}\n")
 	default:
 		b.WriteString(".bob{animation:breathe 5.6s ease-in-out infinite}\n")
-		fmt.Fprintf(b, "@keyframes breathe{0%%,100%%{transform:translateY(0)}50%%{transform:translateY(-%dpx)}}\n", l.rest)
+		b.WriteString("@keyframes breathe{0%,100%{transform:translateY(0)}50%{transform:translateY(-" + strconv.Itoa(l.rest) + "px)}}\n")
 	}
 
 	if c.Creature.Mood.Blinks() {
 		if x0, y0, x1, y1, ok := bbox(&sp.Eyes); ok {
 			cx := l.originX + (x0+x1+1)*l.pixel/2
 			cy := l.originY + (y0+y1+1)*l.pixel/2
-			fmt.Fprintf(b, ".eyes{transform-origin:%dpx %dpx;animation:blink 4.8s infinite}\n", cx, cy)
+			b.WriteString(".eyes{transform-origin:" + strconv.Itoa(cx) + "px " + strconv.Itoa(cy) + "px;animation:blink 4.8s infinite}\n")
 			b.WriteString("@keyframes blink{0%,91%,97%,100%{transform:scaleY(1)}94%{transform:scaleY(.1)}}\n")
 		}
 	}
@@ -393,7 +390,7 @@ func writeGrid(b *strings.Builder, g *creature.Grid, class, ink string, l layout
 				for x < creature.Size && g[y][x] == p {
 					x++
 				}
-				fmt.Fprintf(&d, "M%d %dh%dv%dh-%dz", l.originX+start*l.pixel, l.originY+y*l.pixel, (x-start)*l.pixel, l.pixel, (x-start)*l.pixel)
+				d.WriteString("M" + strconv.Itoa(l.originX+start*l.pixel) + " " + strconv.Itoa(l.originY+y*l.pixel) + "h" + strconv.Itoa((x-start)*l.pixel) + "v" + strconv.Itoa(l.pixel) + "h-" + strconv.Itoa((x-start)*l.pixel) + "z")
 			}
 		}
 		if d.Len() > 0 {
@@ -401,14 +398,14 @@ func writeGrid(b *strings.Builder, g *creature.Grid, class, ink string, l layout
 			if p == creature.PInk && ink != "" {
 				fill = ink
 			}
-			paths = append(paths, fmt.Sprintf("<path fill=\"%s\" d=\"%s\"/>", fill, d.String()))
+			paths = append(paths, "<path fill=\""+fill+"\" d=\""+d.String()+"\"/>")
 		}
 	}
 	if len(paths) == 0 {
 		return
 	}
 	if class != "" {
-		fmt.Fprintf(b, "<g class=\"%s\">", class)
+		b.WriteString("<g class=\"" + class + "\">")
 		b.WriteString(strings.Join(paths, ""))
 		b.WriteString("</g>\n")
 		return
@@ -423,7 +420,7 @@ func glyph(rows []string, x, y, s int) string {
 	for dy, row := range rows {
 		for dx := 0; dx < len(row); dx++ {
 			if row[dx] != '.' {
-				fmt.Fprintf(&d, "M%d %dh%dv%dh-%dz", x+dx*s, y+dy*s, s, s, s)
+				d.WriteString("M" + strconv.Itoa(x+dx*s) + " " + strconv.Itoa(y+dy*s) + "h" + strconv.Itoa(s) + "v" + strconv.Itoa(s) + "h-" + strconv.Itoa(s) + "z")
 			}
 		}
 	}
@@ -443,7 +440,7 @@ func writeZzz(b *strings.Builder, sp creature.Sprite, t Theme) {
 	zs := []struct{ dx, dy, s int }{{0, 0, 2}, {12, -14, 2}, {24, -30, 3}}
 	b.WriteString("<g shape-rendering=\"crispEdges\">")
 	for i, z := range zs {
-		fmt.Fprintf(b, "<path class=\"z z%d\" fill=\"%s\" d=\"%s\"/>", i+1, t.Ink, glyph(zGlyph, x+z.dx, y+z.dy, z.s))
+		b.WriteString("<path class=\"z z" + strconv.Itoa(i+1) + "\" fill=\"" + t.Ink + "\" d=\"" + glyph(zGlyph, x+z.dx, y+z.dy, z.s) + "\"/>")
 	}
 	b.WriteString("</g>\n")
 }
@@ -460,8 +457,8 @@ func writeSparkles(b *strings.Builder, sp creature.Sprite) {
 	right := min(originX+(maxX+1)*pixel+4, 186)
 	top := max(originY+minY*pixel+4, 10)
 	b.WriteString("<g shape-rendering=\"crispEdges\">")
-	fmt.Fprintf(b, "<path class=\"sp\" fill=\"%s\" d=\"%s\"/>", creature.Honey, glyph(sparkle, right, top, 4))
-	fmt.Fprintf(b, "<path class=\"sp sp2\" fill=\"%s\" d=\"%s\"/>", creature.Accent, glyph(sparkle, left, top+30, 4))
+	b.WriteString("<path class=\"sp\" fill=\"" + creature.Honey + "\" d=\"" + glyph(sparkle, right, top, 4) + "\"/>")
+	b.WriteString("<path class=\"sp sp2\" fill=\"" + creature.Accent + "\" d=\"" + glyph(sparkle, left, top+30, 4) + "\"/>")
 	b.WriteString("</g>\n")
 }
 
@@ -480,10 +477,9 @@ func moodColor(m creature.Mood, t Theme) string {
 func text(b *strings.Builder, x, y int, size float64, fill, anchor, class, s string) {
 	a := ""
 	if anchor != "" {
-		a = fmt.Sprintf(" text-anchor=\"%s\"", anchor)
+		a = " text-anchor=\"" + anchor + "\""
 	}
-	fmt.Fprintf(b, "<text class=\"t%s\" x=\"%d\" y=\"%d\" font-size=\"%s\" fill=\"%s\"%s>%s</text>\n",
-		class, x, y, strconv.FormatFloat(size, 'f', -1, 64), fill, a, Escape(s))
+	b.WriteString("<text class=\"t" + class + "\" x=\"" + strconv.Itoa(x) + "\" y=\"" + strconv.Itoa(y) + "\" font-size=\"" + strconv.FormatFloat(size, 'f', -1, 64) + "\" fill=\"" + fill + "\"" + a + ">" + Escape(s) + "</text>\n")
 }
 
 // fitted draws the first candidate that fits maxW, shrinking through sizes
@@ -516,9 +512,9 @@ func writePanel(b *strings.Builder, c Card, t Theme) {
 
 	fitted(b, panelX, 64, panelWidth, []float64{22, 20, 18, 16}, t.Ink, "", " b", cr.StageName())
 
-	fmt.Fprintf(b, "<rect x=\"%d\" y=\"78\" width=\"8\" height=\"8\" fill=\"%s\" shape-rendering=\"crispEdges\"/>\n", panelX, moodColor(cr.Mood, t))
+	b.WriteString("<rect x=\"" + strconv.Itoa(panelX) + "\" y=\"78\" width=\"8\" height=\"8\" fill=\"" + moodColor(cr.Mood, t) + "\" shape-rendering=\"crispEdges\"/>\n")
 	text(b, panelX+14, 86, 12, t.Ink, "", "", cr.Mood.Name())
-	text(b, panelEnd, 86, 11, t.Muted, "end", "", fmt.Sprintf("fase %d de %d", int(cr.Stage)+1, len(creature.Stages)))
+	text(b, panelEnd, 86, 11, t.Muted, "end", "", "fase "+strconv.Itoa(int(cr.Stage)+1)+" de "+strconv.Itoa(len(creature.Stages)))
 
 	// XP row: the total goes first; the goal on the right gets what is left,
 	// with a shorter wording if needed.
@@ -528,8 +524,8 @@ func writePanel(b *strings.Builder, c Card, t Theme) {
 	goalSizes := []float64{11, 10, 9}
 	if next, ok := cr.Stage.Next(); ok {
 		fitted(b, panelEnd, 110, goalRoom, goalSizes, t.Muted, "end", "",
-			fmt.Sprintf("%s: %s XP", strings.ToLower(cr.Species.StageName(next)), Thousands(next.MinXP())),
-			fmt.Sprintf("meta: %s XP", Thousands(next.MinXP())))
+			strings.ToLower(cr.Species.StageName(next))+": "+Thousands(next.MinXP())+" XP",
+			"meta: "+Thousands(next.MinXP())+" XP")
 	} else {
 		fitted(b, panelEnd, 110, goalRoom, goalSizes, t.Muted, "end", "", "fase máxima", "máxima")
 	}
@@ -541,7 +537,7 @@ func writePanel(b *strings.Builder, c Card, t Theme) {
 	var on, off strings.Builder
 	for i := 0; i < barCells; i++ {
 		x := panelX + i*(barCellW+barGap)
-		seg := fmt.Sprintf("M%d 118h%dv%dh-%dz", x, barCellW, barHeight, barCellW)
+		seg := "M" + strconv.Itoa(x) + " 118h" + strconv.Itoa(barCellW) + "v" + strconv.Itoa(barHeight) + "h-" + strconv.Itoa(barCellW) + "z"
 		if i < filled {
 			on.WriteString(seg)
 		} else {
@@ -550,10 +546,10 @@ func writePanel(b *strings.Builder, c Card, t Theme) {
 	}
 	b.WriteString("<g shape-rendering=\"crispEdges\">")
 	if off.Len() > 0 {
-		fmt.Fprintf(b, "<path fill=\"%s\" d=\"%s\"/>", t.Line, off.String())
+		b.WriteString("<path fill=\"" + t.Line + "\" d=\"" + off.String() + "\"/>")
 	}
 	if on.Len() > 0 {
-		fmt.Fprintf(b, "<path fill=\"%s\" d=\"%s\"/>", creature.Moss, on.String())
+		b.WriteString("<path fill=\"" + creature.Moss + "\" d=\"" + on.String() + "\"/>")
 	}
 	b.WriteString("</g>\n")
 
@@ -562,7 +558,7 @@ func writePanel(b *strings.Builder, c Card, t Theme) {
 		label, value string
 	}{
 		{panelX, 86, "racha", plural(s.Streak, "día", "días")},
-		{panelX + 86, 94, "activo 30 d", fmt.Sprintf("%d/30", s.ActiveDays30)},
+		{panelX + 86, 94, "activo 30 d", (strconv.Itoa(s.ActiveDays30) + "/30")},
 		{panelX + 180, panelEnd - (panelX + 180), "repos", strconv.Itoa(s.Repos)},
 	}
 	for _, col := range cols {
@@ -593,15 +589,15 @@ func compactSVG(c Card, t Theme) []byte {
 		title = "commitling de @" + c.User
 	}
 
-	fmt.Fprintf(&b, `<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d" role="img" aria-labelledby="cl-title cl-desc">`, compactWidth, compactHeight, compactWidth, compactHeight)
+	b.WriteString(`<svg xmlns="http://www.w3.org/2000/svg" width="` + strconv.Itoa(compactWidth) + `" height="` + strconv.Itoa(compactHeight) + `" viewBox="0 0 ` + strconv.Itoa(compactWidth) + ` ` + strconv.Itoa(compactHeight) + `" role="img" aria-labelledby="cl-title cl-desc">`)
 	b.WriteString("\n")
-	fmt.Fprintf(&b, "<title id=\"cl-title\">%s</title>\n", Escape(title))
-	fmt.Fprintf(&b, "<desc id=\"cl-desc\">%s</desc>\n", Escape(Description(c)))
+	b.WriteString("<title id=\"cl-title\">" + Escape(title) + "</title>\n")
+	b.WriteString("<desc id=\"cl-desc\">" + Escape(Description(c)) + "</desc>\n")
 	writeStyle(&b, c, sp, l)
 
-	fmt.Fprintf(&b, "<rect x=\"0.5\" y=\"0.5\" width=\"%d\" height=\"%d\" rx=\"8\" fill=\"%s\" stroke=\"%s\"/>\n", compactWidth-1, compactHeight-1, t.Bg, t.Line)
+	b.WriteString("<rect x=\"0.5\" y=\"0.5\" width=\"" + strconv.Itoa(compactWidth-1) + "\" height=\"" + strconv.Itoa(compactHeight-1) + "\" rx=\"8\" fill=\"" + t.Bg + "\" stroke=\"" + t.Line + "\"/>\n")
 	groundY := l.originY + creature.Size*l.pixel
-	fmt.Fprintf(&b, "<path d=\"M%d %d.5h%d\" stroke=\"%s\" stroke-dasharray=\"4 2\" shape-rendering=\"crispEdges\"/>\n", l.originX, groundY, creature.Size*l.pixel, t.Line)
+	b.WriteString("<path d=\"M" + strconv.Itoa(l.originX) + " " + strconv.Itoa(groundY) + ".5h" + strconv.Itoa(creature.Size*l.pixel) + "\" stroke=\"" + t.Line + "\" stroke-dasharray=\"4 2\" shape-rendering=\"crispEdges\"/>\n")
 
 	b.WriteString("<g class=\"bob\" shape-rendering=\"crispEdges\">\n")
 	writeGrid(&b, &sp.Outline, "", t.Outline, l)
@@ -613,9 +609,9 @@ func compactSVG(c Card, t Theme) []byte {
 	fitted(&b, compactTextX, 23, room, []float64{14, 13, 12, 11}, t.Ink, "", " b", cr.StageName())
 
 	// The mood: a square of its colour, its name and the number of the phase.
-	fmt.Fprintf(&b, "<rect x=\"%d\" y=\"31\" width=\"6\" height=\"6\" fill=\"%s\" shape-rendering=\"crispEdges\"/>\n", compactTextX, moodColor(cr.Mood, t))
+	b.WriteString("<rect x=\"" + strconv.Itoa(compactTextX) + "\" y=\"31\" width=\"6\" height=\"6\" fill=\"" + moodColor(cr.Mood, t) + "\" shape-rendering=\"crispEdges\"/>\n")
 	fitted(&b, compactTextX+10, 37, room-10, []float64{10, 9}, t.Muted, "", "",
-		fmt.Sprintf("%s · fase %d/%d", cr.Mood.Name(), int(cr.Stage)+1, len(creature.Stages)))
+		cr.Mood.Name()+" · fase "+strconv.Itoa(int(cr.Stage)+1)+"/"+strconv.Itoa(len(creature.Stages)))
 
 	filled := int(creature.Progress(c.Stats.XP) * compactCells)
 	if cr.Stage == creature.Ancient {
@@ -624,7 +620,7 @@ func compactSVG(c Card, t Theme) []byte {
 	var on, off strings.Builder
 	for i := 0; i < compactCells; i++ {
 		x := compactTextX + i*(compactCellW+compactCellGap)
-		seg := fmt.Sprintf("M%d %dh%dv%dh-%dz", x, compactBarY, compactCellW, compactCellH, compactCellW)
+		seg := "M" + strconv.Itoa(x) + " " + strconv.Itoa(compactBarY) + "h" + strconv.Itoa(compactCellW) + "v" + strconv.Itoa(compactCellH) + "h-" + strconv.Itoa(compactCellW) + "z"
 		if i < filled {
 			on.WriteString(seg)
 		} else {
@@ -633,10 +629,10 @@ func compactSVG(c Card, t Theme) []byte {
 	}
 	b.WriteString("<g shape-rendering=\"crispEdges\">")
 	if off.Len() > 0 {
-		fmt.Fprintf(&b, "<path fill=\"%s\" d=\"%s\"/>", t.Line, off.String())
+		b.WriteString("<path fill=\"" + t.Line + "\" d=\"" + off.String() + "\"/>")
 	}
 	if on.Len() > 0 {
-		fmt.Fprintf(&b, "<path fill=\"%s\" d=\"%s\"/>", creature.Moss, on.String())
+		b.WriteString("<path fill=\"" + creature.Moss + "\" d=\"" + on.String() + "\"/>")
 	}
 	b.WriteString("</g>\n")
 	b.WriteString("</svg>\n")

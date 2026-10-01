@@ -1,7 +1,7 @@
 package generate
 
 import (
-	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/BertMarti/commitling/internal/creature"
@@ -40,7 +40,7 @@ func demoActivities(day int) []stats.Activity {
 			continue
 		}
 		at := demoStart.AddDate(0, 0, d).Add(9 * time.Hour)
-		repo := fmt.Sprintf("%s/repo-%d", DemoUser, 1+d/5)
+		repo := DemoUser + "/repo-" + strconv.Itoa(1+d/5)
 		acts = append(acts, stats.Activity{At: at, Repo: repo, Kind: stats.KindCommit, Count: 4 + d%3})
 		if d%4 == 0 {
 			acts = append(acts, stats.Activity{At: at, Repo: repo, Kind: stats.KindPullRequest, Count: 1})

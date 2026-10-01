@@ -6,7 +6,7 @@ package generate
 
 import (
 	"bytes"
-	"fmt"
+	"errors"
 	"strconv"
 	"strings"
 	"time"
@@ -38,16 +38,16 @@ type Result struct {
 // shows for a wrong --theme, --species or --user.
 func (o Options) Check() error {
 	if _, ok := render.ThemeByName(o.themeName()); !ok {
-		return fmt.Errorf("tema no válido %q (usa light o dark)", o.Theme)
+		return errors.New("tema no válido " + strconv.Quote(o.Theme) + " (usa light o dark)")
 	}
 	if _, ok := creature.SpeciesByName(o.speciesName()); !ok {
-		return fmt.Errorf("especie no válida %q (usa moss o mushroom)", o.Species)
+		return errors.New("especie no válida " + strconv.Quote(o.Species) + " (usa moss o mushroom)")
 	}
 	if _, ok := render.SizeByName(o.Size); !ok {
-		return fmt.Errorf("tamaño no válido %q (usa full o compact)", o.Size)
+		return errors.New("tamaño no válido " + strconv.Quote(o.Size) + " (usa full o compact)")
 	}
 	if o.User != "" && !events.ValidLogin(o.User) {
-		return fmt.Errorf("nombre de usuario no válido: %q", o.User)
+		return errors.New("nombre de usuario no válido: " + strconv.Quote(o.User))
 	}
 	return nil
 }
@@ -148,7 +148,7 @@ func Workflow(o Options) (string, error) {
 		return "", err
 	}
 	var inputs strings.Builder
-	line := func(k, v string) { fmt.Fprintf(&inputs, "          %s: %s\n", k, v) }
+	line := func(k, v string) { inputs.WriteString("          " + k + ": " + v + "\n") }
 	if o.User != "" {
 		// Always a quoted string: YAML would read 007 as a number and null or
 		// true as nothing or a boolean. A valid login only has letters, digits
@@ -189,12 +189,12 @@ func FetchError(status int, remaining, reset string, now time.Time) string {
 			if mins == 1 {
 				unit = "minuto"
 			}
-			wait = fmt.Sprintf("Vuelve a probar en %d %s.", mins, unit)
+			wait = "Vuelve a probar en " + strconv.Itoa(mins) + " " + unit + "."
 		}
 		return "GitHub deja hacer 60 peticiones por hora sin iniciar sesión y desde tu conexión ya se han gastado. " + wait +
 			" La Action, con el token de tu workflow, no tiene este límite."
 	case status >= 500:
-		return fmt.Sprintf("GitHub no responde bien ahora mismo (%d). Inténtalo de nuevo en unos minutos.", status)
+		return "GitHub no responde bien ahora mismo (" + strconv.Itoa(status) + "). Inténtalo de nuevo en unos minutos."
 	}
-	return fmt.Sprintf("GitHub respondió con el error %d. Inténtalo de nuevo más tarde.", status)
+	return "GitHub respondió con el error " + strconv.Itoa(status) + ". Inténtalo de nuevo más tarde."
 }

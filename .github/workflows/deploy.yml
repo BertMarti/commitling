@@ -38,7 +38,7 @@ jobs:
       # file is in the repository.
       - name: Generador (WebAssembly)
         run: |
-          GOOS=js GOARCH=wasm go build -ldflags="-s -w" -o site/commitling.wasm ./cmd/wasm
+          GOOS=js GOARCH=wasm go build -trimpath -ldflags="-s -w" -o site/commitling.wasm ./cmd/wasm
           cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" site/wasm_exec.js
           echo "commitling.wasm: $(wc -c < site/commitling.wasm) bytes, $(gzip -9 -c site/commitling.wasm | wc -c) gzipped" | tee -a "$GITHUB_STEP_SUMMARY"
 

@@ -16,7 +16,7 @@ Una mascota pixel-art **original** que vive en el README de tu perfil de GitHub.
 - Generar: `go run ./cmd/commitling render --user BertMarti --out out/commitling.svg`
 - Sin red: `go run ./cmd/commitling render --fixture testdata/events.json --out out/commitling.svg`
 - Galería: `go run ./cmd/commitling gallery --out site/`
-- wasm (generador en vivo): `GOOS=js GOARCH=wasm go build -ldflags="-s -w" -o site/commitling.wasm ./cmd/wasm` y copiar `wasm_exec.js` de `$(go env GOROOT)/lib/wasm/` a `site/` (no se suben al repositorio)
+- wasm (generador en vivo): `GOOS=js GOARCH=wasm go build -trimpath -ldflags="-s -w" -o site/commitling.wasm ./cmd/wasm` y copiar `wasm_exec.js` de `$(go env GOROOT)/lib/wasm/` a `site/` (no se suben al repositorio)
 
 ## Estructura
 - `cmd/commitling/` CLI.

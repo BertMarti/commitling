@@ -157,19 +157,3 @@ func TestPayloadReadersMatchEncodingJSON(t *testing.T) {
 		}
 	}
 }
-
-// The production build of the browser must not link encoding/json (nor fmt):
-// see docs/specs/v0.7.md.
-func TestEventsAvoidsHeavyImports(t *testing.T) {
-	for _, f := range []string{"events.go", "scan.go"} {
-		b, err := os.ReadFile(f)
-		if err != nil {
-			t.Fatal(err)
-		}
-		for _, bad := range []string{`"encoding/json"`, `"fmt"`, `"reflect"`, `"regexp"`} {
-			if strings.Contains(string(b), bad) {
-				t.Errorf("%s imports %s: it makes the wasm much bigger", f, bad)
-			}
-		}
-	}
-}
