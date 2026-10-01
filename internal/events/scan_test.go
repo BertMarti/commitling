@@ -69,7 +69,7 @@ func parseCorpus(t *testing.T) []string {
 	return []string{
 		fixture(t),
 		``, ` `, `[]`, ` [ ] `, `null`, `[null]`, `{}`, `{"a":1}`, `"x"`, `1`, `true`, `[1]`, `["x"]`, `[[]]`, `{nope`, `[{`, `[{"id"`, `[{"id":`, `[{"id":"1"`, `[{"id":"1",}]`, `[{"id":"1"} {"id":"2"}]`, `[,]`, `[{"id":"1"},]`,
-		`[{}]`, `[{"id":"a","id":"b"}]`, `[{"ID":"a","Type":"T","CREATED_AT":"2026-09-01T10:00:00Z"}]`,
+		`[{}]`, `[{"id":"a","id":"b"}]`, `[{"ID":"a","Type":"T","CREATED_AT":"2026-09-01T10:00:00Z"}]`, `[{"ſize":"x","ID":"folded"}]`,
 		`[{"id":null,"type":null,"created_at":null,"actor":null,"repo":null,"payload":null}]`,
 		`[{"id":1}]`, `[{"type":true}]`, `[{"id":[]}]`, `[{"actor":[]}]`, `[{"actor":{"login":5}}]`, `[{"repo":"x"}]`, `[{"repo":{"name":null}}]`,
 		`[{"created_at":"yesterday"}]`, `[{"created_at":5}]`, `[{"created_at":"2026-09-01T10:00:00+02:00"}]`, `[{"created_at":"2026-09-01T10:00:00.123456Z"}]`,
@@ -144,7 +144,7 @@ func TestPayloadReadersMatchEncodingJSON(t *testing.T) {
 		`{"size": -3, "commits": [{}]}`, `{"size": 2.0}`, `{"size": 2.5, "commits": [{}]}`, `{"size": "7", "commits": [{}, {}]}`, `{"size": null, "commits": [1, 2]}`,
 		`{"size": 1e2}`, `{"size": 99999999999999999999}`, `{"size": 5, "size": 6}`, `{"size": 5, "size": null}`, `{"size": 5, "size": "x"}`,
 		`{"commits": [{}], "commits": [{}, {}]}`, `{"commits": [{}, {}], "commits": null}`, `{"commits": [{}, {}], "commits": {}}`, `{"commits": {}}`, `{"commits": "x"}`,
-		`{"SIZE": 3}`, `{"Commits": [1]}`, `{"push_id": 1, "ref": "refs/heads/main"}`, `{"size": 2} x`, `{"size": 2,}`, `{"size": }`, `{"size": 2`, `{"commits": [{"a": [1, {"b": 2}]}, "x", null]}`,
+		`{"SIZE": 3}`, `{"ſize": 3}`, `{"ſize": 3, "commits": [{}]}`, `{"COMMITS": [{}, {}]}`, `{"Commits": [1]}`, `{"push_id": 1, "ref": "refs/heads/main"}`, `{"size": 2} x`, `{"size": 2,}`, `{"size": }`, `{"size": 2`, `{"commits": [{"a": [1, {"b": 2}]}, "x", null]}`,
 		`{"action": "opened"}`, `{"action": "closed"}`, `{"action": 5}`, `{"action": null}`, `{"action": "a", "action": "b"}`, `{"Action": "opened"}`, `{"action": "\u006fpened"}`, `{"action": "opened"`, `{"action": ["x"]}`,
 	}
 	for _, p := range payloads {

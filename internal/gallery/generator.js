@@ -93,6 +93,10 @@
     return null;
   }
 
+  function cacheDrop(user) {
+    try { sessionStorage.removeItem(cacheKey(user)); } catch (e) { /* nothing to drop */ }
+  }
+
   function cachePut(user, events, at) {
     var value = JSON.stringify({ at: at, events: events });
     try {
@@ -237,9 +241,10 @@
     var r = window.commitling.render(JSON.stringify(current.events), current.user, checked('species'), checked('theme'), 0, checked('size'));
     if (r.error) {
       fail(r.error);
-      return;
+      return false;
     }
     show(r, current.user, current.events.length === 0);
+    return true;
   }
 
   async function draw() {
@@ -293,7 +298,11 @@
         cachePut(user, events, current.at);
       }
       current.user = user;
-      redraw();
+      if (!redraw() && cached) {
+        // What came from the cache did not draw: do not keep it for the next ten minutes.
+        cacheDrop(user);
+        current = null;
+      }
     } finally {
       setBusy(false);
     }
@@ -397,6 +406,9 @@
 
   async function startDemo() {
     if (busy) return;
+    // «Ver demo» of the rate-limit notice disappears when the demo starts: the
+    // keyboard focus moves to the demo's own button instead of falling to <body>.
+    if (document.activeElement === demoAlt) demoGo.focus();
     setBusy(true);
     say('Cargando la demo…');
     try {

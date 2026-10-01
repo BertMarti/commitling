@@ -43,6 +43,7 @@ function loadPage(storage, opts = {}) {
   byId('gen-demo-alt').hidden = true; // as in the markup
 
   const page = {
+    doc: null,
     api: opts.api || (() => ({ status: 200, body: [] })),
     requests, calls, els, form,
     user: byId('gen-user'),
@@ -97,6 +98,7 @@ function loadPage(storage, opts = {}) {
       check(user) { calls.check.push(user); return ''; },
       render(json, user, species, theme, now, size) {
         calls.render.push({ user, species, theme, size, events: JSON.parse(json) });
+        if (JSON.parse(json).some((e) => e.id === 'bad')) return { error: 'EVENTOS NO VALIDOS' };
         return { svg: '<svg/>', description: 'descripción', login: user };
       },
       workflow() { return { workflow: 'yaml' }; },
@@ -108,6 +110,7 @@ function loadPage(storage, opts = {}) {
     };
   }
 
+  page.doc = sandbox.document;
   vm.runInNewContext(source, sandbox);
   return page;
 }
@@ -268,6 +271,35 @@ const tests = {
     assert.equal(p.requests.api.length, 1, 'and asks GitHub for nothing');
     assert.equal(p.error(), '', 'the alert is cleared');
     assert.equal(p.alt.hidden, true);
+  },
+
+  async 'with the keyboard on «Ver demo» of the notice, the focus moves to the demo button, not to <body>'() {
+    const p = loadPage(memoryStorage(), { api: () => ({ status: 403 }) });
+    await submit(p, 'octo');
+    assert.equal(p.alt.hidden, false);
+    p.doc.activeElement = p.alt; // the button that has the focus is about to be hidden
+    await p.alt.fire('click');
+    await wait(5);
+    assert.equal(p.alt.hidden, true);
+    assert.equal(p.els['demo-go'].focused, true, 'the focus goes to the demo button');
+  },
+
+  async 'what came from the cache and does not draw is dropped from it'() {
+    const storage = memoryStorage({ [KEY('octo')]: JSON.stringify({ at: Date.now(), events: [{ id: 'bad' }] }) });
+    const p = loadPage(storage, { api: () => assert.fail('it came from the cache') });
+    await submit(p, 'octo');
+    assert.equal(p.error(), 'EVENTOS NO VALIDOS');
+    assert.equal(storage.data[KEY('octo')], undefined, 'the broken entry is removed');
+    // And the next try asks GitHub.
+    const again = loadPage(storage, { api: ok([push(1)]) });
+    await submit(again, 'octo');
+    assert.equal(again.requests.api.length, 1);
+    assert.equal(again.error(), '');
+    // A fresh search that fails to draw is not what the cache is for either: nothing was cached from the cache.
+    const storage2 = memoryStorage();
+    const fresh = loadPage(storage2, { api: ok([{ id: 'bad' }]) });
+    await submit(fresh, 'octo');
+    assert.equal(fresh.error(), 'EVENTOS NO VALIDOS');
   },
 
   async '429 is a rate limit too, and a later success hides the offer'() {
