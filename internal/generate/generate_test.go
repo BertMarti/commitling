@@ -211,23 +211,27 @@ func TestWorkflowRejectsWhatIsNotAYAMLSafeLogin(t *testing.T) {
 }
 
 func TestFetchError(t *testing.T) {
-	now := time.Date(2026, 10, 1, 12, 0, 0, 0, time.UTC)
+	madrid := time.FixedZone("CEST", 2*3600)
+	now := time.Date(2026, 10, 1, 12, 0, 0, 0, madrid)
 	reset := func(d time.Duration) string { return strconv.FormatInt(now.Add(d).Unix(), 10) }
 	tests := []struct {
 		name              string
 		status            int
 		remaining, resets string
 		want              []string
+		wantNot           []string
 	}{
-		{"network", 0, "", "", []string{"conexión"}},
-		{"404", 404, "", "", []string{"no existe"}},
-		{"limit with reset", 403, "0", reset(17 * time.Minute), []string{"60 peticiones", "17 minutos"}},
-		{"limit with reset in seconds", 429, "0", reset(20 * time.Second), []string{"60 peticiones", "1 minuto"}},
-		{"limit reset already past", 403, "0", reset(-time.Minute), []string{"60 peticiones", "1 minuto"}},
-		{"limit without headers", 403, "", "", []string{"60 peticiones", "una hora"}},
-		{"limit bad reset header", 429, "0", "mañana", []string{"60 peticiones", "una hora"}},
-		{"5xx", 503, "", "", []string{"503", "minutos"}},
-		{"other", 418, "", "", []string{"418"}},
+		{"network", 0, "", "", []string{"conexión"}, []string{"Ver demo"}},
+		{"404", 404, "", "", []string{"no existe"}, []string{"Ver demo"}},
+		{"limit with reset", 403, "0", reset(17 * time.Minute), []string{"60 peticiones", "12:17", "hora local", "17 minutos", "«Ver demo»", "La Action"}, nil},
+		{"limit with reset in seconds", 429, "0", reset(20 * time.Second), []string{"60 peticiones", "12:01", "1 minuto", "«Ver demo»"}, []string{"1 minutos"}},
+		{"limit reset already past", 403, "0", reset(-time.Minute), []string{"60 peticiones", "Ya debería", "1 minuto", "«Ver demo»"}, []string{"11:59", "hora local"}},
+		{"limit reset in an hour", 403, "0", reset(time.Hour), []string{"13:00", "60 minutos"}, nil},
+		{"limit reset after midnight", 403, "0", strconv.FormatInt(time.Date(2026, 10, 1, 23, 50, 0, 0, madrid).Add(20*time.Minute).Unix(), 10), []string{"00:10"}, nil},
+		{"limit without headers", 403, "", "", []string{"60 peticiones", "una hora", "«Ver demo»"}, []string{"hora local"}},
+		{"limit bad reset header", 429, "0", "mañana", []string{"60 peticiones", "una hora", "«Ver demo»"}, []string{"hora local"}},
+		{"5xx", 503, "", "", []string{"503", "minutos"}, []string{"Ver demo"}},
+		{"other", 418, "", "", []string{"418"}, []string{"Ver demo"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -237,7 +241,32 @@ func TestFetchError(t *testing.T) {
 					t.Errorf("FetchError = %q, want it to contain %q", msg, w)
 				}
 			}
+			for _, w := range tt.wantNot {
+				if strings.Contains(msg, w) {
+					t.Errorf("FetchError = %q, must not contain %q", msg, w)
+				}
+			}
 		})
+	}
+}
+
+// The reset time is shown in the zone of the clock it is given (in the browser,
+// the local one), not in UTC or in the zone of the machine that runs the test.
+func TestFetchErrorShowsTheResetInTheZoneOfNow(t *testing.T) {
+	at := time.Date(2026, 10, 1, 10, 0, 0, 0, time.UTC) // 12:00 in Madrid, 06:00 in New York
+	reset := strconv.FormatInt(at.Add(25*time.Minute).Unix(), 10)
+	for _, c := range []struct {
+		zone *time.Location
+		want string
+	}{
+		{time.UTC, "10:25"},
+		{time.FixedZone("CEST", 2*3600), "12:25"},
+		{time.FixedZone("EDT", -4*3600), "06:25"},
+		{time.FixedZone("IST", 5*3600+1800), "15:55"},
+	} {
+		if msg := FetchError(403, "0", reset, at.In(c.zone)); !strings.Contains(msg, c.want) {
+			t.Errorf("zone %v: %q must say %s", c.zone, msg, c.want)
+		}
 	}
 }
 

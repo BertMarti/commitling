@@ -10,7 +10,7 @@
 //
 //	commitling.render(eventsJSON, user, species, theme, nowMs, size) -> {svg, description, login} | {error}
 //	commitling.workflow(user, species, theme, size)                  -> {workflow} | {error}
-//	commitling.explain(status, remaining, reset, nowMs)              -> string
+//	commitling.explain(status, remaining, reset, nowMs)              -> string (the reset time in local time)
 //	commitling.check(user, species, theme, size)                     -> "" when valid, else the error
 //	commitling.demo(day, species, theme, size)                       -> {svg, description, login, day, days, phase} | {error}
 //
@@ -115,5 +115,7 @@ func explain(_ js.Value, args []js.Value) any {
 	if now.IsZero() {
 		now = time.Now().UTC()
 	}
-	return generate.FetchError(status, str(args, 1), str(args, 2), now)
+	// The reset time is shown in the zone of the browser (Go reads its offset
+	// from Date.getTimezoneOffset).
+	return generate.FetchError(status, str(args, 1), str(args, 2), now.In(time.Local))
 }
