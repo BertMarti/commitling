@@ -34,7 +34,7 @@ Una mascota pixel-art **original** que vive en el README de tu perfil de GitHub.
 - En `generator.js`: «Ver demo» (y el enlace de la cabecera) es una acción de la persona, nunca autoarranca; el día sale del tiempo transcurrido (15 s), no del número de cuadros; Pausa/Reanudar/Repetir y Detener están siempre en la página (deshabilitados, no ocultos); se pausa si la pestaña se oculta.
 - Con `prefers-reduced-motion: reduce` no hay timelapse: solo el control deslizante de día.
 - Solo `#demo-phase` es región viva (`aria-live`): el contador y el pie cambian en cada cuadro y no lo son (nada de `<output>`).
-- Para probarla en el navegador del panel (que puede estar oculto y pausa `requestAnimationFrame`), sustituye `requestAnimationFrame` por un temporizador solo en la prueba.
+- Para probarla: servir la galería con el wasm y `wasm_exec.js`, pulsar «Ver demo», comprobar las 5 fases, Pausa/Reanudar/Detener (también con teclado: tras Detener el foco vuelve a «Ver demo»), el deslizante y `prefers-reduced-motion`.
 
 ## Ajustes visuales de v0.5.0
 - La cabecera muestra la tarjeta real (`svg/acc-all.svg`, claro y oscuro) en un `<picture>`; el propio SVG apaga la animación con `prefers-reduced-motion`.
