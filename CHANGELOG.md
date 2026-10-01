@@ -6,6 +6,24 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ## [Sin publicar]
 
+## [0.6.0] - 2026-10-01
+
+### Añadido
+
+- **Tarjeta compacta opcional** (#37 y #38): entrada `size` en la Action (`full` por defecto o `compact`) y `--size` en la CLI. La compacta es una insignia de 200x60 con la criatura, la fase, el ánimo («Contento · fase 3/5») y una barra de progreso, para firmas, barras laterales o la cabecera de un repositorio; misma paleta, mismos sprites y misma animación a escala (sin zzz ni destellos). Un valor desconocido falla con un mensaje claro. Sin `size`, el SVG es **byte a byte** el de v0.5.0: `testdata/golden/full-sha256.txt` guarda el SHA-256 de las 96 tarjetas de la galería de v0.5.0 y un test las compara.
+- `render.Size` (`Full` es el valor cero), `generate.Options.Size` (también en `Check` y en el workflow relleno, que solo escribe `size: compact` si no es el predeterminado) y argumento `size`, siempre el último, en `commitling.render`, `workflow`, `check` y `demo` del wasm.
+- La galería enseña la compacta en las cinco fases de las dos especies (`#compacta`, claro y oscuro) y el generador de la web tiene un selector «Tamaño» que redibuja en vivo, se aplica a la demo y al workflow relleno y adapta la vista previa.
+- `docs/specs/v0.6.md`, con la causa del desborde medida antes y después.
+
+### Corregido
+
+- **Desborde lateral a 320 px** (#39): el documento medía 338 px (a 360 y 375 px no se veía). La causa real era un `<code>` sin puntos de corte (`.github/workflows/commitling.yml`) en un paso de «Instálalo»; además las rejillas del generador sin columnas declaradas (columna implícita `auto`) y las tablas con la primera columna en `nowrap`. Ahora el código en línea parte (`overflow-wrap:anywhere`), toda rejilla usa `minmax(0,1fr)` y las tablas envuelven en móvil. Medido después: 320 px.
+
+### Cambiado
+
+- Los tests de CSS de la galería comprueban intenciones (lector de reglas `css_test.go`) en lugar de cadenas exactas de CSS.
+- Versión de la CLI: `0.6.0`.
+
 ## [0.5.0] - 2026-10-01
 
 ### Añadido
@@ -94,7 +112,8 @@ Primera versión: el MVP.
 
 - Las acciones de los workflows suben de versión para evitar Node 20 (`checkout@v7`, `setup-go@v7`, `configure-pages@v6`, `upload-pages-artifact@v5` y `deploy-pages@v5`) (PR #2).
 
-[Sin publicar]: https://github.com/BertMarti/commitling/compare/v0.5.0...HEAD
+[Sin publicar]: https://github.com/BertMarti/commitling/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/BertMarti/commitling/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/BertMarti/commitling/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/BertMarti/commitling/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/BertMarti/commitling/compare/v0.2.0...v0.3.0
