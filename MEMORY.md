@@ -1,7 +1,10 @@
 # MEMORY.md · commitling
-Última actualización: 2026-10-01 por builder (agent-project-3, v0.6.0 tarjeta compacta)
+Última actualización: 2026-10-01 por builder (agent-project-3, v0.7.0 «Ligero»)
 
 ## Estado actual
+**v0.7.0 «Ligero» (hito `v0.7.0`, spec `docs/specs/v0.7.md`)**: v0.6.0 está publicada y `v1` apunta a ella. Cuatro PR encadenados contra `main`, en este orden: #51 (#47: wasm sin `encoding/json` ni `fmt`, de 4.624.571 a 2.566.093 B y de 1.261.906 a 734.870 con gzip; spec; presupuesto de 3 MB en el CI), #52 (#48: aviso del límite de la API con la hora local y «Ver demo», caché de eventos en `sessionStorage` y validación del login en JS, con tests de comportamiento en Node), #53 (#49: lector de CSS de los tests con comentarios y `@supports`, huella de `favicon.svg`) y el de documentación (#50: CLI 0.7.0 y su test, CHANGELOG `[0.7.0] - 2026-10-01` con enlace `v0.6.0...v0.7.0`, README, `docs/USO.md`, AGENTS.md y este archivo). `action.yml` no ha cambiado; la release, la etiqueta `v0.7.0` y mover `v1` las hace Alberto tras fusionar. Las tarjetas son byte a byte las de v0.6.0 (galería de 120 archivos y CLI en 16 combinaciones comparadas con `main`; las 96 huellas de v0.5.0 pasan).
+
+(Histórico:)
 **v0.6.0 (hito `v0.6.0`, spec `docs/specs/v0.6.md`)**: v0.5.0 está publicada y `v1` apunta a ella. Cinco PR encadenados contra `main` (el de rendimiento es #46 y entra después de #40): #37 (tarjeta compacta: `render.Size`, `generate.Options.Size`, `--size`, entrada `size` de la Action, huellas de retrocompatibilidad), #38 (galería y generador wasm), #39 (deuda: desborde a 320 px y tests de CSS por intención) y #40 (documentación, CLI 0.6.0 y CHANGELOG). La CLI ya dice `0.6.0` y el CHANGELOG tiene `[0.6.0] - 2026-10-01` (enlace `v0.5.0...v0.6.0`); la release, la etiqueta `v0.6.0` y, si quiere, mover `v1` las hace Alberto tras fusionar. Sin `size`, la tarjeta es byte a byte la de v0.5.0 (`testdata/golden/full-sha256.txt` guarda el SHA-256 de las 96 tarjetas de la galería de v0.5.0).
 
 (Histórico:)
@@ -135,6 +138,7 @@ Pulido de v0.4.0 (rama `agent/builder/v0.4-pulido`, un PR contra `main`, tras la
 - 2026-10-01 (builder, v0.7.0 #49): el lector de CSS de los tests (`cssRules`) quita los comentarios `/* */` antes de leer (respetando cadenas y un comentario sin cerrar), lee `@supports` como `@media` (la condición es `supports (display:grid)`, y las anidadas se unen con ` && `), salta `@charset`/`@import` (sin bloque, antes se tragaban la regla siguiente) y parte selectores y declaraciones solo en comas y puntos y comas de primer nivel (`:is(a, b)`, `url(data:…;base64,…)`). `favicon.svg` ya está en `testdata/golden/full-sha256.txt` (su huella es la de v0.5.0, comprobada contra el árbol de la etiqueta); el test espera 97 archivos.
 
 ## Siguiente paso
+-3. v0.7.0: fusionar #51, #52, #53 y el PR de documentación (#50) en ese orden; con el despliegue hecho, abrir el generador con un usuario real (el wasm debe bajar ~2,6 MB: se ve en el resumen del job de despliegue y en la pestaña Red), probar el límite agotado con un `fetch` falso o desde una IP gastada (aviso con hora y botón «Ver demo») y crear la release `v0.7.0` (la CLI ya dice `0.7.0`; notas desde `CHANGELOG.md`); mover `v1` a ella si quiere (las entradas de `action.yml` no cambian).
 -2. v0.6.0: fusionar los PR #41, #42, #43, #44 y el de rendimiento (#46) en ese orden y, tras el despliegue, mirar a 320 y 375 px que no hay desplazamiento lateral y probar el selector «Tamaño» del generador; preparar la etiqueta `v0.6.0`.
 -1. v0.5.0: #32 a #35 ya están fusionados; fusionar el PR de pulido (`agent/builder/v0.5-pulido`); tras el despliegue, pulsar «Ver demo» en la web real y mirar a 375 px que no hay desplazamiento lateral; preparar la etiqueta `v0.5.0`.
 0. v0.4.0: #23 a #26 ya están fusionados; fusionar el PR de pulido, y tras el despliegue de Pages comprobar el generador en https://bertmarti.github.io/commitling/#generador (escribir un usuario real), mirar el peso del wasm en el resumen del job de despliegue y preparar la release 0.4.0 (versión de la CLI, fecha del CHANGELOG, etiqueta).
@@ -145,6 +149,8 @@ Pulido de v0.4.0 (rama `agent/builder/v0.4-pulido`, un PR contra `main`, tras la
 5. Tras el primer despliegue de Pages, comprobar que se ven las capturas del README y `og.png`.
 
 ## Problemas conocidos
+- El lector de eventos del wasm (`internal/events/scan.go`) no es `encoding/json`: sigue sus reglas (hay un test diferencial), pero rechaza más de 500 niveles de anidamiento y no mira lo que sigue al array. Si algún día cambia el formato de los eventos (campos nuevos que haya que leer), hay que ampliar el lector y su corpus.
+- El Node-test del generador simula el DOM: prueba la lógica (validación, caché, límite), no el aspecto ni el foco; eso se comprueba en el navegador a mano.
 - En el Windows local de Alberto, el Control de aplicaciones (Smart App Control) bloquea a veces los binarios que genera Go (`go test`, `go run`, `go build`). Solución: `GOTMPDIR="$PWD/out/gotmp"` y reintentar; en el CI no pasa.
 - `live/BertMarti.svg` solo existe tras el primer despliegue desde `main`; hasta entonces la imagen del README aparece rota y la web muestra un aviso.
 - La API de eventos solo da 90 días / 300 eventos: perfiles muy activos pueden ver su XP recortada a lo que cabe en esos 300 eventos.
@@ -181,3 +187,4 @@ Pulido de v0.4.0 (rama `agent/builder/v0.4-pulido`, un PR contra `main`, tras la
 - 2026-10-01 builder · Claude Code Sonnet (agent/builder/47-wasm-ligero): v0.7.0 #47: spec `docs/specs/v0.7.md`, wasm sin `encoding/json` ni `fmt` (4,6 a 2,6 MB; 1,26 a 0,73 MB gzip), test de imports prohibidos y presupuesto de 3 MB en el CI.
 - 2026-10-01 builder · Claude Code Sonnet (agent/builder/48-limite-api): v0.7.0 #48: aviso del límite con hora local y «Ver demo», caché de eventos en sessionStorage, validación del login en JS y tests de comportamiento en Node.
 - 2026-10-01 builder · Claude Code Sonnet (agent/builder/49-pulido): v0.7.0 #49: lector de CSS de los tests con comentarios y @supports, y huella de favicon.svg en las de compatibilidad.
+- 2026-10-01 builder · Claude Code Sonnet (agent/builder/50-docs-version): v0.7.0 #50: CLI 0.7.0 (y su test), CHANGELOG `[0.7.0]`, README, `docs/USO.md`, AGENTS.md y MEMORY.md al día.

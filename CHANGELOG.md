@@ -6,6 +6,23 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ## [Sin publicar]
 
+## [0.7.0] - 2026-10-01
+
+### Cambiado
+
+- **WebAssembly un 45 % más pequeño** (#47): de 4.624.571 a 2.566.093 bytes (de 1.261.906 a 734.870 con gzip; unos 6,3 s a unos 3,7 s en Slow-4G). `encoding/json` (con `reflect`) pesaba 1,6 MB y `fmt` 0,45 MB, así que los campos de los eventos se leen a mano (`internal/events/scan.go`, comparado con `encoding/json` por un test diferencial) y `render` y `generate` usan `strconv` y concatenación. Las tarjetas siguen siendo idénticas byte a byte: las 96 huellas SHA-256 de v0.5.0 pasan y la galería entera y la CLI coinciden con las de v0.6.0. `Event.Payload` pasa de `json.RawMessage` a `[]byte`. El CI compila con `-trimpath`, falla si el wasm pasa de 3 MB y un test impide que vuelvan `encoding/json`, `fmt`, `reflect`, `regexp`, `net/http`, `os` o las plantillas a lo que entra en el wasm.
+- **Límite de la API de GitHub en el generador** (#48): con las 60 peticiones por hora agotadas, el aviso dice **a qué hora se restablece** (cabecera `X-RateLimit-Reset`, en la hora local del navegador) y la web ofrece «Ver demo». Los eventos de un usuario se guardan 10 minutos en `sessionStorage` (por pestaña), de modo que redibujar, cambiar tamaño, especie o tema o recargar no gasta peticiones, y el nombre de usuario se valida en JavaScript antes de cargar el wasm o pedir nada (misma regla que `events.ValidLogin`, comprobada por un test).
+- Versión de la CLI: `0.7.0`. `action.yml` no cambia.
+
+### Añadido
+
+- `docs/specs/v0.7.md`, con la medición por paquete del wasm, qué se aplicó y qué se descartó.
+- Test de comportamiento del generador en Node (`internal/gallery/testdata/generator.test.js`) con un DOM, `fetch`, `sessionStorage` y wasm simulados.
+
+### Corregido
+
+- Los tests de CSS (#49): el lector de reglas ignora los comentarios `/* */`, entiende `@supports` y no se traga la regla que sigue a un `@charset` o `@import`; `favicon.svg` entra en las huellas de compatibilidad (la de v0.5.0).
+
 ## [0.6.0] - 2026-10-01
 
 ### Añadido
@@ -113,7 +130,8 @@ Primera versión: el MVP.
 
 - Las acciones de los workflows suben de versión para evitar Node 20 (`checkout@v7`, `setup-go@v7`, `configure-pages@v6`, `upload-pages-artifact@v5` y `deploy-pages@v5`) (PR #2).
 
-[Sin publicar]: https://github.com/BertMarti/commitling/compare/v0.6.0...HEAD
+[Sin publicar]: https://github.com/BertMarti/commitling/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/BertMarti/commitling/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/BertMarti/commitling/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/BertMarti/commitling/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/BertMarti/commitling/compare/v0.3.0...v0.4.0
