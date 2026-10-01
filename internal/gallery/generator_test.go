@@ -135,3 +135,30 @@ func TestGeneratorButtonContrast(t *testing.T) {
 		t.Errorf("button text contrast %.2f", got)
 	}
 }
+
+// Next to the creature: a download link for the very SVG on screen and the
+// workflow filled in for the person, with the same copy button as the rest of
+// the page.
+func TestGeneratorHasDownloadAndFilledWorkflow(t *testing.T) {
+	dir := buildDir(t)
+	page := readBuilt(t, dir, "index.html")
+	for _, want := range []string{
+		`<div class="gen-after" id="gen-after" hidden>`,
+		`<a class="go" id="gen-dl" download="commitling.svg"`,
+		`>Descargar SVG</a>`,
+		`id="gen-wf"`,
+		`data-copy="gen-wf"`,
+		`aria-label="Copiar el workflow con tu usuario"`,
+		`.github/workflows/commitling.yml`,
+	} {
+		if !strings.Contains(page, want) {
+			t.Errorf("index.html does not contain %q", want)
+		}
+	}
+	js := readBuilt(t, dir, "generator.js")
+	for _, want := range []string{"commitling.workflow(", "dl.download", "dl.href", "'commitling-' + "} {
+		if !strings.Contains(js, want) {
+			t.Errorf("generator.js does not contain %q", want)
+		}
+	}
+}

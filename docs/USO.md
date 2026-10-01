@@ -30,6 +30,22 @@ https://bertmarti.github.io/commitling/
 
 Ahí verás las dos especies, cada una con sus 5 fases y los 4 ánimos de cada una (20 tarjetas por especie, en versión clara y oscura), los accesorios, las reglas y las instrucciones de instalación con botones para copiar. También hay una criatura «en vivo» del autor del proyecto, que se actualiza cada día.
 
+### Generar la tuya en la web (sin instalar nada)
+
+Arriba de todo, en la sección **Pruébalo con tu usuario**, puedes ver tu propia criatura al instante:
+
+1. Escribe tu usuario de GitHub (vale con o sin `@`).
+2. Elige la especie (brote de musgo u hongo) y el tema (claro u oscuro).
+3. Pulsa **Dibujar** (o Intro). En unos segundos aparece tu criatura. Si cambias la especie o el tema, se redibuja sola, sin volver a preguntar a GitHub.
+4. Con **Descargar SVG** te llevas la imagen (`commitling-<usuario>.svg`), y debajo tienes el **workflow ya relleno** con tu usuario, la especie y el tema que has elegido, con botón de copiar. Pégalo en `.github/workflows/commitling.yml` de tu repositorio de perfil y sigue los pasos de la sección 3.
+
+Cómo funciona: tu navegador pide a GitHub tus eventos públicos (los que cualquiera puede ver en tu perfil, sin token) y los dibuja con el mismo programa que la Action, convertido a WebAssembly. No se envía nada a ningún servidor de commitling. Detalles que conviene saber:
+
+- **Límite de peticiones.** GitHub permite 60 peticiones por hora y por conexión sin iniciar sesión, y cada intento gasta entre 1 y 3. Si se agotan, la web te dice cuántos minutos faltan; espera y vuelve a probar. La Action no tiene este problema porque usa el token de tu workflow.
+- **La primera vez tarda un poco más**, porque descarga unos 5 MB (1,4 MB comprimidos) de WebAssembly. Solo ocurre cuando interactúas con el formulario, y el navegador lo guarda para la próxima vez.
+- **Puede diferir un poco de lo que dibuje la Action**: GitHub publica los eventos con unos minutos de retraso y la Action usa la hora a la que se ejecuta; con los mismos eventos y la misma fecha, el resultado es idéntico.
+- Necesita JavaScript y un navegador reciente con WebAssembly (Firefox, Chrome, Safari o Edge).
+
 ## 3. Ponerla en tu perfil, paso a paso
 
 Necesitas una cuenta de GitHub. Todo se hace desde el navegador.
@@ -347,6 +363,9 @@ El ánimo se recalcula en cada ejecución. Con la actividad de hoy pasas a «Con
 **¿Se puede dibujar a otra persona?**
 Sí. Añade `user: nombre-de-usuario` dentro del `with:` de la Action. Solo se usa su actividad pública.
 
+**¿Puedo ver mi criatura sin instalar la Action?**
+Sí: en la [web del proyecto](https://bertmarti.github.io/commitling/#generador) escribe tu usuario y pulsa **Dibujar**. Es el mismo dibujo que dará la Action. Lo explica la sección [Generar la tuya en la web](#generar-la-tuya-en-la-web-sin-instalar-nada).
+
 **¿Qué especie elijo?**
 La que más te guste: el dibujo cambia, pero la XP, los ánimos, los accesorios y los umbrales de fase son idénticos. Puedes cambiar de especie cuando quieras editando `species:` en el workflow; la criatura conserva la misma fase porque solo depende de tu actividad.
 
@@ -390,6 +409,14 @@ El mensaje dice que GitHub ha rechazado la petición (403 o 429) y que puede ser
 **Qué pasa con tu perfil si la caída es larga:** con `keep-on-error` (activada por defecto), cuando se agotan los reintentos por una causa transitoria (error de red, 5xx o límite de peticiones) la Action no falla: conserva el `commitling.svg` que ya tenías en el repositorio (por eso el workflow debe hacer `actions/checkout` antes, como el de arriba), muestra el aviso «la API de GitHub no responde… se conserva commitling.svg sin cambios» en el log y en el resumen del workflow, y termina en verde; el paso de guardar dice «Sin cambios.» y tu perfil sigue mostrando la criatura de ayer. Mañana se vuelve a intentar. **Lo que no es transitorio sigue fallando, a propósito**, para que te enteres: un `token:` propio caducado o inválido (401), un `user:` que no existe (404), un 422 o un 403 de permisos. Si aun así quieres que falle también ante las caídas transitorias, pon `keep-on-error: false`; y la primera vez, sin SVG previo, el error se mantiene porque no hay nada que conservar.
 
 En un workflow normal no debería pasar, porque la Action usa el token del propio workflow, que tiene más margen. Si falla, es casi siempre pasajero: espera y vuelve a ejecutarlo (o deja que lo haga el cron del día siguiente). Comprueba también que no has puesto un `token:` propio caducado, y que el usuario de `user:` existe. Si la usas fuera de GitHub Actions (en la línea de órdenes), define la variable `GITHUB_TOKEN` para subir el límite.
+
+### El generador de la web dice que se agotó el límite de peticiones
+
+GitHub deja 60 peticiones por hora y por conexión (dirección IP) a quien no ha iniciado sesión, y todas las personas que comparten tu red (oficina, residencia, datos móviles de la misma operadora) cuentan juntas. El mensaje indica cuántos minutos faltan para que se reinicie el contador; espera ese tiempo y vuelve a pulsar **Dibujar**. Para no depender de ese límite, instala la Action: usa el token de tu propio workflow.
+
+### El generador de la web no carga o dice que no se pudo cargar
+
+Comprueba que tienes JavaScript activado y un navegador reciente. Si tu conexión es lenta, la primera vez descarga unos 5 MB; recarga la página e inténtalo de nuevo. Si la web la sirve otra persona desde una copia propia, recuerda que el `.wasm` y `wasm_exec.js` los genera el despliegue y no están en el repositorio.
 
 ### El workflow termina en verde pero no hace commit
 

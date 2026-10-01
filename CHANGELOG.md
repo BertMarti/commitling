@@ -6,6 +6,18 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ## [Sin publicar]
 
+### Añadido
+
+- **Generador en vivo con WebAssembly** (v0.4.0 «Pro», #19 a #22): la galería tiene una sección «Pruébalo con tu usuario» donde cualquiera escribe su usuario de GitHub, elige especie y tema y ve su criatura al instante, dibujada en su navegador por el mismo código Go que la CLI, compilado a WebAssembly (`GOOS=js GOARCH=wasm`, `syscall/js`). Los eventos públicos se piden desde el navegador a `api.github.com` (sin token; 60 peticiones por hora y por conexión, con un mensaje claro y los minutos hasta el reinicio si se agotan). Incluye botón para descargar el SVG y el workflow ya relleno con el usuario, la especie y el tema, con botón de copiar. El `.wasm` (unos 5 MB, 1,4 MB con gzip) solo se descarga al interactuar con el formulario.
+- `internal/generate`: función compartida `Render` (eventos a SVG), `Workflow` (workflow relleno) y `FetchError` (mensajes de la API en español); la CLI dibuja con ella y un test comprueba que da los mismos bytes que el wasm.
+- `cmd/wasm`: capa fina de `syscall/js` (`commitling.render`, `workflow`, `explain`, `check`), probada dentro de Node en el CI.
+- El CI comprueba que el wasm compila y muestra su peso; el despliegue de Pages genera `commitling.wasm` y copia `wasm_exec.js` de la misma versión de Go (ninguno de los dos está en el repositorio).
+
+### Cambiado
+
+- El parser de eventos pasa a `internal/events`, sin `net/http`, para que el wasm pese 5,1 MB en lugar de 7,1 MB; `internal/github` conserva alias con la misma API.
+- `docs/specs/v0.4.md`: especificación de la versión.
+
 ## [0.3.0] - 2026-09-30
 
 ### Añadido
