@@ -11,6 +11,8 @@
 
   var API = 'https://api.github.com/users/';
   var PAGES = 3; // 3 pages of 100: the 300 events the API keeps (about 90 days)
+  var TIMEOUT_MS = 15000; // same as the command line client
+  var REUSE_MS = 60000; // the API caches for about a minute: do not ask again sooner
   var form = document.getElementById('gen-form');
   var userInput = document.getElementById('gen-user');
   var button = document.getElementById('gen-go');
@@ -24,7 +26,7 @@
   var wf = document.getElementById('gen-wf');
 
   var busy = false;
-  var current = null; // {user, events} of the last successful search
+  var current = null; // {user, events, at} of the last successful search
   var blobURL = '';
 
   root.hidden = false;
@@ -96,6 +98,12 @@
     return loading;
   }
 
+  // A signal that aborts the request after TIMEOUT_MS (none on old browsers).
+  function timeoutSignal() {
+    return typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function'
+      ? AbortSignal.timeout(TIMEOUT_MS) : undefined;
+  }
+
   // Reads the public events of user: up to 3 pages, newest first. A failure
   // is rejected as {status, remaining, reset}; status 0 means no answer at all.
   async function fetchEvents(user) {
@@ -105,12 +113,13 @@
       var batch;
       try {
         res = await fetch(API + encodeURIComponent(user) + '/events/public?per_page=100&page=' + page,
-          { headers: { Accept: 'application/vnd.github+json' } });
+          { headers: { Accept: 'application/vnd.github+json' }, signal: timeoutSignal() });
         if (res.status === 422 && page > 1) break; // past the last page
         if (!res.ok) {
           throw { status: res.status, remaining: res.headers.get('X-RateLimit-Remaining'), reset: res.headers.get('X-RateLimit-Reset') };
         }
         batch = await res.json();
+        if (!Array.isArray(batch)) throw { status: 502 }; // a 200 that is not a list of events
       } catch (e) {
         throw e && typeof e.status === 'number' ? e : { status: 0 };
       }
@@ -125,7 +134,7 @@
     img.src = url;
     if (blobURL) URL.revokeObjectURL(blobURL);
     blobURL = url;
-    img.alt = 'commitling de @' + user + ': ' + result.description;
+    img.alt = 'commitling de @' + user;
     img.hidden = false;
     empty.hidden = true;
     caption.textContent = '@' + user + ': ' + result.description;
@@ -173,15 +182,20 @@
         userInput.focus();
         return;
       }
-      say('Buscando la actividad pública de @' + user + '…');
       var events;
-      try {
-        events = await fetchEvents(user);
-      } catch (f) {
-        fail(window.commitling.explain(f.status, f.remaining, f.reset));
-        return;
+      if (current && current.user.toLowerCase() === user.toLowerCase() && Date.now() - current.at < REUSE_MS) {
+        events = current.events; // same user a moment ago: nothing new to ask GitHub
+      } else {
+        say('Buscando la actividad pública de @' + user + '…');
+        try {
+          events = await fetchEvents(user);
+        } catch (f) {
+          fail(window.commitling.explain(f.status, f.remaining, f.reset));
+          return;
+        }
+        current = { user: user, events: events, at: Date.now() };
       }
-      current = { user: user, events: events };
+      current.user = user;
       redraw();
     } finally {
       setBusy(false);
@@ -193,8 +207,9 @@
     draw();
   });
 
-  // Start downloading as soon as someone shows interest in the form.
-  form.addEventListener('focusin', function () {
+  // Start downloading as soon as someone types in the form (submit and change
+  // load it too); merely tabbing through the page does not.
+  form.addEventListener('input', function () {
     ensureWasm().catch(function () {});
   });
 

@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"regexp"
 	"sort"
 	"time"
 
@@ -157,7 +156,19 @@ func Login(events []Event) string {
 	return logins[0]
 }
 
-var loginRe = regexp.MustCompile(`^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$`)
-
-// ValidLogin reports whether s looks like a GitHub username.
-func ValidLogin(s string) bool { return loginRe.MatchString(s) }
+// ValidLogin reports whether s looks like a GitHub username: 1 to 39 ASCII
+// letters, digits or dashes, not starting with a dash. It is checked by hand
+// because a regexp adds half a megabyte to the WebAssembly build.
+func ValidLogin(s string) bool {
+	if len(s) == 0 || len(s) > 39 {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		alnum := c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9'
+		if !alnum && (c != '-' || i == 0) {
+			return false
+		}
+	}
+	return true
+}

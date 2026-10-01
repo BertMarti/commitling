@@ -42,7 +42,7 @@ Arriba de todo, en la sección **Pruébalo con tu usuario**, puedes ver tu propi
 Cómo funciona: tu navegador pide a GitHub tus eventos públicos (los que cualquiera puede ver en tu perfil, sin token) y los dibuja con el mismo programa que la Action, convertido a WebAssembly. No se envía nada a ningún servidor de commitling. Detalles que conviene saber:
 
 - **Límite de peticiones.** GitHub permite 60 peticiones por hora y por conexión sin iniciar sesión, y cada intento gasta entre 1 y 3. Si se agotan, la web te dice cuántos minutos faltan; espera y vuelve a probar. La Action no tiene este problema porque usa el token de tu workflow.
-- **La primera vez tarda un poco más**, porque descarga unos 5 MB (1,4 MB comprimidos) de WebAssembly. Solo ocurre cuando interactúas con el formulario, y el navegador lo guarda para la próxima vez.
+- **La primera vez tarda un poco más**, porque descarga unos 4,6 MB (1,3 MB comprimidos) de WebAssembly. Solo ocurre cuando interactúas con el formulario, y el navegador lo guarda para la próxima vez.
 - **Puede diferir un poco de lo que dibuje la Action**: GitHub publica los eventos con unos minutos de retraso y la Action usa la hora a la que se ejecuta; con los mismos eventos y la misma fecha, el resultado es idéntico.
 - Necesita JavaScript y un navegador reciente con WebAssembly (Firefox, Chrome, Safari o Edge).
 
@@ -416,7 +416,7 @@ GitHub deja 60 peticiones por hora y por conexión (dirección IP) a quien no ha
 
 ### El generador de la web no carga o dice que no se pudo cargar
 
-Comprueba que tienes JavaScript activado y un navegador reciente. Si tu conexión es lenta, la primera vez descarga unos 5 MB; recarga la página e inténtalo de nuevo. Si la web la sirve otra persona desde una copia propia, recuerda que el `.wasm` y `wasm_exec.js` los genera el despliegue y no están en el repositorio.
+Comprueba que tienes JavaScript activado y un navegador reciente. Si tu conexión es lenta, la primera vez descarga unos 4,6 MB; recarga la página e inténtalo de nuevo. Si la web la sirve otra persona desde una copia propia, recuerda que el `.wasm` y `wasm_exec.js` los genera el despliegue y no están en el repositorio.
 
 ### El workflow termina en verde pero no hace commit
 

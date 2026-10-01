@@ -139,13 +139,17 @@ func Workflow(o Options) (string, error) {
 	var inputs strings.Builder
 	line := func(k, v string) { fmt.Fprintf(&inputs, "          %s: %s\n", k, v) }
 	if o.User != "" {
-		line("user", o.User)
+		// Always a quoted string: YAML would read 007 as a number and null or
+		// true as nothing or a boolean. A valid login only has letters, digits
+		// and dashes, so Go quoting is also valid YAML quoting.
+		line("user", strconv.Quote(o.User))
 	}
 	if sp, _ := creature.SpeciesByName(o.speciesName()); sp != creature.MossSprout {
 		line("species", sp.Slug())
 	}
-	if o.themeName() != "light" {
-		line("theme", o.themeName())
+	// The canonical name, not the raw text (spaces, capitals, line breaks).
+	if theme, _ := render.ThemeByName(o.themeName()); theme.Name != render.Light.Name {
+		line("theme", theme.Name)
 	}
 	return strings.Replace(BaseWorkflow, "        with:\n", "        with:\n"+inputs.String(), 1), nil
 }

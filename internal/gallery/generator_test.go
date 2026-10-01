@@ -93,7 +93,7 @@ func TestGeneratorLoadsWasmLazily(t *testing.T) {
 		}
 	}
 	js := readBuilt(t, dir, "generator.js")
-	for _, want := range []string{"commitling.wasm", "wasm_exec.js", "focusin", "submit", "WebAssembly", "instantiateStreaming"} {
+	for _, want := range []string{"commitling.wasm", "wasm_exec.js", "'input'", "'change'", "'submit'", "WebAssembly", "instantiateStreaming"} {
 		if !strings.Contains(js, want) {
 			t.Errorf("generator.js does not mention %q", want)
 		}
@@ -160,5 +160,53 @@ func TestGeneratorHasDownloadAndFilledWorkflow(t *testing.T) {
 		if !strings.Contains(js, want) {
 			t.Errorf("generator.js does not contain %q", want)
 		}
+	}
+}
+
+// The status and alert regions are always in the accessibility tree: an empty
+// one must not be display:none (a screen reader may miss the first message of
+// a region that appears with its content).
+func TestLiveRegionsAreNeverHidden(t *testing.T) {
+	page := buildPage(t)
+	style := regexp.MustCompile(`(?s)<style>(.*?)</style>`).FindStringSubmatch(page)[1]
+	for _, m := range regexp.MustCompile(`([^{}]+)\{([^}]*)\}`).FindAllStringSubmatch(style, -1) {
+		sel, body := m[1], m[2]
+		if !regexp.MustCompile(`display:\s*none|visibility:\s*hidden`).MatchString(body) {
+			continue
+		}
+		for _, bad := range []string{"gen-msgs", "gen-status", "gen-error", "[role"} {
+			if strings.Contains(sel, bad) {
+				t.Errorf("rule %q hides a live region", strings.TrimSpace(sel))
+			}
+		}
+		if strings.Contains(sel, ":empty") {
+			t.Errorf("rule %q hides empty elements, live regions included", strings.TrimSpace(sel))
+		}
+	}
+	if !strings.Contains(page, `id="gen-status" class="note" role="status"`) || !strings.Contains(page, `id="gen-error" class="gen-error" role="alert"`) {
+		t.Error("the live regions are missing from the page")
+	}
+}
+
+// What the script promises to do (it runs in a browser, so these are
+// static checks; the behaviour was verified in the browser pane).
+func TestGeneratorScriptRobustness(t *testing.T) {
+	js := readBuilt(t, buildDir(t), "generator.js")
+	for _, want := range []string{
+		"TIMEOUT_MS = 15000",
+		"AbortSignal.timeout(TIMEOUT_MS)", // a request that never answers must not hang the button
+		"Array.isArray(",                  // a 200 that is not a list of events
+		"60000",                           // events are reused for a minute for the same user
+	} {
+		if !strings.Contains(js, want) {
+			t.Errorf("generator.js lacks %q", want)
+		}
+	}
+	if strings.Contains(js, "focusin") {
+		t.Error("the wasm must not start downloading on focus, only on input, submit or change")
+	}
+	// The alt is short; the description is already the visible caption.
+	if !strings.Contains(js, "img.alt = 'commitling de @' + user;") {
+		t.Error("the preview alt must be 'commitling de @user'")
 	}
 }

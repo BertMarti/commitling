@@ -26,7 +26,7 @@ En la [web del proyecto](https://bertmarti.github.io/commitling/#generador) escr
 
 - Se dibuja **en tu navegador** con el mismo código Go que la CLI y la Action, compilado a WebAssembly (`GOOS=js GOARCH=wasm`, `syscall/js`): para los mismos eventos y la misma fecha, el SVG es idéntico byte a byte (lo comprueba un test).
 - Lo único que sale de tu ordenador es la petición pública a `https://api.github.com/users/<usuario>/events/public` (hasta 3 páginas de 100 eventos, sin token). GitHub deja **60 peticiones por hora y por conexión** sin iniciar sesión; si se agotan, la web dice cuántos minutos faltan. La Action, con el token de tu workflow, no tiene ese límite.
-- El WebAssembly (unos 5 MB, 1,4 MB comprimido) **solo se descarga cuando interactúas con el formulario**, no al abrir la página. El `.wasm` y `wasm_exec.js` los genera el workflow de despliegue; no están en el repositorio.
+- El WebAssembly (unos 4,6 MB, 1,3 MB comprimido) **solo se descarga cuando interactúas con el formulario**, no al abrir la página. El `.wasm` y `wasm_exec.js` los genera el workflow de despliegue; no están en el repositorio.
 - Necesita JavaScript y un navegador con WebAssembly. Sin ellos, la galería sigue funcionando.
 
 ## Úsalo en tu perfil

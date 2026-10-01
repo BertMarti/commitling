@@ -6,15 +6,22 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ## [Sin publicar]
 
+## [0.4.0] - 2026-10-01
+
 ### Añadido
 
-- **Generador en vivo con WebAssembly** (v0.4.0 «Pro», #19 a #22): la galería tiene una sección «Pruébalo con tu usuario» donde cualquiera escribe su usuario de GitHub, elige especie y tema y ve su criatura al instante, dibujada en su navegador por el mismo código Go que la CLI, compilado a WebAssembly (`GOOS=js GOARCH=wasm`, `syscall/js`). Los eventos públicos se piden desde el navegador a `api.github.com` (sin token; 60 peticiones por hora y por conexión, con un mensaje claro y los minutos hasta el reinicio si se agotan). Incluye botón para descargar el SVG y el workflow ya relleno con el usuario, la especie y el tema, con botón de copiar. El `.wasm` (unos 5 MB, 1,4 MB con gzip) solo se descarga al interactuar con el formulario.
+- **Generador en vivo con WebAssembly** (v0.4.0 «Pro», #19 a #22): la galería tiene una sección «Pruébalo con tu usuario» donde cualquiera escribe su usuario de GitHub, elige especie y tema y ve su criatura al instante, dibujada en su navegador por el mismo código Go que la CLI, compilado a WebAssembly (`GOOS=js GOARCH=wasm`, `syscall/js`). Los eventos públicos se piden desde el navegador a `api.github.com` (sin token; 60 peticiones por hora y por conexión, con un mensaje claro y los minutos hasta el reinicio si se agotan). Incluye botón para descargar el SVG y el workflow ya relleno con el usuario, la especie y el tema, con botón de copiar. El `.wasm` (unos 4,6 MB, 1,3 MB con gzip) solo se descarga al interactuar con el formulario.
 - `internal/generate`: función compartida `Render` (eventos a SVG), `Workflow` (workflow relleno) y `FetchError` (mensajes de la API en español); la CLI dibuja con ella y un test comprueba que da los mismos bytes que el wasm.
 - `cmd/wasm`: capa fina de `syscall/js` (`commitling.render`, `workflow`, `explain`, `check`), probada dentro de Node en el CI.
 - El CI comprueba que el wasm compila y muestra su peso; el despliegue de Pages genera `commitling.wasm` y copia `wasm_exec.js` de la misma versión de Go (ninguno de los dos está en el repositorio).
 
 ### Cambiado
 
+- La versión de la CLI pasa a `0.4.0`.
+- `commitling.workflow` (y el workflow que muestra el generador) escribe `user` siempre entre comillas, para que un login como `007`, `1e3`, `null` o `true` no se lea como número, booleano o nulo en YAML, y escribe el tema con su nombre canónico.
+- Las regiones de estado y de error del generador ya no se ocultan cuando están vacías, para que existan siempre en el árbol de accesibilidad.
+- `ValidLogin` se comprueba a mano en lugar de con una expresión regular (mismas reglas), lo que reduce el wasm.
+- El generador cancela las peticiones a GitHub a los 15 s, comprueba que cada página sea una lista, reutiliza los eventos durante un minuto si se vuelve a dibujar el mismo usuario, empieza a descargar el wasm al escribir (no al enfocar) y usa un `alt` corto.
 - El parser de eventos pasa a `internal/events`, sin `net/http`, para que el wasm pese 5,1 MB en lugar de 7,1 MB; `internal/github` conserva alias con la misma API.
 - `docs/specs/v0.4.md`: especificación de la versión.
 
@@ -72,7 +79,8 @@ Primera versión: el MVP.
 
 - Las acciones de los workflows suben de versión para evitar Node 20 (`checkout@v7`, `setup-go@v7`, `configure-pages@v6`, `upload-pages-artifact@v5` y `deploy-pages@v5`) (PR #2).
 
-[Sin publicar]: https://github.com/BertMarti/commitling/compare/v0.3.0...HEAD
+[Sin publicar]: https://github.com/BertMarti/commitling/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/BertMarti/commitling/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/BertMarti/commitling/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/BertMarti/commitling/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/BertMarti/commitling/releases/tag/v0.1.0
