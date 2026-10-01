@@ -210,3 +210,75 @@ func TestGeneratorScriptRobustness(t *testing.T) {
 		t.Error("the preview alt must be 'commitling de @user'")
 	}
 }
+
+// The demo is a user action, never a surprise: nothing starts by itself, Pause
+// and Stop are always on the page (disabled until there is a demo, not hidden)
+// and there is a manual slider for people who ask for less motion.
+func TestDemoControls(t *testing.T) {
+	page := buildPage(t)
+	for _, want := range []string{
+		`<button type="button" class="go" id="demo-go">Ver demo</button>`,
+		`<button type="button" class="go alt" id="demo-pause" disabled>Pausa</button>`,
+		`<button type="button" class="go alt" id="demo-stop" disabled>Detener</button>`,
+		`<input type="range" id="demo-range" min="0" max="90"`,
+		`<label for="demo-range">`,
+		`id="hero-demo" hidden>`, // the header link needs the script: hidden until it runs
+	} {
+		if !strings.Contains(page, want) {
+			t.Errorf("index.html does not contain %q", want)
+		}
+	}
+	js := readBuilt(t, buildDir(t), "generator.js")
+	if !strings.Contains(js, "demoGo.addEventListener('click', startDemo)") || !strings.Contains(js, "heroDemo.addEventListener('click', startDemo)") {
+		t.Error("the demo must start from a click")
+	}
+	if strings.Contains(js, "startDemo();") || strings.Contains(js, "autoplay") {
+		t.Error("the demo must never start by itself")
+	}
+	for _, want := range []string{"prefers-reduced-motion: reduce", "requestAnimationFrame", "cancelAnimationFrame", "commitling.demo("} {
+		if !strings.Contains(js, want) {
+			t.Errorf("generator.js lacks %q", want)
+		}
+	}
+}
+
+// The demo draws locally: between its first and last line there is no network.
+func TestDemoNeverTouchesTheNetwork(t *testing.T) {
+	js := readBuilt(t, buildDir(t), "generator.js")
+	a, b := strings.Index(js, "function reducedMotion"), strings.Index(js, "form.addEventListener('submit'")
+	if a < 0 || b < a {
+		t.Fatal("cannot find the demo code")
+	}
+	for _, bad := range []string{"fetch(", "XMLHttpRequest", "API", "api.github.com", "fetchEvents"} {
+		if strings.Contains(js[a:b], bad) {
+			t.Errorf("the demo code uses %q", bad)
+		}
+	}
+}
+
+// Only the phase is announced. The day counter and the caption change every
+// frame, so none of them may be a live region.
+func TestDemoAnnouncesOnlyThePhase(t *testing.T) {
+	page := buildPage(t)
+	if !regexp.MustCompile(`id="demo-phase" role="status" aria-live="polite"`).MatchString(page) {
+		t.Error("the demo phase must be a polite live region")
+	}
+	day := regexp.MustCompile(`<span class="demo-day" id="demo-day"[^>]*>`).FindString(page)
+	if !strings.Contains(day, `aria-hidden="true"`) || strings.Contains(day, "aria-live") || strings.Contains(day, "role=") {
+		t.Errorf("the day counter must not be live: %s", day)
+	}
+	for _, id := range []string{"gen-caption", "gen-stage", "demo-range"} {
+		el := regexp.MustCompile(`<[^>]*` + id + `[^>]*>`).FindString(page)
+		if strings.Contains(el, "aria-live") || strings.Contains(el, "role=\"status\"") || strings.Contains(el, "role=\"alert\"") {
+			t.Errorf("%s must not be a live region: %s", id, el)
+		}
+	}
+	// <output> is a live region by default.
+	if strings.Contains(page, "<output") {
+		t.Error("<output> announces every change: use a plain element")
+	}
+	js := readBuilt(t, buildDir(t), "generator.js")
+	if !strings.Contains(js, "if (r.phase !== demo.phase)") {
+		t.Error("the phase must only be written when it changes")
+	}
+}

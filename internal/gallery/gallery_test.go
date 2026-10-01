@@ -206,7 +206,7 @@ func TestCopyButtonsAreAccessible(t *testing.T) {
 			t.Errorf("copy button must be type=button: %s", b)
 		}
 	}
-	if got := strings.Count(page, `role="status" aria-live="polite"`); got != 4 {
+	if got := strings.Count(page, `class="copy-msg note" role="status" aria-live="polite"`); got != 4 {
 		t.Errorf("found %d live regions for copy feedback, want 4", got)
 	}
 	// If the clipboard fails the user gets a message and the text is selected.

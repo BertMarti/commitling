@@ -123,7 +123,7 @@ func TestDemoIsGenerateDemo(t *testing.T) {
 		if got.Get("svg").String() != string(want.SVG) || got.Get("description").String() != want.Description {
 			t.Errorf("day %d: commitling.demo and generate.Demo draw different cards", day)
 		}
-		if got.Get("day").Int() != day || got.Get("days").Int() != generate.DemoDays || got.Get("phase").String() != want.Phase {
+		if got.Get("login").String() != generate.DemoUser || got.Get("day").Int() != day || got.Get("days").Int() != generate.DemoDays || got.Get("phase").String() != want.Phase {
 			t.Errorf("day %d: day %d, days %d, phase %q", day, got.Get("day").Int(), got.Get("days").Int(), got.Get("phase").String())
 		}
 	}
