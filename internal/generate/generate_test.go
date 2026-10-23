@@ -3,6 +3,8 @@ package generate
 import (
 	"bytes"
 	"encoding/json"
+	"encoding/xml"
+	"io"
 	"os"
 	"strconv"
 	"strings"
@@ -76,6 +78,39 @@ func TestRenderDefaultsAndLoginFromEvents(t *testing.T) {
 	}
 	if got.Login != "octoexample" {
 		t.Errorf("Login = %q", got.Login)
+	}
+}
+
+// The login taken from the events is not validated, only escaped: a hostile
+// actor.login must not break the SVG, in both sizes.
+func TestRenderEscapesLoginTakenFromEvents(t *testing.T) {
+	login := `<svg onload=alert(1)>`
+	data := []byte(`[{"id":"1","type":"PushEvent","actor":{"login":"` + login +
+		`"},"repo":{"name":"octoexample/notes"},"created_at":"2026-09-29T12:00:00Z","payload":{"size":1}}]`)
+	now := time.Date(2026, 9, 29, 12, 0, 0, 0, time.UTC)
+	for _, size := range []string{"", "full", "compact"} {
+		got, err := Render(data, Options{Now: now, Size: size})
+		if err != nil {
+			t.Fatalf("size %q: %v", size, err)
+		}
+		if got.Login != login {
+			t.Errorf("size %q: Login = %q, want %q", size, got.Login, login)
+		}
+		dec := xml.NewDecoder(bytes.NewReader(got.SVG))
+		for {
+			_, err := dec.Token()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				t.Fatalf("size %q: invalid XML: %v\n%s", size, err, got.SVG)
+			}
+		}
+		for _, bad := range []string{"<svg onload", "<script", " onload='", "]]>"} {
+			if bytes.Contains(got.SVG, []byte(bad)) {
+				t.Errorf("size %q: SVG contains %q:\n%s", size, bad, got.SVG)
+			}
+		}
 	}
 }
 

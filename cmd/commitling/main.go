@@ -27,7 +27,7 @@ import (
 )
 
 // version is the CLI version; it can be overridden with -ldflags "-X main.version=...".
-var version = "0.7.0"
+var version = "0.8.0"
 
 const usage = `commitling: una mascota pixel-art que crece con tus commits.
 
@@ -191,13 +191,39 @@ func readFixture(path string) ([]github.Event, error) {
 	return github.ParseEvents(f)
 }
 
+// writeFile replaces path atomically: it writes a temporary file next to it
+// and renames it over the old one, so a run that is cancelled or crashes
+// half-way never leaves a truncated SVG (keep-on-error relies on the previous
+// file being whole). A symbolic link is written through, as before.
 func writeFile(path string, data []byte) error {
-	if dir := filepath.Dir(path); dir != "" {
-		if err := os.MkdirAll(dir, 0o755); err != nil {
-			return err
-		}
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
 	}
-	return os.WriteFile(path, data, 0o644)
+	if fi, err := os.Lstat(path); err == nil && fi.Mode()&os.ModeSymlink != 0 {
+		return os.WriteFile(path, data, 0o644)
+	}
+	tmp, err := os.CreateTemp(dir, "."+filepath.Base(path)+".tmp-*")
+	if err != nil {
+		return err
+	}
+	name := tmp.Name()
+	_, werr := tmp.Write(data)
+	cerr := tmp.Close()
+	if werr == nil {
+		werr = cerr
+	}
+	if werr == nil {
+		werr = os.Chmod(name, 0o644)
+	}
+	if werr == nil {
+		werr = os.Rename(name, path)
+	}
+	if werr != nil {
+		os.Remove(name)
+		return werr
+	}
+	return nil
 }
 
 func runGallery(args []string, stdout, stderr io.Writer) error {

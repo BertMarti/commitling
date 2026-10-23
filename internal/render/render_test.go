@@ -70,6 +70,48 @@ func TestSVGEscapesUserText(t *testing.T) {
 	}
 }
 
+// The login can reach the card straight from the events (events.Login), which
+// is not validated, only escaped: every size, theme and species must turn a
+// hostile login into inert text.
+func TestEveryCardEscapesHostileUserText(t *testing.T) {
+	hostile := []string{
+		`</text><script>alert(1)</script>`,
+		`"><foreignObject>`,
+		`]]><!--`,
+		`a&b`,
+		`x' onload='y`,
+		"\x00\x07\x1b",
+	}
+	for _, size := range []Size{Full, Compact} {
+		for _, th := range []Theme{Light, Dark} {
+			for _, sp := range []creature.Species{creature.MossSprout, creature.Mushroom} {
+				for _, user := range hostile {
+					name := th.Name + "/" + sp.Slug() + "/size=" + strconv.Itoa(int(size)) + "/user=" + strconv.Quote(user)
+					c := Card{User: user, Stats: sampleStats(), Theme: th, Size: size,
+						Creature: creature.Creature{Species: sp, Stage: creature.Shrub, Mood: creature.Radiant}}
+					svg := SVG(c)
+					mustParseXML(t, svg)
+					s := string(svg)
+					for _, bad := range []string{"<script", "<foreignObject", " onload='", " onload=\"", "]]>"} {
+						if strings.Contains(s, bad) {
+							t.Errorf("%s: SVG contains %q:\n%s", name, bad, svg)
+						}
+					}
+					if !strings.Contains(s, "<title id=\"cl-title\">commitling de @"+Escape(user)+"</title>") {
+						t.Errorf("%s: escaped login not found in the title:\n%s", name, svg)
+					}
+					if d := Description(c); strings.Contains(d, "<") || strings.Contains(d, "]]>") {
+						t.Errorf("%s: Description = %q", name, d)
+					}
+					if !strings.Contains(s, "<desc id=\"cl-desc\">"+Escape(Description(c))+"</desc>") {
+						t.Errorf("%s: Description does not close the <desc> cleanly:\n%s", name, svg)
+					}
+				}
+			}
+		}
+	}
+}
+
 func TestSVGIsDeterministic(t *testing.T) {
 	a := SVG(NewCard("octoexample", sampleStats(), Light))
 	b := SVG(NewCard("octoexample", sampleStats(), Light))
