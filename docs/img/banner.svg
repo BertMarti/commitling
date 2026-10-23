@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 1200 300" role="img" aria-labelledby="bn-title bn-desc">
+<title id="bn-title">commitling: tu mascota pixel-art que crece con tus commits</title>
+<desc id="bn-desc">La palabra commitling sobre fondo de papel y, a la derecha, las cinco fases del brote de musgo dibujadas con los mismos sprites que la Action: semilla, brote, retoño, arbusto y árbol ancestral.</desc>
+<style>
+.t{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,&quot;DejaVu Sans Mono&quot;,&quot;Liberation Mono&quot;,monospace}
+.bob{animation:breathe 3.2s ease-in-out infinite}
+.f2 .bob{animation-delay:.3s}.f3 .bob{animation-delay:.6s}.f4 .bob{animation-delay:.9s}.f5 .bob{animation-delay:1.2s}
+@keyframes breathe{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+.eyes{transform-box:fill-box;transform-origin:center;animation:blink 4.8s infinite}
+@keyframes blink{0%,91%,97%,100%{transform:scaleY(1)}94%{transform:scaleY(.1)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+<rect x="0.5" y="0.5" width="1199" height="299" rx="8" fill="#f3efe6" stroke="#ddd5c6"/>
+<text class="t" x="64" y="132" font-size="76" font-weight="700" fill="#2b2724">commitling</text>
+<text class="t" x="68" y="172" font-size="18" fill="#2b2724">tu mascota pixel-art que crece con tus commits</text>
+<g shape-rendering="crispEdges"><rect x="68" y="200" width="12" height="12" fill="#7fb069"/><rect x="84" y="200" width="12" height="12" fill="#7fb069"/><rect x="100" y="200" width="12" height="12" fill="#7fb069"/><rect x="116" y="200" width="12" height="12" fill="#7fb069"/><rect x="132" y="200" width="12" height="12" fill="#7fb069"/><rect x="148" y="200" width="12" height="12" fill="#7fb069"/><rect x="164" y="200" width="12" height="12" fill="#7fb069"/><rect x="180" y="200" width="12" height="12" fill="#7fb069"/><rect x="196" y="200" width="12" height="12" fill="#7fb069"/><rect x="212" y="200" width="12" height="12" fill="#7fb069"/><rect x="228" y="200" width="12" height="12" fill="#7fb069"/><rect x="244" y="200" width="12" height="12" fill="#7fb069"/><rect x="260" y="200" width="12" height="12" fill="#7fb069"/><rect x="276" y="200" width="12" height="12" fill="#7fb069"/><rect x="292" y="200" width="12" height="12" fill="#7fb069"/><rect x="308" y="200" width="12" height="12" fill="#7fb069"/><rect x="324" y="200" width="12" height="12" fill="#7fb069"/><rect x="340" y="200" width="12" height="12" fill="#ddd5c6"/><rect x="356" y="200" width="12" height="12" fill="#ddd5c6"/><rect x="372" y="200" width="12" height="12" fill="#ddd5c6"/><rect x="388" y="200" width="12" height="12" fill="#ddd5c6"/><rect x="404" y="200" width="12" height="12" fill="#ddd5c6"/><rect x="420" y="200" width="12" height="12" fill="#ddd5c6"/><rect x="436" y="200" width="12" height="12" fill="#ddd5c6"/></g>
+<text class="t" x="68" y="240" font-size="15" fill="#6f675e">commits · racha · días activos → XP</text>
+<path d="M612.5 40v220" stroke="#ddd5c6" stroke-dasharray="2 4" shape-rendering="crispEdges"/>
+<path d="M640 214h520" stroke="#ddd5c6" stroke-width="2" stroke-dasharray="8 4" shape-rendering="crispEdges"/>
+<g class="f1" transform="translate(630 108.4) scale(0.6)"><g class="bob">
+<path fill="#2b2724" d="M100 66h30v10h-30zM90 76h10v10h-10zM130 76h10v10h-10zM90 86h10v10h-10zM110 86h20v10h-20zM60 96h80v10h-80zM50 106h10v10h-10zM140 106h10v10h-10zM40 116h10v10h-10zM150 116h10v10h-10zM40 126h10v10h-10zM150 126h10v10h-10zM40 136h10v10h-10zM150 136h10v10h-10zM40 146h10v10h-10zM150 146h10v10h-10zM50 156h10v10h-10zM140 156h10v10h-10zM60 166h80v10h-80z"/>
+<path fill="#7fb069" d="M100 76h30v10h-30zM100 86h10v10h-10z"/>
+<path fill="#e6aa68" d="M70 106h70v10h-70zM50 116h100v10h-100zM50 126h100v10h-100zM50 136h10v10h-10zM70 136h10v10h-10zM90 136h20v10h-20zM120 136h10v10h-10zM140 136h10v10h-10zM50 146h40v10h-40zM110 146h40v10h-40zM60 156h80v10h-80z"/>
+<path fill="#f3efe6" d="M60 106h10v10h-10z"/>
+<path fill="#ca3c25" d="M60 136h10v10h-10zM130 136h10v10h-10z"/>
+<path fill="#2b2724" d="M80 136h10v10h-10zM110 136h10v10h-10zM90 146h20v10h-20z"/>
+<g class="eyes"><path fill="#2b2724" d="M70 116h10v10h-10zM120 116h10v10h-10zM70 126h10v10h-10zM120 126h10v10h-10z"/></g>
+</g></g>
+<text class="t" x="690" y="240" font-size="13" text-anchor="middle" fill="#6f675e">1 · Semilla</text>
+<g class="f2" transform="translate(738 108.4) scale(0.6)"><g class="bob">
+<path fill="#2b2724" d="M40 46h30v10h-30zM130 46h30v10h-30zM30 56h10v10h-10zM70 56h20v10h-20zM110 56h20v10h-20zM160 56h10v10h-10zM30 66h10v10h-10zM90 66h20v10h-20zM160 66h10v10h-10zM40 76h30v10h-30zM130 76h30v10h-30zM70 86h20v10h-20zM110 86h20v10h-20zM60 96h30v10h-30zM110 96h30v10h-30zM40 106h20v10h-20zM140 106h20v10h-20zM30 116h10v10h-10zM160 116h10v10h-10zM30 126h10v10h-10zM160 126h10v10h-10zM30 136h10v10h-10zM160 136h10v10h-10zM30 146h10v10h-10zM160 146h10v10h-10zM40 156h10v10h-10zM150 156h10v10h-10zM50 166h100v10h-100z"/>
+<path fill="#7fb069" d="M40 56h30v10h-30zM130 56h30v10h-30zM40 66h50v10h-50zM110 66h50v10h-50zM70 76h60v10h-60zM90 86h20v10h-20zM90 96h20v10h-20zM70 106h70v10h-70zM40 116h120v10h-120zM40 126h120v10h-120zM40 136h20v10h-20zM70 136h10v10h-10zM90 136h20v10h-20zM120 136h10v10h-10zM140 136h20v10h-20zM40 146h50v10h-50zM110 146h50v10h-50zM50 156h100v10h-100z"/>
+<path fill="#f3efe6" d="M60 106h10v10h-10z"/>
+<path fill="#ca3c25" d="M60 136h10v10h-10zM130 136h10v10h-10z"/>
+<path fill="#2b2724" d="M80 136h10v10h-10zM110 136h10v10h-10zM90 146h20v10h-20z"/>
+<g class="eyes"><path fill="#2b2724" d="M70 116h10v10h-10zM120 116h10v10h-10zM70 126h10v10h-10zM120 126h10v10h-10z"/></g>
+</g></g>
+<text class="t" x="798" y="240" font-size="13" text-anchor="middle" fill="#6f675e">2 · Brote</text>
+<g class="f3" transform="translate(846 108.4) scale(0.6)"><g class="bob">
+<path fill="#2b2724" d="M90 16h20v10h-20zM80 26h10v10h-10zM110 26h10v10h-10zM40 36h20v10h-20zM80 36h10v10h-10zM110 36h10v10h-10zM140 36h20v10h-20zM30 46h10v10h-10zM60 46h10v10h-10zM80 46h10v10h-10zM110 46h10v10h-10zM130 46h10v10h-10zM160 46h10v10h-10zM30 56h10v10h-10zM70 56h20v10h-20zM110 56h20v10h-20zM160 56h10v10h-10zM40 66h20v10h-20zM140 66h20v10h-20zM60 76h30v10h-30zM110 76h30v10h-30zM40 86h30v10h-30zM130 86h30v10h-30zM30 96h10v10h-10zM160 96h10v10h-10zM20 106h10v10h-10zM170 106h10v10h-10zM20 116h10v10h-10zM170 116h10v10h-10zM20 126h10v10h-10zM170 126h10v10h-10zM20 136h10v10h-10zM170 136h10v10h-10zM30 146h10v10h-10zM160 146h10v10h-10zM40 156h120v10h-120zM50 166h10v10h-10zM80 166h10v10h-10zM110 166h10v10h-10zM140 166h10v10h-10z"/>
+<path fill="#7fb069" d="M90 26h20v10h-20zM90 36h20v10h-20zM40 46h20v10h-20zM90 46h20v10h-20zM140 46h20v10h-20zM40 56h30v10h-30zM90 56h20v10h-20zM130 56h30v10h-30zM60 66h80v10h-80zM90 76h20v10h-20zM70 86h60v10h-60zM40 96h120v10h-120zM30 106h10v10h-10zM50 106h120v10h-120zM30 116h30v10h-30zM70 116h10v10h-10zM90 116h20v10h-20zM120 116h10v10h-10zM140 116h30v10h-30zM30 126h60v10h-60zM110 126h60v10h-60zM30 136h140v10h-140zM40 146h120v10h-120z"/>
+<path fill="#e6aa68" d="M60 166h20v10h-20zM120 166h20v10h-20z"/>
+<path fill="#f3efe6" d="M40 106h10v10h-10z"/>
+<path fill="#ca3c25" d="M60 116h10v10h-10zM130 116h10v10h-10z"/>
+<path fill="#2b2724" d="M80 116h10v10h-10zM110 116h10v10h-10zM90 126h20v10h-20z"/>
+<g class="eyes"><path fill="#2b2724" d="M70 96h10v10h-10zM120 96h10v10h-10zM70 106h10v10h-10zM120 106h10v10h-10z"/></g>
+</g></g>
+<text class="t" x="906" y="240" font-size="13" text-anchor="middle" fill="#6f675e">3 · Retoño</text>
+<g class="f4" transform="translate(954 108.4) scale(0.6)"><g class="bob">
+<path fill="#2b2724" d="M40 26h30v10h-30zM80 26h40v10h-40zM130 26h30v10h-30zM30 36h10v10h-10zM70 36h10v10h-10zM120 36h10v10h-10zM160 36h10v10h-10zM30 46h10v10h-10zM160 46h10v10h-10zM20 56h10v10h-10zM170 56h10v10h-10zM20 66h10v10h-10zM170 66h10v10h-10zM20 76h10v10h-10zM170 76h10v10h-10zM20 86h10v10h-10zM170 86h10v10h-10zM20 96h10v10h-10zM170 96h10v10h-10zM20 106h10v10h-10zM170 106h10v10h-10zM20 116h10v10h-10zM170 116h10v10h-10zM20 126h10v10h-10zM170 126h10v10h-10zM30 136h10v10h-10zM160 136h10v10h-10zM40 146h120v10h-120zM50 156h10v10h-10zM70 156h10v10h-10zM120 156h10v10h-10zM140 156h10v10h-10zM40 166h10v10h-10zM70 166h10v10h-10zM120 166h10v10h-10zM150 166h10v10h-10z"/>
+<path fill="#7fb069" d="M40 36h30v10h-30zM80 36h40v10h-40zM130 36h30v10h-30zM40 46h10v10h-10zM60 46h100v10h-100zM30 56h110v10h-110zM150 56h20v10h-20zM30 66h140v10h-140zM30 76h140v10h-140zM30 86h140v10h-140zM30 96h30v10h-30zM70 96h10v10h-10zM90 96h20v10h-20zM120 96h10v10h-10zM140 96h30v10h-30zM30 106h10v10h-10zM50 106h40v10h-40zM110 106h60v10h-60zM30 116h140v10h-140zM30 126h140v10h-140zM40 136h120v10h-120z"/>
+<path fill="#e6aa68" d="M60 156h10v10h-10zM130 156h10v10h-10zM50 166h20v10h-20zM130 166h20v10h-20z"/>
+<path fill="#f3efe6" d="M50 46h10v10h-10z"/>
+<path fill="#ca3c25" d="M140 56h10v10h-10zM60 96h10v10h-10zM130 96h10v10h-10zM40 106h10v10h-10z"/>
+<path fill="#2b2724" d="M80 96h10v10h-10zM110 96h10v10h-10zM90 106h20v10h-20z"/>
+<g class="eyes"><path fill="#2b2724" d="M70 76h10v10h-10zM120 76h10v10h-10zM70 86h10v10h-10zM120 86h10v10h-10z"/></g>
+</g></g>
+<text class="t" x="1014" y="240" font-size="13" text-anchor="middle" fill="#6f675e">4 · Arbusto</text>
+<g class="f5" transform="translate(1062 108.4) scale(0.6)"><g class="bob">
+<path fill="#2b2724" d="M60 16h80v10h-80zM40 26h20v10h-20zM140 26h20v10h-20zM30 36h10v10h-10zM160 36h10v10h-10zM20 46h10v10h-10zM170 46h10v10h-10zM20 56h10v10h-10zM170 56h10v10h-10zM20 66h10v10h-10zM170 66h10v10h-10zM30 76h10v10h-10zM160 76h10v10h-10zM40 86h20v10h-20zM140 86h20v10h-20zM50 96h10v10h-10zM140 96h10v10h-10zM50 106h10v10h-10zM140 106h10v10h-10zM50 116h10v10h-10zM140 116h10v10h-10zM50 126h10v10h-10zM140 126h10v10h-10zM50 136h10v10h-10zM140 136h10v10h-10zM40 146h10v10h-10zM150 146h10v10h-10zM30 156h10v10h-10zM60 156h10v10h-10zM130 156h10v10h-10zM160 156h10v10h-10zM20 166h40v10h-40zM70 166h60v10h-60zM140 166h40v10h-40z"/>
+<path fill="#7fb069" d="M60 26h80v10h-80zM40 36h10v10h-10zM60 36h60v10h-60zM130 36h30v10h-30zM30 46h140v10h-140zM30 56h30v10h-30zM70 56h100v10h-100zM30 66h110v10h-110zM150 66h20v10h-20zM40 76h120v10h-120z"/>
+<path fill="#e6aa68" d="M60 86h80v10h-80zM60 96h80v10h-80zM60 106h80v10h-80zM70 116h10v10h-10zM120 116h10v10h-10zM60 126h30v10h-30zM110 126h30v10h-30zM60 136h80v10h-80zM50 146h100v10h-100zM40 156h20v10h-20zM70 156h60v10h-60zM140 156h20v10h-20z"/>
+<path fill="#f3efe6" d="M50 36h10v10h-10z"/>
+<path fill="#ca3c25" d="M120 36h10v10h-10zM60 56h10v10h-10zM140 66h10v10h-10zM60 116h10v10h-10zM90 116h20v10h-20zM130 116h10v10h-10z"/>
+<path fill="#2b2724" d="M80 116h10v10h-10zM110 116h10v10h-10zM90 126h20v10h-20z"/>
+<g class="eyes"><path fill="#2b2724" d="M70 96h10v10h-10zM120 96h10v10h-10zM60 106h10v10h-10zM80 106h10v10h-10zM110 106h10v10h-10zM130 106h10v10h-10z"/></g>
+</g></g>
+<text class="t" x="1122" y="240" font-size="13" text-anchor="middle" fill="#6f675e">5 · Árbol</text>
+</svg>
