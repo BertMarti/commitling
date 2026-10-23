@@ -5,6 +5,7 @@ Hoja de ruta priorizada. Fechada el 24/10/2026. Las etiquetas, releases y mover 
 ## Hecho hoy (v0.8.0 «Blindada», rama `mejoras-2026-10-24`)
 - CSP estricta en la web y sin scripts en línea (`page.js`), `theme-color`.
 - CI con job «seguridad» (govulncheck, staticcheck, gitleaks), permisos mínimos por job, `persist-credentials: false`, dependabot semanal agrupado y `SECURITY.md`.
+- `toolchain go1.27.3` en `go.mod`: la Action y el CI compilaban con Go 1.27.0 (11 vulnerabilidades de la biblioteca estándar).
 - Tests de regresión: sin `${{ }}` en `run:`, workflows con permisos y escape de logins hostiles en todas las tarjetas.
 - README para personas usuarias con cabecera pixel-art (sprites reales) y `docs/DESARROLLO.md`; `.claude/agents` y `.claude/skills`; corregido `@v1.0.0` inexistente en `docs/USO.md`.
 
@@ -13,7 +14,8 @@ Hoja de ruta priorizada. Fechada el 24/10/2026. Las etiquetas, releases y mover 
 2. **Alberto**: activar «Private vulnerability reporting» en Settings → Security (lo enlaza `SECURITY.md`).
 3. Tras el despliegue: abrir https://bertmarti.github.io/commitling/ con la consola abierta y comprobar que no hay violaciones de CSP (demo, generador con un usuario y descarga).
 4. Publicar la Action en el Marketplace si aún no lo está (nombre `commitling`, branding ya declarado).
-5. Fijar las acciones de terceros por SHA en los workflows (hoy por versión mayor) si se quiere el máximo de reproducibilidad; dependabot sabe actualizar SHAs.
+5. Subir `toolchain` de `go.mod` con cada parche de Go (govulncheck en el CI avisará).
+6. Fijar las acciones de terceros por SHA en los workflows (hoy por versión mayor) si se quiere el máximo de reproducibilidad; dependabot sabe actualizar SHAs.
 
 ## Ideas (sin compromiso)
 - Una tercera especie de diseño propio (receta en `CONTRIBUTING.md`).

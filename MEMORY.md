@@ -148,6 +148,7 @@ Pulido de v0.4.0 (rama `agent/builder/v0.4-pulido`, un PR contra `main`, tras la
 - 2026-10-24 (Claude Opus): `action.yml` no se toca: ya pasaba las entradas por `env:` y valida `keep-on-error`. La única interpolación en `run:` estaba en `action-test.yml` (`github.repository_owner`, de bajo riesgo) y se pasó a `env:`.
 - 2026-10-24 (Claude Opus): la cabecera del README se genera con los sprites reales (la que propuso el delegado inventaba criaturas y ponía la animación CSS en el mismo `<g>` que el `transform`, que la anulaba).
 - 2026-10-24 (Claude Opus, a propuesta de la revisión de Luna): `writeFile` de la CLI escribe en un temporal del mismo directorio y renombra (atómico también en Windows); si el destino es un enlace simbólico escribe a través de él como antes. Se descartaron otras dos propuestas de la revisión: revocar la blob URL anterior en `paint` es correcto (la imagen ya apunta a la nueva) y los colores de `Theme` solo vienen de `ThemeByName`.
+- 2026-10-24 (Claude Opus): **`toolchain go1.27.3` en go.mod**. Con solo `go 1.27.0`, `setup-go` (CI, Pages y la propia Action en los perfiles) instalaba Go 1.27.0, con 11 vulnerabilidades de la biblioteca estándar alcanzables (net/http, http2, textproto, crypto/tls, crypto/x509, html/template). El job de govulncheck lo detectó en el primer CI. Mantener el `toolchain` en el último parche (dependabot no siempre lo sube): mirar https://go.dev/dl/?mode=json.
 - 2026-10-24 (Claude Opus): versión 0.8.0 (menor: nada incompatible). No se mueven etiquetas.
 
 ## Siguiente paso

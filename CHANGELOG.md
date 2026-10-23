@@ -13,11 +13,15 @@ Versión «Blindada»: seguridad, documentación y accesibilidad. **`action.yml`
 ### Añadido
 
 - **Content-Security-Policy estricta en la web**: solo scripts propios (más `'wasm-unsafe-eval'` para el generador), conexiones solo a la propia web y a `api.github.com`, sin `object`, `base` ni formularios externos; `referrer` `strict-origin-when-cross-origin` y `theme-color` para claro y oscuro. El script de los botones «Copiar» y el aviso de criatura en vivo no disponible pasan a `page.js` (antes eran un `<script>` y un `onerror` en línea, que la CSP bloquearía). Test `TestPageHasStrictCSP`.
-- **Job «seguridad» en el CI**: `govulncheck` (sin vulnerabilidades), `staticcheck` (también del wasm, sin avisos) y `gitleaks` sobre todo el historial (binario oficial con SHA-256 fijado).
+- **Job «seguridad» en el CI**: `govulncheck` (sin vulnerabilidades con Go 1.27.3), `staticcheck` (también del wasm, sin avisos) y `gitleaks` sobre todo el historial (binario oficial con SHA-256 fijado).
 - `.github/dependabot.yml` (Actions y Go, semanal y agrupado) y `SECURITY.md`.
 - Tests de regresión: ninguna expresión `${{ }}` dentro de un script `run:` de `action.yml` o de los workflows (`TestNoExpressionsInRunScripts`), y todo workflow con `permissions` y `persist-credentials: false` (`TestWorkflowsAreLeastPrivilege`). Tests de escape de logins hostiles en todas las tarjetas.
 - README para personas usuarias con cabecera pixel-art propia (`docs/img/banner.svg`, hecha con los sprites reales) y preguntas frecuentes; lo técnico pasa a `docs/DESARROLLO.md`.
 - Documentación para agentes: `PLAN.md`, `.claude/agents/` y `.claude/skills/`.
+
+### Seguridad
+
+- **La Action, el CI y Pages compilaban con Go 1.27.0**, que tiene 11 vulnerabilidades conocidas en la biblioteca estándar que commitling usa (`net/http`, `net/http/internal/http2`, `net/textproto`, `crypto/tls`, `crypto/x509` y `html/template`; GO-2026-6599 a GO-2026-6809), porque `setup-go` instalaba exactamente la versión de `go.mod`. `go.mod` declara ahora `toolchain go1.27.3` (la última), así que todo se compila con ella. Lo destapó el nuevo job de govulncheck.
 
 ### Cambiado
 
