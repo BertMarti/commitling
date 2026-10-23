@@ -18,6 +18,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Action con el fixture (sin red)
         id: fixture
@@ -109,6 +111,7 @@ jobs:
           INVALID_OUTCOME: ${{ steps.invalid.outcome }}
           UNAUTHORIZED_OUTCOME: ${{ steps.unauthorized.outcome }}
           BADKEEP_OUTCOME: ${{ steps.badkeep.outcome }}
+          OWNER: ${{ github.repository_owner }}
         run: |
           set -euo pipefail
           test "$INVALID_OUTCOME" = failure || { echo 'species: dragon debería fallar'; exit 1; }
@@ -130,5 +133,5 @@ jobs:
           grep -q 'Retoño' "$FIXTURE_PATH"
           grep -q 'Seta' "$MUSHROOM_PATH"
           if grep -q 'Retoño' "$MUSHROOM_PATH"; then echo 'la especie hongo no se aplicó'; exit 1; fi
-          grep -q "@${{ github.repository_owner }}" "$REAL_PATH"
+          grep -q "@$OWNER" "$REAL_PATH"
           grep -q '#2b2724' "$REAL_PATH"

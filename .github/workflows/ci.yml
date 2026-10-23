@@ -25,6 +25,8 @@ jobs:
         shell: bash
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-go@v7
         with:
@@ -75,3 +77,44 @@ jobs:
 
       - name: versión
         run: go run ./cmd/commitling version
+
+  # Security checks: known vulnerabilities in Go and its standard library
+  # (govulncheck), static analysis (staticcheck, also for the wasm build) and
+  # secrets in the whole history and the working tree (gitleaks, official
+  # binary checked against a pinned SHA-256).
+  security:
+    name: seguridad
+    runs-on: ubuntu-latest
+    env:
+      GITLEAKS_VERSION: "8.30.1"
+      GITLEAKS_SHA256: "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"
+      GOVULNCHECK_VERSION: "v1.9.0"
+      STATICCHECK_VERSION: "2026.2.2"
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: govulncheck
+        run: go run "golang.org/x/vuln/cmd/govulncheck@${GOVULNCHECK_VERSION}" ./...
+
+      - name: staticcheck
+        run: |
+          go install "honnef.co/go/tools/cmd/staticcheck@${STATICCHECK_VERSION}"
+          "$(go env GOPATH)/bin/staticcheck" ./...
+          GOOS=js GOARCH=wasm "$(go env GOPATH)/bin/staticcheck" ./cmd/wasm
+
+      - name: gitleaks
+        run: |
+          tgz="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -fsSLo "$RUNNER_TEMP/$tgz" "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/$tgz"
+          echo "${GITLEAKS_SHA256}  $RUNNER_TEMP/$tgz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/$tgz" -C "$RUNNER_TEMP" gitleaks
+          "$RUNNER_TEMP/gitleaks" git . --redact --no-banner -v
+          "$RUNNER_TEMP/gitleaks" dir . --redact --no-banner -v
