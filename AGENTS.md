@@ -11,7 +11,7 @@ Una mascota pixel-art **original** que vive en el README de tu perfil de GitHub.
 - Web del proyecto en **GitHub Pages**: galería de fases y ánimos generada por el propio binario (`commitling gallery`), un generador en vivo (wasm), un **modo demo** («Ver demo») y una criatura en vivo de BertMarti regenerada a diario.
 
 ## Comandos
-- Tests: `go test ./...`
+- Tests: `go test ./...` (en la Raspberry Pi: `GOFLAGS=-p=2 go test ./...`)
 - Generador (comportamiento, Node): `node internal/gallery/testdata/generator.test.js <generator.js construido por la galería>`
 - Análisis: `go vet ./...` y `gofmt -l .` (debe salir vacío)
 - Generar: `go run ./cmd/commitling render --user BertMarti --out out/commitling.svg`
@@ -56,6 +56,15 @@ Una mascota pixel-art **original** que vive en el README de tu perfil de GitHub.
 - Generador y límite de la API: `generator.js` valida el login con la regla de `events.ValidLogin` (un test compara la regexp de JS con la función de Go), cachea los eventos 10 min en `sessionStorage` (`commitling:events:<login en minúsculas>`; todo con `try/catch`; no hay más almacenamiento, ni `localStorage` ni cookies) y, con un 403 o 429, enseña `generate.FetchError` (hora local de `X-RateLimit-Reset`) y el botón «Ver demo» (`#gen-demo-alt`).
 - Tests de comportamiento del generador en Node: `node internal/gallery/testdata/generator.test.js <generator.js>` (DOM, `fetch`, `sessionStorage` y wasm simulados, sin dependencias); lo lanza `TestGeneratorBehaviourInNode`, que en el CI falla si no hay `node` y en otros sitios se salta.
 - El lector de CSS de los tests (`css_test.go`) ignora comentarios y cadenas y entiende `@media` y `@supports`; sigue siendo un lector mínimo, no un analizador completo.
+
+## Blindada (v0.8.0, 24/10/2026)
+- **La interfaz de `action.yml` es sagrada**: entradas (`user`, `out`, `theme`, `token`, `species`, `size`, `fixture`, `keep-on-error`), salida `path`, nombres de archivo y formato del SVG. El perfil de BertMarti (y otros) la usan a diario con `@v1`; un cambio incompatible rompe perfiles al día siguiente de mover `v1`.
+- **Nada de `${{ }}` dentro de un script `run:`** (ni en `action.yml` ni en los workflows): las entradas y contextos llegan por `env:`. Lo vigila `TestNoExpressionsInRunScripts`.
+- Workflows con `permissions` explícitos (Pages: `{}` arriba y lo justo por job) y `persist-credentials: false` en cada `checkout` (`TestWorkflowsAreLeastPrivilege`).
+- **CSP de la web** (`<meta http-equiv="Content-Security-Policy">` en `index.html.tmpl`): no se admiten `<script>` en línea ni atributos `on…=`. Lo pequeño va a `internal/gallery/page.js` (embebido y escrito por `gallery.Build`), el generador a `generator.js`. Si la web necesita otro origen, hay que añadirlo a la CSP y a `TestPageHasStrictCSP`.
+- Seguridad local (lo mismo que el job «seguridad» del CI): `go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...`, `go run honnef.co/go/tools/cmd/staticcheck@2026.2.2 ./...` (y con `GOOS=js GOARCH=wasm` sobre `./cmd/wasm`), `gitleaks git . --redact`.
+- Cabecera del README: `docs/img/banner.svg` se generó con los `<g class="bob">` de los SVG reales de la galería (fases contento y árbol radiante) a escala 0,6; si cambian los sprites, regénerala igual (receta en `.claude/skills/publicar-version/SKILL.md`).
+- En la Raspberry Pi de Alberto (4 núcleos, compartida): `GOFLAGS=-p=2` y nunca dos builds a la vez.
 
 ## Reglas de contenido
 - El personaje es **diseño propio**. Prohibido imitar criaturas de videojuegos, anime o marcas.

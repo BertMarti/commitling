@@ -6,6 +6,31 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ## [Sin publicar]
 
+## [0.8.0] - 2026-10-24
+
+Versión «Blindada»: seguridad, documentación y accesibilidad. **`action.yml` no cambia** (mismas entradas, misma salida `path`, mismos archivos) y las tarjetas SVG son byte a byte las de v0.7.0 (las 96 huellas de v0.5.0 pasan).
+
+### Añadido
+
+- **Content-Security-Policy estricta en la web**: solo scripts propios (más `'wasm-unsafe-eval'` para el generador), conexiones solo a la propia web y a `api.github.com`, sin `object`, `base` ni formularios externos; `referrer` `strict-origin-when-cross-origin` y `theme-color` para claro y oscuro. El script de los botones «Copiar» y el aviso de criatura en vivo no disponible pasan a `page.js` (antes eran un `<script>` y un `onerror` en línea, que la CSP bloquearía). Test `TestPageHasStrictCSP`.
+- **Job «seguridad» en el CI**: `govulncheck` (sin vulnerabilidades), `staticcheck` (también del wasm, sin avisos) y `gitleaks` sobre todo el historial (binario oficial con SHA-256 fijado).
+- `.github/dependabot.yml` (Actions y Go, semanal y agrupado) y `SECURITY.md`.
+- Tests de regresión: ninguna expresión `${{ }}` dentro de un script `run:` de `action.yml` o de los workflows (`TestNoExpressionsInRunScripts`), y todo workflow con `permissions` y `persist-credentials: false` (`TestWorkflowsAreLeastPrivilege`). Tests de escape de logins hostiles en todas las tarjetas.
+- README para personas usuarias con cabecera pixel-art propia (`docs/img/banner.svg`, hecha con los sprites reales) y preguntas frecuentes; lo técnico pasa a `docs/DESARROLLO.md`.
+- Documentación para agentes: `PLAN.md`, `.claude/agents/` y `.claude/skills/`.
+
+### Cambiado
+
+- Workflows con permisos mínimos: el de Pages no da nada por defecto (`build` solo lee; `deploy` tiene `pages` e `id-token`, y `configure-pages` pasa a ese job) y ningún `checkout` guarda el token en `.git/config`.
+- La prueba de la Action pasa `github.repository_owner` al script por `env:` en vez de interpolarlo.
+- La CLI (y por tanto la Action) **escribe el SVG de forma atómica** (archivo temporal y renombrado): una ejecución cancelada a medias ya no puede dejar un SVG cortado, que `keep-on-error` necesita entero. Mismo contenido, mismos permisos (0644).
+- `.gitignore` ignora `.env*` (salvo `.env.example`).
+- Versión de la CLI: `0.8.0`.
+
+### Corregido
+
+- `docs/USO.md` recomendaba fijar `@v1.0.0`, una etiqueta que no existe (el workflow fallaría): ahora remite a las releases (`@v0.7.0`).
+
 ## [0.7.0] - 2026-10-01
 
 ### Cambiado
@@ -132,7 +157,8 @@ Primera versión: el MVP.
 
 - Las acciones de los workflows suben de versión para evitar Node 20 (`checkout@v7`, `setup-go@v7`, `configure-pages@v6`, `upload-pages-artifact@v5` y `deploy-pages@v5`) (PR #2).
 
-[Sin publicar]: https://github.com/BertMarti/commitling/compare/v0.7.0...HEAD
+[Sin publicar]: https://github.com/BertMarti/commitling/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/BertMarti/commitling/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/BertMarti/commitling/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/BertMarti/commitling/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/BertMarti/commitling/compare/v0.4.0...v0.5.0
