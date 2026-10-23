@@ -186,3 +186,76 @@ func TestActionInputDefaultsMatchTheCLI(t *testing.T) {
 		}
 	}
 }
+
+// runBlocks returns the body of every `run: |` block of a workflow or action
+// file (the indented lines that follow it).
+func runBlocks(yml string) []string {
+	var blocks []string
+	lines := strings.Split(yml, "\n")
+	for i := 0; i < len(lines); i++ {
+		l := lines[i]
+		trim := strings.TrimLeft(l, " ")
+		if !strings.HasPrefix(trim, "run:") && !strings.HasPrefix(trim, "- run:") {
+			continue
+		}
+		indent := len(l) - len(trim)
+		body := []string{strings.TrimSpace(strings.SplitN(trim, "run:", 2)[1])}
+		for i+1 < len(lines) {
+			next := lines[i+1]
+			if strings.TrimSpace(next) != "" && len(next)-len(strings.TrimLeft(next, " ")) <= indent {
+				break
+			}
+			body = append(body, next)
+			i++
+		}
+		blocks = append(blocks, strings.Join(body, "\n"))
+	}
+	return blocks
+}
+
+// No `${{ }}` expression may be expanded inside a shell script: GitHub pastes
+// it into the script before running it, so an input (or anything a user can
+// influence) would become code. Inputs reach the scripts through `env:`.
+func TestNoExpressionsInRunScripts(t *testing.T) {
+	files := []string{"action.yml"}
+	entries, err := os.ReadDir("../../.github/workflows")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, e := range entries {
+		if strings.HasSuffix(e.Name(), ".yml") || strings.HasSuffix(e.Name(), ".yaml") {
+			files = append(files, ".github/workflows/"+e.Name())
+		}
+	}
+	for _, f := range files {
+		blocks := runBlocks(readRepoFile(t, f))
+		if len(blocks) == 0 {
+			t.Errorf("%s: no run blocks found (is the parser still right?)", f)
+		}
+		for _, b := range blocks {
+			if strings.Contains(b, "${{") {
+				t.Errorf("%s: a run script expands an expression; pass it through env: instead:\n%s", f, b)
+			}
+		}
+	}
+}
+
+// Every workflow declares its permissions and no checkout keeps the token in
+// .git/config (none of these jobs pushes).
+func TestWorkflowsAreLeastPrivilege(t *testing.T) {
+	entries, err := os.ReadDir("../../.github/workflows")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, e := range entries {
+		f := ".github/workflows/" + e.Name()
+		yml := readRepoFile(t, f)
+		if !regexp.MustCompile(`(?m)^permissions:`).MatchString(yml) {
+			t.Errorf("%s has no top-level permissions", f)
+		}
+		checkouts := strings.Count(yml, "uses: actions/checkout@")
+		if got := strings.Count(yml, "persist-credentials: false"); got != checkouts {
+			t.Errorf("%s: %d checkouts but %d with persist-credentials: false", f, checkouts, got)
+		}
+	}
+}
