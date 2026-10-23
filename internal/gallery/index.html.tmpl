@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; connect-src 'self' https://api.github.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <title>{{.Title}}</title>
 <meta name="description" content="{{.Description}}">
 <link rel="canonical" href="{{.SiteURL}}">
@@ -235,7 +237,7 @@ footer p{max-width:none}
     <div class="live">
       <picture>
         <source media="(prefers-color-scheme: dark)" srcset="live/{{.LiveUser}}-dark.svg">
-        <img src="live/{{.LiveUser}}.svg" width="480" height="200" loading="lazy" alt="La criatura de @{{.LiveUser}}, generada con su actividad pública en GitHub" onerror="this.closest('.live').querySelector('.missing').hidden=false;this.closest('picture').hidden=true">
+        <img src="live/{{.LiveUser}}.svg" width="480" height="200" loading="lazy" alt="La criatura de @{{.LiveUser}}, generada con su actividad pública en GitHub" id="live-img">
       </picture>
       <p class="note">La criatura de <a href="https://github.com/{{.LiveUser}}">@{{.LiveUser}}</a>, regenerada cada día con su actividad pública.</p>
       <p class="note missing" hidden>La criatura en vivo aún no está disponible; se genera en el despliegue diario.</p>
@@ -353,40 +355,7 @@ footer p{max-width:none}
   <p>commitling {{.Version}} · licencia MIT · <a href="https://github.com/BertMarti/commitling">github.com/BertMarti/commitling</a></p>
   <p>Construido por un equipo de agentes de IA (Claude Code y OpenCode) supervisado por Alberto. La criatura es un diseño original.</p>
 </footer>
-<script>
-document.querySelectorAll('.copy').forEach(function (b) {
-  var box = b.closest('.code');
-  var msg = box.querySelector('.copy-msg');
-  var code = document.getElementById(b.dataset.copy);
-  function say(text) { msg.textContent = text; }
-  function select() {
-    var range = document.createRange();
-    range.selectNodeContents(code);
-    var sel = window.getSelection();
-    sel.removeAllRanges();
-    sel.addRange(range);
-  }
-  function done() {
-    b.textContent = 'Copiado';
-    say('Copiado al portapapeles.');
-    setTimeout(function () { b.textContent = 'Copiar'; say(''); }, 2000);
-  }
-  function failed() {
-    select();
-    say('No se pudo copiar automáticamente. El texto está seleccionado: cópialo con Ctrl+C (o Cmd+C).');
-  }
-  b.hidden = false;
-  b.addEventListener('click', function () {
-    var text = code.textContent;
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(done, failed);
-      return;
-    }
-    select();
-    try { document.execCommand('copy') ? done() : failed(); } catch (e) { failed(); }
-  });
-});
-</script>
+<script src="page.js" defer></script>
 <script src="generator.js" defer></script>
 </body>
 </html>
