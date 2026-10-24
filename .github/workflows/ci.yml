@@ -73,7 +73,7 @@ jobs:
         run: |
           go run ./cmd/commitling gallery --out out/site
           test -s out/site/index.html
-          ls out/site/svg | wc -l
+          find out/site/svg -type f | wc -l
 
       - name: versión
         run: go run ./cmd/commitling version
@@ -103,7 +103,7 @@ jobs:
           tar -xzf "$RUNNER_TEMP/$tgz" -C "$RUNNER_TEMP" actionlint
           command -v shellcheck
           "$RUNNER_TEMP/actionlint" -color out/wf/*.yml .github/workflows/*.yml
-          echo "$(ls out/wf/*.yml | wc -l) workflows generados válidos"
+          echo "$(find out/wf -name "*.yml" | wc -l) workflows generados válidos"
 
   # Security checks: known vulnerabilities in Go and its standard library
   # (govulncheck), static analysis (staticcheck, also for the wasm build) and
