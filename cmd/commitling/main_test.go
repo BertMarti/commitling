@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -93,7 +94,7 @@ func TestMissingFixture(t *testing.T) {
 
 func TestVersionAndGallery(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	if err := run([]string{"version"}, &stdout, &stderr); err != nil || stdout.String() != "commitling 0.7.0\n" {
+	if err := run([]string{"version"}, &stdout, &stderr); err != nil || stdout.String() != "commitling 0.8.0\n" {
 		t.Fatalf("version: %v %q", err, stdout.String())
 	}
 	dir := t.TempDir()
@@ -461,5 +462,33 @@ func TestRenderInvalidSizeFailsEarly(t *testing.T) {
 func TestUsageMentionsSize(t *testing.T) {
 	if !strings.Contains(usage, "--size full|compact") {
 		t.Error("the usage text does not mention --size")
+	}
+}
+
+// writeFile replaces the file whole (temporary file and rename) and leaves
+// nothing else behind.
+func TestWriteFileIsAtomicAndLeavesNoTemporaryFiles(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "sub", "commitling.svg")
+	for _, body := range []string{"<svg>uno</svg>", "<svg>dos</svg>"} {
+		if err := writeFile(path, []byte(body)); err != nil {
+			t.Fatal(err)
+		}
+		got, err := os.ReadFile(path)
+		if err != nil || string(got) != body {
+			t.Fatalf("content = %q, %v; want %q", got, err, body)
+		}
+	}
+	entries, err := os.ReadDir(filepath.Dir(path))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 1 {
+		t.Fatalf("files left in the directory: %v", entries)
+	}
+	if runtime.GOOS != "windows" {
+		if fi, _ := os.Stat(path); fi.Mode().Perm() != 0o644 {
+			t.Errorf("mode = %v, want 0644", fi.Mode().Perm())
+		}
 	}
 }

@@ -2,7 +2,10 @@ out/
 site/
 /commitling
 *.exe
-.env
 graphify-out/
 *.wasm
 wasm_exec.js
+
+# Variables de entorno locales (nunca al repositorio)
+.env*
+!.env.example

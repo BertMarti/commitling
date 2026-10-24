@@ -54,6 +54,13 @@ var indexTmpl string
 //go:embed generator.js
 var generatorJS []byte
 
+// pageJS drives the «Copiar» buttons and the fallback of the live creature.
+// It is a file, not an inline script, so the Content-Security-Policy of the
+// page can forbid inline scripts.
+//
+//go:embed page.js
+var pageJS []byte
+
 // Sample returns synthetic stats that produce exactly the given stage and
 // mood with no accessories.
 func Sample(st creature.Stage, m creature.Mood) stats.Stats {
@@ -238,6 +245,9 @@ func Build(dir, version string) (int, error) {
 	}
 	p.GenSizes = []choice{{"full", "Completa"}, {"compact", "Compacta"}}
 	if err := write("generator.js", generatorJS); err != nil {
+		return n, err
+	}
+	if err := write("page.js", pageJS); err != nil {
 		return n, err
 	}
 	// The header shows the real animated card: the first species with everything unlocked.

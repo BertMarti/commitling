@@ -1,0 +1,26 @@
+# Weekly, grouped updates. commitling has no Go dependencies today (standard
+# library only), so the gomod entry only wakes up if one is ever added; the
+# Actions entry keeps checkout, setup-go and the Pages actions current.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: "ci"
+
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      go:
+        patterns: ["*"]
+    commit-message:
+      prefix: "chore"

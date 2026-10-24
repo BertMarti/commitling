@@ -37,10 +37,10 @@ func TestBuild(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Per species, 20 stage×mood cards and 4 accessory cards, light and
-	// dark, plus favicon, og.png, generator.js and index (the hero of the header is
+	// dark, plus favicon, og.png, generator.js, page.js and index (the hero of the header is
 	// one of the accessory cards), plus the compact badges: per species, one
 	// per stage, light and dark.
-	if want := 2*(20+4)*2 + 4 + 2*5*2; n != want {
+	if want := 2*(20+4)*2 + 5 + 2*5*2; n != want {
 		t.Fatalf("Build wrote %d files, want %d", n, want)
 	}
 
@@ -215,7 +215,7 @@ func TestCopyButtonsAreAccessible(t *testing.T) {
 	}
 	// If the clipboard fails the user gets a message and the text is selected.
 	for _, want := range []string{"No se pudo copiar", "navigator.clipboard", "execCommand", "selectNodeContents"} {
-		if !strings.Contains(page, want) {
+		if !strings.Contains(string(pageJS), want) {
 			t.Errorf("copy script does not handle %q", want)
 		}
 	}
@@ -618,5 +618,61 @@ func mustBeValidXML(t *testing.T, name string, data string) {
 			t.Errorf("%s is not valid XML: %v", name, err)
 			return
 		}
+	}
+}
+
+// The page declares a strict Content-Security-Policy: no inline scripts (the
+// copy buttons live in page.js), WebAssembly allowed, and the only outside
+// origin it talks to is the public API of GitHub. Any inline <script> or
+// event handler attribute would be blocked by it, so none may appear.
+func TestPageHasStrictCSP(t *testing.T) {
+	dir := t.TempDir()
+	if _, err := Build(dir, "test"); err != nil {
+		t.Fatal(err)
+	}
+	html, err := os.ReadFile(filepath.Join(dir, "index.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	page := string(html)
+	m := regexp.MustCompile(`<meta http-equiv="Content-Security-Policy" content="([^"]+)">`).FindStringSubmatch(page)
+	if m == nil {
+		t.Fatal("index.html has no Content-Security-Policy meta")
+	}
+	csp := strings.ReplaceAll(m[1], "&#39;", "'")
+	for _, want := range []string{
+		"default-src 'self'",
+		"script-src 'self' 'wasm-unsafe-eval'",
+		"connect-src 'self' https://api.github.com",
+		"img-src 'self' blob: data:",
+		"object-src 'none'",
+		"base-uri 'self'",
+	} {
+		if !strings.Contains(csp, want) {
+			t.Errorf("CSP %q lacks %q", csp, want)
+		}
+	}
+	// 'wasm-unsafe-eval' only lets WebAssembly compile; plain eval stays off.
+	if strings.Contains(csp, "'unsafe-eval'") {
+		t.Errorf("CSP allows eval: %q", csp)
+	}
+	if script := regexp.MustCompile(`script-src [^;]*`).FindString(csp); strings.Contains(script, "'unsafe-inline'") {
+		t.Errorf("CSP allows inline scripts: %q", script)
+	}
+	scripts := regexp.MustCompile(`<script[^>]*>`).FindAllString(page, -1)
+	for _, s := range scripts {
+		if !strings.Contains(s, ` src="`) {
+			t.Errorf("inline script %q would be blocked by the CSP", s)
+		}
+	}
+	if len(scripts) != 2 {
+		t.Errorf("scripts = %v, want page.js and generator.js", scripts)
+	}
+	if regexp.MustCompile(`(?i)\son[a-z]+="`).MatchString(page) {
+		t.Error("an inline event handler attribute would be blocked by the CSP")
+	}
+	js, err := os.ReadFile(filepath.Join(dir, "page.js"))
+	if err != nil || !bytes.Contains(js, []byte("navigator.clipboard")) {
+		t.Errorf("page.js missing or empty: %v", err)
 	}
 }
