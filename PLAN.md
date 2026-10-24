@@ -9,6 +9,11 @@ Hoja de ruta priorizada. Fechada el 24/10/2026. Las etiquetas, releases y mover 
 - Tests de regresión: sin `${{ }}` en `run:`, workflows con permisos y escape de logins hostiles en todas las tarjetas.
 - README para personas usuarias con cabecera pixel-art (sprites reales) y `docs/DESARROLLO.md`; `.claude/agents` y `.claude/skills`; corregido `@v1.0.0` inexistente en `docs/USO.md`.
 
+## Hecho en la fase 2 (24/10/2026, tarde, rama `fase2-2026-10-24`)
+- Generador del workflow en la web (usuario → especie/tema/tamaño → YAML y README; 6 pasos y «Si algo falla»), `commitling workflow`.
+- Errores de la API en español y accionables, anotación `::error` en Actions, aviso de permisos en el `git push` del workflow de ejemplo.
+- Token enmascarado en la Action, actionlint sobre los 13 workflows generables, CSP sin `'unsafe-inline'` en estilos.
+
 ## Siguiente (por orden)
 1. **Alberto**: fusionar el PR, crear la release `v0.8.0` con las notas del CHANGELOG y mover `v1` a ella (la Action es compatible: mismas entradas, salida y SVG byte a byte).
 2. **Alberto**: activar «Private vulnerability reporting» en Settings → Security (lo enlaza `SECURITY.md`).
