@@ -56,17 +56,22 @@
     return match ? match[1] : s;
   }
 
-  function option(value, fallback) {
-    return typeof value === 'string' && value ? value.trim().toLowerCase() : fallback;
+  // Only the canonical values of the radios are accepted (as Go checks them
+  // with SpeciesByName, ThemeByName and SizeByName); anything else is the
+  // default, so nothing unexpected can reach the YAML.
+  var ALLOWED = { species: ['moss', 'mushroom'], theme: ['light', 'dark', 'both'], size: ['full', 'compact'] };
+  function option(kind, value) {
+    var v = typeof value === 'string' ? value.trim().toLowerCase() : '';
+    return ALLOWED[kind].indexOf(v) >= 0 ? v : ALLOWED[kind][0];
   }
 
   function build(input) {
     input = input || {};
     var user = normalizeUser(input.user);
     if (!validLogin(user)) user = '';
-    var species = option(input.species, 'moss');
-    var theme = option(input.theme, 'light');
-    var size = option(input.size, 'full');
+    var species = option('species', input.species);
+    var theme = option('theme', input.theme);
+    var size = option('size', input.size);
     var both = theme === 'both';
     var files = both ? ['commitling.svg', 'commitling-dark.svg'] : ['commitling.svg'];
 
@@ -106,6 +111,9 @@
   var form = document.getElementById('ins-form');
   if (!form) return;
   form.hidden = false;
+  // The form only feeds the code blocks: Enter in the user field must not
+  // send it (that would reload the page with ?user=… in the URL and history).
+  form.addEventListener('submit', function (e) { e.preventDefault(); });
   var userInput = document.getElementById('ins-user');
   var error = document.getElementById('ins-error');
   var workflowEl = document.getElementById('wf');

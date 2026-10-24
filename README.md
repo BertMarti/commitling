@@ -230,7 +230,7 @@ Abre la ejecución en **Actions**: el mensaje de commitling aparece arriba, en e
 
 - «No se pudo guardar la criatura en el repositorio»: comprueba que el workflow tiene `permissions: contents: write`; si sigue fallando, en **Settings → Actions → General → Workflow permissions** elige **Read and write permissions**, y si tu rama principal está protegida permite que `github-actions[bot]` suba cambios.
 - «no existe en GitHub (404)»: el `user:` está mal escrito (va sin `@`). Si quitas esa línea se usa el dueño del repositorio.
-- «se ha agotado el límite de peticiones» o «GitHub no responde bien»: es pasajero; se conserva la criatura anterior y se reintenta en la siguiente ejecución.
+- «se ha agotado el límite de peticiones» o «GitHub no responde bien»: es pasajero; vuelve a lanzarlo más tarde. Cuando ya tienes una criatura, `keep-on-error` (activada por defecto) la conserva y el workflow ni siquiera falla: solo ves este error si aún no había ninguna o si la desactivaste.
 - «GitHub no acepta el token (401)»: quita la entrada `token:` para usar el token automático del workflow, o renueva el secreto que le pasas.
 </details>
 

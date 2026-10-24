@@ -296,10 +296,10 @@ func TestGoModPinsAPatchedGo(t *testing.T) {
 // the log; the script never prints the environment or traces commands.
 func TestActionMasksTheToken(t *testing.T) {
 	yml := readRepoFile(t, "action.yml")
-	mask := strings.Index(yml, `echo "::add-mask::$GITHUB_TOKEN"`)
+	mask := strings.Index(yml, `printf '::add-mask::%s\n' "${GITHUB_TOKEN//[$'\r\n']/}"`)
 	run := strings.Index(yml, "go run ./cmd/commitling")
 	if mask < 0 || run < 0 || mask > run {
-		t.Fatal("action.yml must mask $GITHUB_TOKEN before go run")
+		t.Fatal("action.yml must mask $GITHUB_TOKEN, without line breaks, before go run")
 	}
 	if !strings.Contains(yml, "GITHUB_TOKEN: ${{ inputs.token }}") {
 		t.Error("the token must arrive by env:")

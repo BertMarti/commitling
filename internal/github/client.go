@@ -144,8 +144,9 @@ func (e *APIError) baseError() string {
 			msg += ". Se restablece a las " + e.Reset.UTC().Format("15:04") + " UTC"
 		}
 		if e.Authenticated {
-			return msg + ". Con keep-on-error: true (la opción por defecto de la Action) se conserva la criatura anterior " +
-				"y se vuelve a intentar en la siguiente ejecución; si pasa a menudo, cambia la hora del cron para no coincidir con otros workflows"
+			return msg + ". Es pasajero: vuelve a lanzar el workflow después de esa hora. Si ves este error es que no se pudo " +
+				"conservar la criatura anterior (aún no había SVG o keep-on-error está en false); si pasa a menudo, " +
+				"cambia la hora del cron para no coincidir con otros workflows"
 		}
 		return msg + ". Sin token solo hay 60 peticiones por hora: en la Action no quites la entrada token " +
 			"(por defecto usa el GITHUB_TOKEN del workflow) y en la línea de órdenes define la variable GITHUB_TOKEN"
@@ -154,7 +155,7 @@ func (e *APIError) baseError() string {
 			"comprueba sus permisos o quita esa entrada para usar el GITHUB_TOKEN del workflow"
 	case e.Status >= 500:
 		return fmt.Sprintf("GitHub no responde bien ahora mismo (%d: %s). Es pasajero: vuelve a lanzar el workflow "+
-			"dentro de unos minutos (con keep-on-error: true se conserva la criatura anterior)", e.Status, e.Message)
+			"dentro de unos minutos (si ya había una criatura, keep-on-error la conserva sin fallar; este error indica que no la había o que keep-on-error está en false)", e.Status, e.Message)
 	default:
 		return fmt.Sprintf("la API de GitHub respondió %d: %s", e.Status, e.Message)
 	}

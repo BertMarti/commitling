@@ -153,7 +153,7 @@ function page() {
   vm.runInNewContext(source, { console, encodeURIComponent, window, document });
   const fire = (id, type) => (listeners[id + ':' + type] || []).forEach((fn) => fn({ preventDefault() {} }));
   const type = (v) => { els['ins-user'].value = v; fire('ins-form', 'input'); };
-  return { els, insLinks, radios, fire, type, stored, api: window.commitlingInstall };
+  return { els, insLinks, radios, fire, type, stored, listeners, api: window.commitlingInstall };
 }
 
 ok('la página muestra el formulario y el workflow base', () => {
@@ -218,6 +218,22 @@ ok('el generador de arriba pasa usuario y opciones si aquí está vacío', () =>
   q.els['gen-user'].value = 'mal nombre';
   q.fire('gen-form', 'submit');
   assert.equal(q.els['ins-user'].value, '', 'un nombre no válido no se copia');
+});
+
+ok('Enter en el formulario no lo envía (nada de ?user= en la URL)', () => {
+  const p = page();
+  p.type('octocat');
+  let prevented = 0;
+  (p.listeners['ins-form:submit'] || []).forEach((fn) => fn({ preventDefault() { prevented++; } }));
+  assert.ok(prevented >= 1, 'submit sin preventDefault');
+  assert.equal(p.els['ins-user'].value, 'octocat');
+});
+
+ok('solo valores permitidos de especie, tema y tamaño', () => {
+  const base = api.build({ user: 'octocat' }).workflow;
+  assert.equal(api.build({ user: 'octocat', species: 'dragon\nrun: evil', theme: 'sepia', size: 'xl' }).workflow, base);
+  assert.equal(api.build({ user: 'octocat', species: ' MUSHROOM ', theme: 'Dark', size: 'COMPACT' }).workflow,
+    api.build({ user: 'octocat', species: 'mushroom', theme: 'dark', size: 'compact' }).workflow);
 });
 
 ok('no toca almacenamiento ni cookies', () => {

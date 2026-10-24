@@ -75,7 +75,12 @@ jobs:
           theme: dark
 
       # Un usuario que no existe es un error permanente: falla aunque
-      # keep-on-error esté activada, con el mensaje «no existe en GitHub».
+      # keep-on-error esté activada y haya un SVG previo, que queda intacto.
+      - name: Preparar un SVG previo para el usuario inexistente
+        env:
+          FIXTURE_PATH: ${{ steps.fixture.outputs.path }}
+        run: cp "$FIXTURE_PATH" out/nouser.svg
+
       - name: Un usuario inexistente falla con un error claro
         id: nouser
         continue-on-error: true
@@ -142,7 +147,7 @@ jobs:
           test "$BADKEEP_OUTCOME" = failure || { echo 'keep-on-error: quizas debería fallar'; exit 1; }
           test ! -e out/badkeep.svg
           test "$NOUSER_OUTCOME" = failure || { echo 'un usuario inexistente debería fallar'; exit 1; }
-          test ! -e out/nouser.svg
+          cmp out/nouser.svg "$FIXTURE_PATH" || { echo 'el SVG previo del usuario inexistente cambió'; exit 1; }
           cmp out/keep.svg "$FIXTURE_PATH" || { echo 'el SVG previo cambió'; exit 1; }
           for f in "$FIXTURE_PATH" "$MUSHROOM_PATH" "$COMPACT_PATH" "$REAL_PATH"; do
             test -s "$f"

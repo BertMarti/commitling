@@ -398,7 +398,7 @@ func TestAPIErrorsAreActionableAndNeverShowTheToken(t *testing.T) {
 		{"401", secret, 401, nil, []string{"GitHub no acepta el token", "entrada token", "GITHUB_TOKEN"}},
 		{"403 plain", secret, 403, nil, []string{"denegado", "entrada token"}},
 		{"límite con token", secret, 403, map[string]string{"X-RateLimit-Remaining": "0", "X-RateLimit-Reset": fmt.Sprint(reset.Unix())},
-			[]string{"límite de peticiones", "13:45 UTC", "keep-on-error"}},
+			[]string{"límite de peticiones", "13:45 UTC", "no se pudo conservar", "keep-on-error está en false"}},
 		{"límite sin token", "", 429, nil, []string{"límite de peticiones", "60 peticiones por hora", "GITHUB_TOKEN"}},
 		{"5xx", secret, 503, nil, []string{"no responde bien", "503", "dentro de unos minutos"}},
 	}
