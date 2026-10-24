@@ -492,3 +492,39 @@ func TestWriteFileIsAtomicAndLeavesNoTemporaryFiles(t *testing.T) {
 		}
 	}
 }
+
+// commitling workflow prints the same text as generate.Install and says where
+// to put it; a wrong value is a usage error.
+func TestWorkflowCommand(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	if err := run([]string{"workflow", "--user", "octocat", "--theme", "both", "--species", "mushroom"}, &stdout, &stderr); err != nil {
+		t.Fatal(err)
+	}
+	want, _ := generate.Install(generate.Options{User: "octocat", Theme: "both", Species: "mushroom"})
+	if stdout.String() != want.Workflow {
+		t.Errorf("stdout differs from generate.Install:\n%s", stdout.String())
+	}
+	if !strings.Contains(stderr.String(), ".github/workflows/commitling.yml") || !strings.Contains(stderr.String(), want.Readme) {
+		t.Errorf("stderr does not explain where to put it:\n%s", stderr.String())
+	}
+	var ue usageError
+	if err := run([]string{"workflow", "--user", "@octocat"}, &stdout, &stderr); !errors.As(err, &ue) || !strings.Contains(err.Error(), "quita la @") {
+		t.Errorf("@octocat: %v", err)
+	}
+}
+
+// Inside GitHub Actions a fatal error is also an annotation (one line, so a
+// message cannot open a second workflow command).
+func TestAnnotateOnlyInsideActions(t *testing.T) {
+	var out bytes.Buffer
+	t.Setenv("GITHUB_ACTIONS", "")
+	annotate(&out, errors.New("x"))
+	if out.Len() != 0 {
+		t.Errorf("outside Actions: %q", out.String())
+	}
+	t.Setenv("GITHUB_ACTIONS", "true")
+	annotate(&out, errors.New("50% mal\n::set-output name=x::y"))
+	if got := out.String(); got != "::error title=commitling::50%25 mal%0A::set-output name=x::y\n" {
+		t.Errorf("annotation = %q", got)
+	}
+}

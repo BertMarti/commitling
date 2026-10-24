@@ -44,7 +44,7 @@ const DemoUser = generate.DemoUser
 const WorkflowSnippet = generate.BaseWorkflow
 
 // ReadmeSnippet is the line to paste in the profile README.
-const ReadmeSnippet = `![commitling](./commitling.svg)`
+const ReadmeSnippet = generate.ReadmeSnippet
 
 //go:embed index.html.tmpl
 var indexTmpl string
@@ -175,10 +175,7 @@ func Build(dir, version string) (int, error) {
 		LiveUser:    LiveUser,
 		Workflow:    WorkflowSnippet,
 		Readme:      ReadmeSnippet,
-		ReadmeDrk: `<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="./commitling-dark.svg">
-  <img alt="commitling" src="./commitling.svg">
-</picture>`,
+		ReadmeDrk:   generate.ReadmePicture,
 	}
 
 	extras := []struct {

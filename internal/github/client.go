@@ -92,6 +92,12 @@ type APIError struct {
 	// RateLimited is set on a 403 that carries rate-limit headers (a plain
 	// 403 is a permissions problem).
 	RateLimited bool
+	// User is the login that was asked for ("" when unknown).
+	User string
+	// Reset is when the rate limit is restored (zero when GitHub did not say).
+	Reset time.Time
+	// Authenticated tells whether the request carried a token.
+	Authenticated bool
 }
 
 // IsTransient reports whether err is a failure that may pass by itself: no
@@ -117,12 +123,38 @@ func rateLimitHeaders(hdr http.Header) bool {
 
 func (e *APIError) Error() string { return e.baseError() + retriesSuffix(e.Retries) }
 
+// baseError explains the failure in Spanish and says what to do. It never
+// includes the token: only the status, GitHub's own message and the login.
 func (e *APIError) baseError() string {
+	who := "ese usuario"
+	if e.User != "" {
+		who = "el usuario «" + e.User + "»"
+	}
 	switch {
 	case e.Status == http.StatusNotFound:
-		return "usuario no encontrado en GitHub (404)"
-	case e.Status == http.StatusForbidden || e.Status == http.StatusTooManyRequests:
-		return fmt.Sprintf("la API de GitHub ha rechazado la petición (%d): %s; si es el límite de peticiones, define GITHUB_TOKEN", e.Status, e.Message)
+		return fmt.Sprintf("%s no existe en GitHub (404). Revisa la entrada user del workflow (o --user): "+
+			"es tu nombre de usuario tal y como aparece en github.com/<usuario>, sin @ ni espacios", who)
+	case e.Status == http.StatusUnauthorized:
+		return "GitHub no acepta el token (401: " + e.Message + "). Si pasas un token propio en la entrada token, " +
+			"comprueba que no ha caducado o quita esa entrada para usar el GITHUB_TOKEN del workflow; " +
+			"en la línea de órdenes, revisa o borra la variable GITHUB_TOKEN"
+	case e.Status == http.StatusTooManyRequests || e.RateLimited:
+		msg := fmt.Sprintf("se ha agotado el límite de peticiones de la API de GitHub (%d)", e.Status)
+		if !e.Reset.IsZero() {
+			msg += ". Se restablece a las " + e.Reset.UTC().Format("15:04") + " UTC"
+		}
+		if e.Authenticated {
+			return msg + ". Con keep-on-error: true (la opción por defecto de la Action) se conserva la criatura anterior " +
+				"y se vuelve a intentar en la siguiente ejecución; si pasa a menudo, cambia la hora del cron para no coincidir con otros workflows"
+		}
+		return msg + ". Sin token solo hay 60 peticiones por hora: en la Action no quites la entrada token " +
+			"(por defecto usa el GITHUB_TOKEN del workflow) y en la línea de órdenes define la variable GITHUB_TOKEN"
+	case e.Status == http.StatusForbidden:
+		return "GitHub ha denegado el acceso (403: " + e.Message + "). Si pasas un token propio en la entrada token, " +
+			"comprueba sus permisos o quita esa entrada para usar el GITHUB_TOKEN del workflow"
+	case e.Status >= 500:
+		return fmt.Sprintf("GitHub no responde bien ahora mismo (%d: %s). Es pasajero: vuelve a lanzar el workflow "+
+			"dentro de unos minutos (con keep-on-error: true se conserva la criatura anterior)", e.Status, e.Message)
 	default:
 		return fmt.Sprintf("la API de GitHub respondió %d: %s", e.Status, e.Message)
 	}
@@ -132,7 +164,7 @@ func (e *APIError) baseError() string {
 // the last 90 days) of user, newest first.
 func (c *Client) FetchEvents(ctx context.Context, user string) ([]Event, error) {
 	if !ValidLogin(user) {
-		return nil, fmt.Errorf("nombre de usuario no válido: %q", user)
+		return nil, fmt.Errorf("nombre de usuario no válido: %q%s", user, events.LoginHint(user))
 	}
 	var all []Event
 	for page := 1; page <= maxPages; page++ {
@@ -359,8 +391,13 @@ func (c *Client) doPage(ctx context.Context, user string, page int) ([]Event, ht
 		if msg.Message == "" {
 			msg.Message = http.StatusText(resp.StatusCode)
 		}
-		return nil, resp.Header, &APIError{Status: resp.StatusCode, Message: msg.Message,
-			RateLimited: resp.StatusCode == http.StatusForbidden && rateLimitHeaders(resp.Header)}
+		apiErr := &APIError{Status: resp.StatusCode, Message: msg.Message, User: user,
+			RateLimited:   resp.StatusCode == http.StatusForbidden && rateLimitHeaders(resp.Header),
+			Authenticated: c.Token != ""}
+		if unix, err := strconv.ParseInt(strings.TrimSpace(resp.Header.Get("X-RateLimit-Reset")), 10, 64); err == nil && unix > 0 && unix < 1<<40 {
+			apiErr.Reset = time.Unix(unix, 0)
+		}
+		return nil, resp.Header, apiErr
 	}
 	events, err := ParseEvents(resp.Body)
 	return events, resp.Header, err

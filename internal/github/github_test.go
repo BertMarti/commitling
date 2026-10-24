@@ -192,8 +192,9 @@ func TestFetchEventsErrors(t *testing.T) {
 		body   string
 		want   string
 	}{
-		{http.StatusNotFound, `{"message":"Not Found"}`, "no encontrado"},
-		{http.StatusForbidden, `{"message":"API rate limit exceeded"}`, "GITHUB_TOKEN"},
+		{http.StatusNotFound, `{"message":"Not Found"}`, "«octoexample» no existe en GitHub (404)"},
+		{http.StatusForbidden, `{"message":"Resource not accessible"}`, "quita esa entrada"},
+		{http.StatusUnauthorized, `{"message":"Bad credentials"}`, "401: Bad credentials"},
 		{http.StatusInternalServerError, `oops`, "500"},
 	}
 	for _, c := range cases {
@@ -378,5 +379,55 @@ func TestFetchEventsDropsOverlapBetweenPages(t *testing.T) {
 	}
 	if len(events) != 104 {
 		t.Fatalf("got %d events, want 104", len(events))
+	}
+}
+
+// The messages say what to do, in Spanish, and depend on whether the request
+// carried a token; none of them ever shows the token itself.
+func TestAPIErrorsAreActionableAndNeverShowTheToken(t *testing.T) {
+	const secret = "ghp_EsteTokenNoDebeVerseNunca0123456789"
+	reset := time.Date(2026, 10, 24, 13, 45, 0, 0, time.UTC)
+	cases := []struct {
+		name    string
+		token   string
+		status  int
+		headers map[string]string
+		want    []string
+	}{
+		{"404", secret, 404, nil, []string{"no existe en GitHub", "entrada user", "sin @"}},
+		{"401", secret, 401, nil, []string{"GitHub no acepta el token", "entrada token", "GITHUB_TOKEN"}},
+		{"403 plain", secret, 403, nil, []string{"denegado", "entrada token"}},
+		{"límite con token", secret, 403, map[string]string{"X-RateLimit-Remaining": "0", "X-RateLimit-Reset": fmt.Sprint(reset.Unix())},
+			[]string{"límite de peticiones", "13:45 UTC", "keep-on-error"}},
+		{"límite sin token", "", 429, nil, []string{"límite de peticiones", "60 peticiones por hora", "GITHUB_TOKEN"}},
+		{"5xx", secret, 503, nil, []string{"no responde bien", "503", "dentro de unos minutos"}},
+	}
+	for _, c := range cases {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			for k, v := range c.headers {
+				w.Header().Set(k, v)
+			}
+			w.WriteHeader(c.status)
+			// GitHub never echoes the token, but a hostile proxy could: it must
+			// not reach the log through the message either way.
+			fmt.Fprint(w, `{"message":"x"}`)
+		}))
+		cl := NewClient(c.token)
+		cl.BaseURL = srv.URL
+		cl.MaxWait = time.Millisecond // do not wait for the reset
+		cl.Sleep = func(context.Context, time.Duration) error { return nil }
+		_, err := cl.FetchEvents(context.Background(), "octoexample")
+		srv.Close()
+		if err == nil {
+			t.Fatalf("%s: expected an error", c.name)
+		}
+		for _, w := range c.want {
+			if !strings.Contains(err.Error(), w) {
+				t.Errorf("%s: %q does not mention %q", c.name, err, w)
+			}
+		}
+		if strings.Contains(err.Error(), secret) || strings.Contains(err.Error(), "Bearer") {
+			t.Errorf("%s: the error shows the token: %q", c.name, err)
+		}
 	}
 }

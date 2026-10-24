@@ -86,7 +86,7 @@ jobs:
       - uses: BertMarti/commitling@v1
         with:
           out: commitling.svg
-      - name: Guardar el SVG si ha cambiado
+      - name: Guardar la criatura si ha cambiado
         run: |
           git add commitling.svg
           if git diff --cached --quiet; then
@@ -96,7 +96,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "chore: actualiza commitling"
-          git push
+          if ! git push; then
+            echo "::error title=commitling::No se pudo guardar la criatura en el repositorio. Comprueba que este archivo tiene «permissions: contents: write» y, si la rama está protegida, deja que github-actions[bot] suba cambios."
+            exit 1
+          fi
 ```
 
 4. Pulsa **Commit changes…** y confirma con **Commit changes**.
@@ -213,9 +216,9 @@ Si tu perfil lo ve gente con el tema oscuro de GitHub, puedes ofrecer una imagen
           out: commitling.svg
       - uses: BertMarti/commitling@v1
         with:
-          out: commitling-dark.svg
           theme: dark
-      - name: Guardar los SVG si han cambiado
+          out: commitling-dark.svg
+      - name: Guardar la criatura si ha cambiado
         run: |
           git add commitling.svg commitling-dark.svg
           if git diff --cached --quiet; then
@@ -225,7 +228,10 @@ Si tu perfil lo ve gente con el tema oscuro de GitHub, puedes ofrecer una imagen
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "chore: actualiza commitling"
-          git push
+          if ! git push; then
+            echo "::error title=commitling::No se pudo guardar la criatura en el repositorio. Comprueba que este archivo tiene «permissions: contents: write» y, si la rama está protegida, deja que github-actions[bot] suba cambios."
+            exit 1
+          fi
 ```
 
 **b) Cambia la línea de tu README** por este bloque:
@@ -413,7 +419,7 @@ Si solo quieres pausarlo sin borrar nada: **Actions → commitling → menú ⋯
 
 ### El workflow falla al guardar con un error de permisos
 
-Verás algo como «Permission denied» o `403` en el paso «Guardar el SVG si ha cambiado». Revisa:
+Verás algo como «Permission denied» o `403` en el paso «Guardar la criatura si ha cambiado» (el workflow lo resume como «No se pudo guardar la criatura en el repositorio»). Revisa:
 
 1. Que tu workflow contiene `permissions:` con `contents: write` (está en el ejemplo).
 2. Que en el repositorio, **Settings → Actions → General → Workflow permissions**, está marcado **Read and write permissions**. Algunas organizaciones lo limitan a solo lectura y esa opción manda sobre el archivo.

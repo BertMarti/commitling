@@ -60,7 +60,7 @@ jobs:
       - uses: BertMarti/commitling@v1
         with:
           out: commitling.svg
-      - name: Guardar el SVG si ha cambiado
+      - name: Guardar la criatura si ha cambiado
         run: |
           git add commitling.svg
           if git diff --cached --quiet; then
@@ -70,7 +70,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "chore: actualiza commitling"
-          git push
+          if ! git push; then
+            echo "::error title=commitling::No se pudo guardar la criatura en el repositorio. Comprueba que este archivo tiene «permissions: contents: write» y, si la rama está protegida, deja que github-actions[bot] suba cambios."
+            exit 1
+          fi
 ```
 
 3. Añade la criatura a tu `README.md`:
