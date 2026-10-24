@@ -37,10 +37,10 @@ func TestBuild(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Per species, 20 stage×mood cards and 4 accessory cards, light and
-	// dark, plus favicon, og.png, generator.js, page.js and index (the hero of the header is
+	// dark, plus favicon, og.png, generator.js, page.js, install.js, style.css and index (the hero of the header is
 	// one of the accessory cards), plus the compact badges: per species, one
 	// per stage, light and dark.
-	if want := 2*(20+4)*2 + 5 + 2*5*2; n != want {
+	if want := 2*(20+4)*2 + 7 + 2*5*2; n != want {
 		t.Fatalf("Build wrote %d files, want %d", n, want)
 	}
 
@@ -322,7 +322,6 @@ func contrast(a, b string) float64 {
 // Text colours of the page, in both themes, reach WCAG AA (4.5:1) on the
 // backgrounds they are drawn on; the focus outline needs 3:1.
 func TestPageColoursReachAA(t *testing.T) {
-	page := buildPage(t)
 	vars := func(block string) map[string]string {
 		m := map[string]string{}
 		for _, kv := range regexp.MustCompile(`--([a-z]+):(#[0-9a-f]{6})`).FindAllStringSubmatch(block, -1) {
@@ -330,8 +329,9 @@ func TestPageColoursReachAA(t *testing.T) {
 		}
 		return m
 	}
-	light := vars(regexp.MustCompile(`(?s):root\{(.*?)\}`).FindStringSubmatch(page)[1])
-	darkOver := vars(regexp.MustCompile(`(?s)prefers-color-scheme:dark\)\{\s*:root\{(.*?)\}`).FindStringSubmatch(page)[1])
+	css := builtCSS(t)
+	light := vars(regexp.MustCompile(`(?s):root\{(.*?)\}`).FindStringSubmatch(css)[1])
+	darkOver := vars(regexp.MustCompile(`(?s)prefers-color-scheme:dark\)\{\s*:root\{(.*?)\}`).FindStringSubmatch(css)[1])
 	dark := map[string]string{}
 	for k, v := range light {
 		dark[k] = v
@@ -369,7 +369,7 @@ func TestPageHasSkipLinkAndSpeciesNav(t *testing.T) {
 		}
 	}
 	// The skip link is hidden until it gets focus.
-	if !strings.Contains(page, ".skip:focus") {
+	if !strings.Contains(builtCSS(t), ".skip:focus") {
 		t.Error("the skip link has no focus style")
 	}
 }
@@ -423,7 +423,19 @@ func TestHeaderShowsTheAnimatedCard(t *testing.T) {
 // pageCSS returns the CSS of the page as rules.
 func pageCSS(t *testing.T) ruleSet {
 	t.Helper()
-	return cssRules(regexp.MustCompile(`(?s)<style>(.*?)</style>`).FindStringSubmatch(buildPage(t))[1])
+	return cssRules(builtCSS(t))
+}
+
+// builtCSS returns the stylesheet that Build writes (style.css), checking
+// that the page links it and has no inline styles.
+func builtCSS(t *testing.T) string {
+	t.Helper()
+	dir := buildDir(t)
+	page := readBuilt(t, dir, "index.html")
+	if !strings.Contains(page, `<link rel="stylesheet" href="style.css">`) {
+		t.Fatal("index.html does not link style.css")
+	}
+	return readBuilt(t, dir, "style.css")
 }
 
 // phone is the @media condition of the phone rules of the page.
@@ -665,8 +677,20 @@ func TestPageHasStrictCSP(t *testing.T) {
 			t.Errorf("inline script %q would be blocked by the CSP", s)
 		}
 	}
-	if len(scripts) != 2 {
-		t.Errorf("scripts = %v, want page.js and generator.js", scripts)
+	if len(scripts) != 3 {
+		t.Errorf("scripts = %v, want page.js, generator.js and install.js", scripts)
+	}
+	// Styles come only from style.css: no <style> block and no style
+	// attribute, so style-src needs no 'unsafe-inline' either (all the sites
+	// of bertmarti.github.io share one origin).
+	if style := regexp.MustCompile(`style-src [^;]*`).FindString(csp); style != "style-src 'self'" {
+		t.Errorf("style-src = %q, want only 'self'", style)
+	}
+	if strings.Contains(page, "<style") || regexp.MustCompile(`\sstyle="`).MatchString(page) {
+		t.Error("an inline style would be blocked by the CSP")
+	}
+	if css, err := os.ReadFile(filepath.Join(dir, "style.css")); err != nil || !bytes.Contains(css, []byte("--paper")) {
+		t.Errorf("style.css missing or empty: %v", err)
 	}
 	if regexp.MustCompile(`(?i)\son[a-z]+="`).MatchString(page) {
 		t.Error("an inline event handler attribute would be blocked by the CSP")

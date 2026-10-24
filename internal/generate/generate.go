@@ -47,7 +47,7 @@ func (o Options) Check() error {
 		return errors.New("tamaño no válido " + strconv.Quote(o.Size) + " (usa full o compact)")
 	}
 	if o.User != "" && !events.ValidLogin(o.User) {
-		return errors.New("nombre de usuario no válido: " + strconv.Quote(o.User))
+		return errors.New("nombre de usuario no válido: " + strconv.Quote(o.User) + events.LoginHint(o.User))
 	}
 	return nil
 }
@@ -107,7 +107,8 @@ func draw(login string, st stats.Stats, species creature.Species, o Options) (Re
 }
 
 // BaseWorkflow is the workflow for a profile repository; the README and the
-// website show this same text (a test keeps them in sync).
+// website show this same text (a test keeps them in sync). If the push fails
+// (the usual cause is a workflow without write permission) it says what to do.
 const BaseWorkflow = `name: commitling
 
 on:
@@ -126,7 +127,7 @@ jobs:
       - uses: BertMarti/commitling@v1
         with:
           out: commitling.svg
-      - name: Guardar el SVG si ha cambiado
+      - name: Guardar la criatura si ha cambiado
         run: |
           git add commitling.svg
           if git diff --cached --quiet; then
@@ -136,36 +137,97 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "chore: actualiza commitling"
-          git push
+          if ! git push; then
+            echo "::error title=commitling::No se pudo guardar la criatura en el repositorio. Comprueba que este archivo tiene «permissions: contents: write» y, si la rama está protegida, deja que github-actions[bot] suba cambios."
+            exit 1
+          fi
 `
 
-// Workflow returns BaseWorkflow with the inputs of the Action filled in:
-// user, and species, theme and size when they are not the defaults. Everything is
-// validated first, so nothing that is not a plain login or a known value is
-// ever pasted into the YAML.
-func Workflow(o Options) (string, error) {
+// baseStep is the step of BaseWorkflow that Install fills in or repeats.
+const baseStep = "      - uses: BertMarti/commitling@v1\n        with:\n          out: commitling.svg\n"
+
+// ReadmeSnippet is the line to paste in the profile README for one card.
+const ReadmeSnippet = `![commitling](./commitling.svg)`
+
+// ReadmePicture is the README fragment for the light and dark cards: GitHub
+// shows the one that matches the theme of whoever visits the profile.
+const ReadmePicture = `<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./commitling-dark.svg">
+  <img alt="commitling" src="./commitling.svg">
+</picture>`
+
+// ThemeBoth asks Install for the light and the dark card at once.
+const ThemeBoth = "both"
+
+// Setup is everything a person pastes into a profile repository.
+type Setup struct {
+	Workflow string   // the content of .github/workflows/commitling.yml
+	Readme   string   // what goes in README.md
+	Files    []string // the SVG files that the workflow writes and commits
+}
+
+// Install fills in BaseWorkflow with the inputs of the Action: user, and
+// species, theme and size when they are not the defaults. Theme may also be
+// ThemeBoth: two steps (light and dark) and a <picture> for the README.
+// Everything is validated first, so nothing that is not a plain login or a
+// known value is ever pasted into the YAML. The website builds the same text
+// in JavaScript (install.js) and a test keeps both identical.
+func Install(o Options) (Setup, error) {
+	both := strings.EqualFold(strings.TrimSpace(o.Theme), ThemeBoth)
+	if both {
+		o.Theme = render.Light.Name
+	}
 	if err := o.Check(); err != nil {
-		return "", err
+		if _, ok := render.ThemeByName(o.themeName()); !ok {
+			return Setup{}, errors.New("tema no válido " + strconv.Quote(o.Theme) + " (usa light, dark o both)")
+		}
+		return Setup{}, err
 	}
-	var inputs strings.Builder
-	line := func(k, v string) { inputs.WriteString("          " + k + ": " + v + "\n") }
-	if o.User != "" {
-		// Always a quoted string: YAML would read 007 as a number and null or
-		// true as nothing or a boolean. A valid login only has letters, digits
-		// and dashes, so Go quoting is also valid YAML quoting.
-		line("user", strconv.Quote(o.User))
+	species, _ := creature.SpeciesByName(o.speciesName())
+	size, _ := render.SizeByName(o.Size)
+	step := func(theme render.Theme, out string) string {
+		var b strings.Builder
+		line := func(k, v string) { b.WriteString("          " + k + ": " + v + "\n") }
+		b.WriteString("      - uses: BertMarti/commitling@v1\n        with:\n")
+		if o.User != "" {
+			// Always a quoted string: YAML would read 007 as a number and null or
+			// true as nothing or a boolean. A valid login only has letters, digits
+			// and dashes, so Go quoting is also valid YAML quoting.
+			line("user", strconv.Quote(o.User))
+		}
+		if species != creature.MossSprout {
+			line("species", species.Slug())
+		}
+		// The canonical name, not the raw text (spaces, capitals, line breaks).
+		if theme.Name != render.Light.Name {
+			line("theme", theme.Name)
+		}
+		if size == render.Compact {
+			line("size", "compact")
+		}
+		line("out", out)
+		return b.String()
 	}
-	if sp, _ := creature.SpeciesByName(o.speciesName()); sp != creature.MossSprout {
-		line("species", sp.Slug())
+	s := Setup{Readme: ReadmeSnippet, Files: []string{"commitling.svg"}}
+	var steps string
+	if both {
+		s.Readme = ReadmePicture
+		s.Files = append(s.Files, "commitling-dark.svg")
+		steps = step(render.Light, s.Files[0]) + step(render.Dark, s.Files[1])
+	} else {
+		theme, _ := render.ThemeByName(o.themeName())
+		steps = step(theme, s.Files[0])
 	}
-	// The canonical name, not the raw text (spaces, capitals, line breaks).
-	if theme, _ := render.ThemeByName(o.themeName()); theme.Name != render.Light.Name {
-		line("theme", theme.Name)
-	}
-	if size, _ := render.SizeByName(o.Size); size == render.Compact {
-		line("size", "compact")
-	}
-	return strings.Replace(BaseWorkflow, "        with:\n", "        with:\n"+inputs.String(), 1), nil
+	s.Workflow = strings.Replace(BaseWorkflow, baseStep, steps, 1)
+	s.Workflow = strings.Replace(s.Workflow, "git add commitling.svg\n", "git add "+strings.Join(s.Files, " ")+"\n", 1)
+	return s, nil
+}
+
+// Workflow is the workflow of Install (the live generator of the website asks
+// for one card at a time).
+func Workflow(o Options) (string, error) {
+	s, err := Install(o)
+	return s.Workflow, err
 }
 
 // FetchError explains in Spanish why the browser could not read the events of

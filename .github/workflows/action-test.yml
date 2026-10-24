@@ -74,6 +74,21 @@ jobs:
           out: out/real-dark.svg
           theme: dark
 
+      # Un usuario que no existe es un error permanente: falla aunque
+      # keep-on-error esté activada y haya un SVG previo, que queda intacto.
+      - name: Preparar un SVG previo para el usuario inexistente
+        env:
+          FIXTURE_PATH: ${{ steps.fixture.outputs.path }}
+        run: cp "$FIXTURE_PATH" out/nouser.svg
+
+      - name: Un usuario inexistente falla con un error claro
+        id: nouser
+        continue-on-error: true
+        uses: ./
+        with:
+          user: commitling-usuario-que-no-existe-0
+          out: out/nouser.svg
+
       # keep-on-error (activada por defecto) solo conserva el SVG ante fallos
       # transitorios (red, 5xx, límite de peticiones), que cubren los tests de
       # la CLI. Un 401 (token inválido) es permanente: debe fallar aunque haya
@@ -120,6 +135,7 @@ jobs:
           INVALID_OUTCOME: ${{ steps.invalid.outcome }}
           UNAUTHORIZED_OUTCOME: ${{ steps.unauthorized.outcome }}
           BADKEEP_OUTCOME: ${{ steps.badkeep.outcome }}
+          NOUSER_OUTCOME: ${{ steps.nouser.outcome }}
           OWNER: ${{ github.repository_owner }}
         run: |
           set -euo pipefail
@@ -130,6 +146,8 @@ jobs:
           test "$UNAUTHORIZED_OUTCOME" = failure || { echo 'un 401 debería fallar aunque haya SVG previo'; exit 1; }
           test "$BADKEEP_OUTCOME" = failure || { echo 'keep-on-error: quizas debería fallar'; exit 1; }
           test ! -e out/badkeep.svg
+          test "$NOUSER_OUTCOME" = failure || { echo 'un usuario inexistente debería fallar'; exit 1; }
+          cmp out/nouser.svg "$FIXTURE_PATH" || { echo 'el SVG previo del usuario inexistente cambió'; exit 1; }
           cmp out/keep.svg "$FIXTURE_PATH" || { echo 'el SVG previo cambió'; exit 1; }
           for f in "$FIXTURE_PATH" "$MUSHROOM_PATH" "$COMPACT_PATH" "$REAL_PATH"; do
             test -s "$f"

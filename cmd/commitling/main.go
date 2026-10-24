@@ -3,6 +3,7 @@
 //
 //	commitling render --user <login> [--theme light|dark] [--species moss|mushroom] [--size full|compact] [--keep-on-error] [--now RFC3339] --out commitling.svg
 //	commitling render --fixture testdata/events.json --out commitling.svg
+//	commitling workflow --user <login> [--species moss|mushroom] [--theme light|dark|both] [--size full|compact]
 //	commitling gallery --out site/
 //	commitling og --out og.png
 //	commitling version
@@ -34,9 +35,14 @@ const usage = `commitling: una mascota pixel-art que crece con tus commits.
 Uso:
   commitling render --user <usuario> [--theme light|dark] [--species moss|mushroom] [--size full|compact] [--keep-on-error] [--now RFC3339] --out <archivo.svg>
   commitling render --fixture <eventos.json> [--user <nombre>] [--theme light|dark] [--species moss|mushroom] [--size full|compact] [--now RFC3339] --out <archivo.svg>
+  commitling workflow [--user <usuario>] [--species moss|mushroom] [--theme light|dark|both] [--size full|compact]
   commitling gallery --out <directorio>
   commitling og --out <archivo.png>
   commitling version
+
+  workflow escribe el archivo .github/workflows/commitling.yml listo para tu
+  repositorio de perfil (con --theme both, claro y oscuro) y te dice qué poner
+  en tu README.md. Lo mismo, con botones, en https://bertmarti.github.io/commitling/#instalar
 
 Variables de entorno:
   GITHUB_TOKEN  token opcional para la API de GitHub (más límite de peticiones)
@@ -48,12 +54,27 @@ var newClient = github.NewClient
 func main() {
 	if err := run(os.Args[1:], os.Stdout, os.Stderr); err != nil {
 		fmt.Fprintln(os.Stderr, "commitling:", err)
+		annotate(os.Stdout, err)
 		var ue usageError
 		if errors.As(err, &ue) {
 			os.Exit(2)
 		}
 		os.Exit(1)
 	}
+}
+
+// annotate repeats a fatal error as a GitHub Actions annotation, so it shows
+// in the summary of the run and not only deep inside the log of the step.
+func annotate(stdout io.Writer, err error) {
+	if os.Getenv("GITHUB_ACTIONS") != "true" {
+		return
+	}
+	fmt.Fprintln(stdout, "::error title=commitling::"+escapeCommand(err.Error()))
+}
+
+// escapeCommand escapes the data of a workflow command (one line).
+func escapeCommand(s string) string {
+	return strings.NewReplacer("%", "%25", "\r", "%0D", "\n", "%0A").Replace(s)
 }
 
 type usageError struct{ msg string }
@@ -68,6 +89,8 @@ func run(args []string, stdout, stderr io.Writer) error {
 	switch args[0] {
 	case "render":
 		return runRender(args[1:], stdout, stderr)
+	case "workflow", "init":
+		return runWorkflow(args[1:], stdout, stderr)
 	case "gallery":
 		return runGallery(args[1:], stdout, stderr)
 	case "og":
@@ -171,7 +194,7 @@ func warnKept(stdout, stderr io.Writer, out string, cause error) {
 	msg := fmt.Sprintf("la API de GitHub no responde (%v); se conserva %s sin cambios", cause, out)
 	fmt.Fprintln(stderr, "commitling: aviso:", msg)
 	if os.Getenv("GITHUB_ACTIONS") == "true" {
-		fmt.Fprintln(stdout, "::warning title=commitling::"+strings.NewReplacer("%", "%25", "\r", "%0D", "\n", "%0A").Replace(msg))
+		fmt.Fprintln(stdout, "::warning title=commitling::"+escapeCommand(msg))
 	}
 }
 
@@ -223,6 +246,32 @@ func writeFile(path string, data []byte) error {
 		os.Remove(name)
 		return werr
 	}
+	return nil
+}
+
+// runWorkflow prints the workflow for a profile repository (the same text as
+// the generator of the website) and, on stderr, where to put it.
+func runWorkflow(args []string, stdout, stderr io.Writer) error {
+	fs := flag.NewFlagSet("workflow", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	user := fs.String("user", "", "usuario de GitHub (por defecto, el dueño del repositorio donde corre el workflow)")
+	speciesFlag := fs.String("species", "moss", "especie: moss (brote de musgo) o mushroom (hongo)")
+	theme := fs.String("theme", "light", "tema: light, dark o both (claro y oscuro, según quien mire tu perfil)")
+	sizeFlag := fs.String("size", "full", "tamaño: full (480x200) o compact (insignia de 200x60)")
+	if err := fs.Parse(args); err != nil {
+		return usageError{err.Error()}
+	}
+	if fs.NArg() > 0 {
+		return usageError{fmt.Sprintf("argumentos de más: %s", strings.Join(fs.Args(), " "))}
+	}
+	setup, err := generate.Install(generate.Options{User: *user, Species: *speciesFlag, Theme: *theme, Size: *sizeFlag})
+	if err != nil {
+		return usageError{err.Error()}
+	}
+	if _, err := io.WriteString(stdout, setup.Workflow); err != nil {
+		return err
+	}
+	fmt.Fprintf(stderr, "\nGuárdalo como .github/workflows/commitling.yml en tu repositorio de perfil, añade esto a tu README.md:\n\n%s\n\ny lánzalo una vez en Actions → commitling → Run workflow.\n", setup.Readme)
 	return nil
 }
 

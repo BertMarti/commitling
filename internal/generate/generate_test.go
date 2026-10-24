@@ -189,7 +189,7 @@ func TestCheckMessagesAreTheOnesOfTheCLI(t *testing.T) {
 	if err := (Options{Species: "dragon"}).Check(); err == nil || err.Error() != `especie no válida "dragon" (usa moss o mushroom)` {
 		t.Errorf("species: %v", err)
 	}
-	if err := (Options{User: "a b"}).Check(); err == nil || err.Error() != `nombre de usuario no válido: "a b"` {
+	if err := (Options{User: "a b"}).Check(); err == nil || err.Error() != `nombre de usuario no válido: "a b" (solo letras, números y guiones, sin espacios ni guion al principio)` {
 		t.Errorf("user: %v", err)
 	}
 	if err := (Options{User: "BertMarti", Species: "hongo", Theme: "dark"}).Check(); err != nil {
@@ -387,5 +387,64 @@ func TestWorkflowWritesSizeOnlyWhenCompact(t *testing.T) {
 	}
 	if _, err := Workflow(Options{Size: "xl\nrun: evil"}); err == nil {
 		t.Error("an invalid size must be rejected before it reaches the YAML")
+	}
+}
+
+// Install with both themes draws two cards and the README picks one with
+// <picture>; with one theme it is Workflow.
+func TestInstall(t *testing.T) {
+	plain, err := Install(Options{})
+	if err != nil || plain.Workflow != BaseWorkflow || plain.Readme != ReadmeSnippet || len(plain.Files) != 1 {
+		t.Fatalf("defaults: %+v, %v", plain, err)
+	}
+	if !strings.Contains(BaseWorkflow, baseStep) {
+		t.Fatal("BaseWorkflow lost the step that Install fills in")
+	}
+	both, err := Install(Options{User: "octocat", Species: "hongo", Theme: " Both ", Size: "compact"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if both.Readme != ReadmePicture || strings.Join(both.Files, " ") != "commitling.svg commitling-dark.svg" {
+		t.Errorf("both: readme %q, files %v", both.Readme, both.Files)
+	}
+	for _, want := range []string{
+		"          species: mushroom\n          size: compact\n          out: commitling.svg\n",
+		"          species: mushroom\n          theme: dark\n          size: compact\n          out: commitling-dark.svg\n",
+		"git add commitling.svg commitling-dark.svg\n",
+	} {
+		if !strings.Contains(both.Workflow, want) {
+			t.Errorf("both lacks %q:\n%s", want, both.Workflow)
+		}
+	}
+	if n := strings.Count(both.Workflow, "uses: BertMarti/commitling@v1"); n != 2 {
+		t.Errorf("both uses the Action %d times, want 2", n)
+	}
+	if n := strings.Count(both.Workflow, `user: "octocat"`); n != 2 {
+		t.Errorf("both writes the user %d times, want 2", n)
+	}
+	for _, th := range []string{"light", "dark"} {
+		s, _ := Install(Options{User: "octocat", Theme: th})
+		w, _ := Workflow(Options{User: "octocat", Theme: th})
+		if s.Workflow != w || s.Readme != ReadmeSnippet {
+			t.Errorf("%s: Install and Workflow differ", th)
+		}
+	}
+	if _, err := Install(Options{Theme: "sepia"}); err == nil || !strings.Contains(err.Error(), "both") {
+		t.Errorf("a wrong theme should mention both: %v", err)
+	}
+	if _, err := Install(Options{Theme: "both", User: "x\nrun: evil"}); err == nil {
+		t.Error("both must still validate the user")
+	}
+}
+
+// The push step explains, inside the run, what to do when it is not allowed.
+func TestBaseWorkflowExplainsAFailedPush(t *testing.T) {
+	for _, want := range []string{"permissions:\n  contents: write\n", "if ! git push; then", "::error title=commitling::", "contents: write"} {
+		if !strings.Contains(BaseWorkflow, want) {
+			t.Errorf("BaseWorkflow lacks %q", want)
+		}
+	}
+	if strings.Contains(BaseWorkflow, "${{") {
+		t.Error("no expressions in the workflow that people paste")
 	}
 }

@@ -290,3 +290,23 @@ func TestGoModPinsAPatchedGo(t *testing.T) {
 		}
 	}
 }
+
+// The token reaches the script only through the environment and is masked
+// before anything runs, so even a token pasted as plain text never shows in
+// the log; the script never prints the environment or traces commands.
+func TestActionMasksTheToken(t *testing.T) {
+	yml := readRepoFile(t, "action.yml")
+	mask := strings.Index(yml, `printf '::add-mask::%s\n' "${GITHUB_TOKEN//[$'\r\n']/}"`)
+	run := strings.Index(yml, "go run ./cmd/commitling")
+	if mask < 0 || run < 0 || mask > run {
+		t.Fatal("action.yml must mask $GITHUB_TOKEN, without line breaks, before go run")
+	}
+	if !strings.Contains(yml, "GITHUB_TOKEN: ${{ inputs.token }}") {
+		t.Error("the token must arrive by env:")
+	}
+	for _, bad := range []string{"set -x", "set -o xtrace", "printenv", "env |", "echo \"$GITHUB_TOKEN", "echo $GITHUB_TOKEN"} {
+		if strings.Contains(yml, bad) {
+			t.Errorf("action.yml contains %q", bad)
+		}
+	}
+}

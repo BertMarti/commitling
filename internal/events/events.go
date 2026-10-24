@@ -7,6 +7,7 @@ import (
 	"errors"
 	"io"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/BertMarti/commitling/internal/stats"
@@ -141,6 +142,20 @@ func Login(events []Event) string {
 		return ""
 	}
 	return logins[0]
+}
+
+// LoginHint returns a short Spanish hint, in brackets and starting with a
+// space, on why s is not a valid login (for error messages).
+func LoginHint(s string) string {
+	switch {
+	case s == "":
+		return " (está vacío)"
+	case strings.HasPrefix(s, "@"):
+		return " (quita la @ del principio)"
+	case len(s) > 39:
+		return " (tiene más de 39 caracteres)"
+	}
+	return " (solo letras, números y guiones, sin espacios ni guion al principio)"
 }
 
 // ValidLogin reports whether s looks like a GitHub username: 1 to 39 ASCII

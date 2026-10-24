@@ -52,6 +52,8 @@ Cómo funciona el generador: tu navegador pide a GitHub tus eventos públicos (l
 
 Necesitas una cuenta de GitHub. Todo se hace desde el navegador.
 
+> **Atajo:** el [generador del workflow](https://bertmarti.github.io/commitling/#instalar) de la web rellena el archivo con tu usuario, tu especie, tu tema (también «Automático», claro y oscuro) y tu tamaño, te da el fragmento del README y enlaces directos a cada paso de esta sección. Todo ocurre en tu navegador: no envía ni guarda nada.
+
 ### Paso 1. Crea (o abre) tu repositorio de perfil
 
 GitHub muestra en tu perfil el README de un repositorio especial: el que se llama **igual que tu usuario**. Si tu usuario es `ana-lopez`, el repositorio debe llamarse `ana-lopez/ana-lopez`.
@@ -86,7 +88,7 @@ jobs:
       - uses: BertMarti/commitling@v1
         with:
           out: commitling.svg
-      - name: Guardar el SVG si ha cambiado
+      - name: Guardar la criatura si ha cambiado
         run: |
           git add commitling.svg
           if git diff --cached --quiet; then
@@ -96,7 +98,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "chore: actualiza commitling"
-          git push
+          if ! git push; then
+            echo "::error title=commitling::No se pudo guardar la criatura en el repositorio. Comprueba que este archivo tiene «permissions: contents: write» y, si la rama está protegida, deja que github-actions[bot] suba cambios."
+            exit 1
+          fi
 ```
 
 4. Pulsa **Commit changes…** y confirma con **Commit changes**.
@@ -203,6 +208,8 @@ Sin `size`, o con `size: full`, el dibujo es exactamente el de siempre, byte a b
 
 Si tu perfil lo ve gente con el tema oscuro de GitHub, puedes ofrecer una imagen para cada tema. GitHub elige la adecuada según quién mira.
 
+La forma rápida: en el [generador del workflow](https://bertmarti.github.io/commitling/#instalar) elige **Automático (claro y oscuro)** y sustituye tu archivo por el que sale. A mano:
+
 **a) Cambia el workflow** para generar dos imágenes. Sustituye la sección `steps:` por esta (lo demás del archivo no cambia):
 
 ```yaml
@@ -213,9 +220,9 @@ Si tu perfil lo ve gente con el tema oscuro de GitHub, puedes ofrecer una imagen
           out: commitling.svg
       - uses: BertMarti/commitling@v1
         with:
-          out: commitling-dark.svg
           theme: dark
-      - name: Guardar los SVG si han cambiado
+          out: commitling-dark.svg
+      - name: Guardar la criatura si ha cambiado
         run: |
           git add commitling.svg commitling-dark.svg
           if git diff --cached --quiet; then
@@ -225,7 +232,10 @@ Si tu perfil lo ve gente con el tema oscuro de GitHub, puedes ofrecer una imagen
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "chore: actualiza commitling"
-          git push
+          if ! git push; then
+            echo "::error title=commitling::No se pudo guardar la criatura en el repositorio. Comprueba que este archivo tiene «permissions: contents: write» y, si la rama está protegida, deja que github-actions[bot] suba cambios."
+            exit 1
+          fi
 ```
 
 **b) Cambia la línea de tu README** por este bloque:
@@ -352,13 +362,18 @@ go run ./cmd/commitling render --fixture testdata/events.json --out out/commitli
 # Todas las fases, ánimos y accesorios como web estática
 go run ./cmd/commitling gallery --out site/
 
+# El workflow para tu perfil, ya relleno (lo mismo que el generador de la web)
+go run ./cmd/commitling workflow --user tu-usuario --species mushroom --theme both > commitling.yml
+
 # La imagen de vista previa (PNG de 1200x630)
 go run ./cmd/commitling og --out out/og.png
 
 go run ./cmd/commitling version
 ```
 
-`--species` y `--size` aceptan los mismos valores que `species` y `size` en la Action (sección 3) y `--out -` escribe en la salida estándar.
+`--species` y `--size` aceptan los mismos valores que `species` y `size` en la Action (sección 3) y `--out -` escribe en la salida estándar. `workflow` (o su alias `init`) acepta además `--theme both` para las dos tarjetas; escribe el YAML en la salida estándar y, aparte, te dice qué pegar en el README.
+
+**Mensajes de error.** Cuando algo falla, commitling dice qué ha pasado y qué hacer: usuario inexistente (404: revisa `user`, sin `@`), token rechazado (401: quita la entrada `token` o renueva el secreto), acceso denegado (403), límite de peticiones (con la hora a la que se restablece) o caída de GitHub (5xx). Dentro de GitHub Actions el mensaje sale también como anotación en el resumen de la ejecución. Nunca incluye el token.
 
 **Conservar el SVG ante una caída de la API (`--keep-on-error`).** Con esta opción, si la API de GitHub sigue fallando tras los reintentos por una causa **transitoria** (error de red, 5xx o límite de peticiones: 429, o 403 con cabeceras de límite) y el archivo de `--out` ya existe y es un SVG completo, commitling lo deja intacto, escribe un aviso («la API de GitHub no responde… se conserva … sin cambios») y termina con código 0. Los fallos **permanentes** siguen siendo un error aunque haya archivo previo: 401 (token inválido o caducado), 404 (usuario inexistente), 422 y 403 sin cabeceras de límite (permisos). Sin archivo previo, con un archivo vacío o cortado, o con `--out -`, el error también se mantiene, y no afecta a otros errores (un `--fixture` que no existe, una especie no válida…). En la Action equivale a la entrada `keep-on-error`, que está activada por defecto.
 
@@ -413,7 +428,7 @@ Si solo quieres pausarlo sin borrar nada: **Actions → commitling → menú ⋯
 
 ### El workflow falla al guardar con un error de permisos
 
-Verás algo como «Permission denied» o `403` en el paso «Guardar el SVG si ha cambiado». Revisa:
+Verás algo como «Permission denied» o `403` en el paso «Guardar la criatura si ha cambiado» (el workflow lo resume como «No se pudo guardar la criatura en el repositorio»). Revisa:
 
 1. Que tu workflow contiene `permissions:` con `contents: write` (está en el ejemplo).
 2. Que en el repositorio, **Settings → Actions → General → Workflow permissions**, está marcado **Read and write permissions**. Algunas organizaciones lo limitan a solo lectura y esa opción manda sobre el archivo.

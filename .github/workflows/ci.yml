@@ -73,10 +73,37 @@ jobs:
         run: |
           go run ./cmd/commitling gallery --out out/site
           test -s out/site/index.html
-          ls out/site/svg | wc -l
+          find out/site/svg -type f | wc -l
 
       - name: versión
         run: go run ./cmd/commitling version
+
+      # Every workflow that the web generator and `commitling workflow` can
+      # produce (the web builds the same bytes; a test compares them) must be
+      # a valid GitHub Actions workflow that uses @v1: actionlint (official
+      # binary, pinned SHA-256) also runs shellcheck on its `run:` script.
+      - name: workflows generados (actionlint)
+        if: runner.os == 'Linux'
+        env:
+          ACTIONLINT_VERSION: "1.7.12"
+          ACTIONLINT_SHA256: "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8"
+        run: |
+          set -euo pipefail
+          go build -o "$RUNNER_TEMP/commitling" ./cmd/commitling
+          mkdir -p out/wf
+          "$RUNNER_TEMP/commitling" workflow > out/wf/base.yml 2>/dev/null
+          for sp in moss mushroom; do for th in light dark both; do for sz in full compact; do
+            "$RUNNER_TEMP/commitling" workflow --user octocat --species "$sp" --theme "$th" --size "$sz" > "out/wf/$sp-$th-$sz.yml" 2>/dev/null
+          done; done; done
+          if grep -L 'uses: BertMarti/commitling@v1$' out/wf/*.yml | grep .; then echo "sin @v1"; exit 1; fi
+          if grep -l 'commitling@main' out/wf/*.yml; then echo "con @main"; exit 1; fi
+          tgz="actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          curl -fsSLo "$RUNNER_TEMP/$tgz" "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/$tgz"
+          echo "${ACTIONLINT_SHA256}  $RUNNER_TEMP/$tgz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/$tgz" -C "$RUNNER_TEMP" actionlint
+          command -v shellcheck
+          "$RUNNER_TEMP/actionlint" -color out/wf/*.yml .github/workflows/*.yml
+          echo "$(find out/wf -name "*.yml" | wc -l) workflows generados válidos"
 
   # Security checks: known vulnerabilities in Go and its standard library
   # (govulncheck), static analysis (staticcheck, also for the wasm build) and
