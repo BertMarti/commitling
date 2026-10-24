@@ -38,8 +38,12 @@ En la [web](https://bertmarti.github.io/commitling/#generador) escribes tu usuar
 
 ## Úsalo en tu perfil en 4 pasos
 
-1. Abre (o crea) tu repositorio de perfil: el que se llama igual que tu usuario, `tu-usuario/tu-usuario`.
-2. Crea `.github/workflows/commitling.yml` con este contenido:
+> 🧭 **La forma más fácil:** abre el [generador del workflow](https://bertmarti.github.io/commitling/#instalar), escribe tu usuario, elige especie, tema y tamaño, y copia lo que sale. Tiene enlaces directos a cada paso en GitHub y te explica qué hacer si algo falla. Son unos 5 minutos y no hay que instalar nada ni crear tokens.
+
+Si prefieres hacerlo a mano:
+
+1. Abre (o crea) tu **repositorio de perfil**: un repositorio **público** que se llama exactamente igual que tu usuario, `tu-usuario/tu-usuario`. Si lo creas ahora, marca «Add a README file».
+2. En ese repositorio pulsa **Add file → Create new file**, escribe como nombre `.github/workflows/commitling.yml` (cada barra crea una carpeta), pega este contenido y pulsa **Commit changes**:
 
 ```yaml
 name: commitling
@@ -76,13 +80,17 @@ jobs:
           fi
 ```
 
-3. Añade la criatura a tu `README.md`:
+3. Edita el `README.md` de tu repositorio de perfil (el lápiz) y pega donde quieras verla:
 
 ```markdown
 ![commitling](./commitling.svg)
 ```
 
-4. En **Actions**, elige «commitling» y pulsa **Run workflow**. A partir de ahí se actualiza sola cada día.
+4. Ve a la pestaña **Actions** (si te lo pregunta, pulsa «I understand my workflows, go ahead and enable them»), elige «commitling» y pulsa **Run workflow**. En uno o dos minutos aparece un ✓ verde y la criatura sale en tu perfil. A partir de ahí se actualiza sola cada día.
+
+No hace falta tocar nada más: la línea `permissions: contents: write` deja que el workflow guarde la imagen en tu repositorio con un token temporal que GitHub crea en cada ejecución, y la Action usa como usuario al dueño del repositorio.
+
+¿Tienes Go instalado y prefieres la terminal? `go run github.com/BertMarti/commitling/cmd/commitling@latest workflow --user tu-usuario --theme both` escribe el mismo archivo (con `--theme both`, claro y oscuro).
 
 ## Opciones
 
@@ -133,6 +141,8 @@ Para una firma, una barra lateral o una cabecera, usa una insignia de 200x60:
           size: compact
 ```
 
+Si la añades como un paso más, suma `commitling-compact.svg` al `git add` del último paso. Si solo quieres la compacta, basta con poner `size: compact` en el paso que ya tienes (o elegir «Compacta» en el generador).
+
 <table>
   <tr>
     <td align="center"><img alt="Arbusto contento, tarjeta compacta (brote de musgo)" src="https://bertmarti.github.io/commitling/svg/compact-shrub.svg" width="200" height="60"></td>
@@ -142,7 +152,7 @@ Para una firma, una barra lateral o una cabecera, usa una insignia de 200x60:
 
 ### Tema oscuro
 
-Añade un segundo paso a tu workflow con `theme: dark` y `out: commitling-dark.svg`, súmalo al `git add` y deja que GitHub elija según el tema de quien visite tu perfil:
+Lo más sencillo es elegir **Automático (claro y oscuro)** en el [generador](https://bertmarti.github.io/commitling/#instalar) y sustituir tu workflow por el que sale. A mano: añade un segundo paso a tu workflow con `theme: dark` y `out: commitling-dark.svg`, súmalo al `git add` y deja que GitHub elija según el tema de quien visite tu perfil:
 
 ```yaml
       - uses: BertMarti/commitling@v1
@@ -212,6 +222,16 @@ Sí. El proyecto y la Action tienen licencia MIT. GitHub puede aplicar sus propi
 <details><summary>¿Ve mis repositorios privados?</summary>
 
 No. Solo lee la actividad pública que cualquiera puede ver en tu perfil.
+</details>
+
+<details><summary>El workflow sale en rojo, ¿qué hago?</summary>
+
+Abre la ejecución en **Actions**: el mensaje de commitling aparece arriba, en el resumen, y dice qué hacer.
+
+- «No se pudo guardar la criatura en el repositorio»: comprueba que el workflow tiene `permissions: contents: write`; si sigue fallando, en **Settings → Actions → General → Workflow permissions** elige **Read and write permissions**, y si tu rama principal está protegida permite que `github-actions[bot]` suba cambios.
+- «no existe en GitHub (404)»: el `user:` está mal escrito (va sin `@`). Si quitas esa línea se usa el dueño del repositorio.
+- «se ha agotado el límite de peticiones» o «GitHub no responde bien»: es pasajero; se conserva la criatura anterior y se reintenta en la siguiente ejecución.
+- «GitHub no acepta el token (401)»: quita la entrada `token:` para usar el token automático del workflow, o renueva el secreto que le pasas.
 </details>
 
 <details><summary>¿Por qué no se actualiza?</summary>

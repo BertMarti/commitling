@@ -61,6 +61,18 @@ var generatorJS []byte
 //go:embed page.js
 var pageJS []byte
 
+// installJS is the workflow generator of «Instálalo en tu perfil»: plain
+// JavaScript, no wasm and no network (a test compares it with generate.Install).
+//
+//go:embed install.js
+var installJS []byte
+
+// styleCSS is the stylesheet of the page, a file so that the
+// Content-Security-Policy needs no 'unsafe-inline' for styles.
+//
+//go:embed style.css
+var styleCSS []byte
+
 // Sample returns synthetic stats that produce exactly the given stage and
 // mood with no accessories.
 func Sample(st creature.Stage, m creature.Mood) stats.Stats {
@@ -245,6 +257,12 @@ func Build(dir, version string) (int, error) {
 		return n, err
 	}
 	if err := write("page.js", pageJS); err != nil {
+		return n, err
+	}
+	if err := write("install.js", installJS); err != nil {
+		return n, err
+	}
+	if err := write("style.css", styleCSS); err != nil {
 		return n, err
 	}
 	// The header shows the real animated card: the first species with everything unlocked.

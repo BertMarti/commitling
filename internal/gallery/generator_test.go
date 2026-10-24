@@ -75,8 +75,10 @@ func TestGeneratorFormIsAccessible(t *testing.T) {
 	if !strings.Contains(page, `<legend>Tamaño</legend>`) || !strings.Contains(page, "Compacta</label>") || !strings.Contains(page, "Completa</label>") {
 		t.Error("the size group needs its legend and visible labels")
 	}
-	if got := strings.Count(page, `checked>`); got != 3 {
-		t.Errorf("%d options checked by default, want 3 (one species, one theme, one size)", got)
+	// One species, one theme and one size in the generator, and the same three
+	// in the workflow generator of «Instálalo en tu perfil».
+	if got := strings.Count(page, `checked>`); got != 6 {
+		t.Errorf("%d options checked by default, want 6 (species, theme and size, in each form)", got)
 	}
 	if !regexp.MustCompile(`<input type="radio" name="size" value="full"[^>]* checked>`).MatchString(page) {
 		t.Error("the full card must be the default size")
@@ -188,7 +190,7 @@ func TestGeneratorHasDownloadAndFilledWorkflow(t *testing.T) {
 // a region that appears with its content).
 func TestLiveRegionsAreNeverHidden(t *testing.T) {
 	page := buildPage(t)
-	style := regexp.MustCompile(`(?s)<style>(.*?)</style>`).FindStringSubmatch(page)[1]
+	style := builtCSS(t)
 	for _, m := range regexp.MustCompile(`([^{}]+)\{([^}]*)\}`).FindAllStringSubmatch(style, -1) {
 		sel, body := m[1], m[2]
 		if !regexp.MustCompile(`display:\s*none|visibility:\s*hidden`).MatchString(body) {
@@ -327,7 +329,7 @@ func TestGeneratorPassesTheSizeToTheWasm(t *testing.T) {
 	if !strings.Contains(page, `id="gen-stage"`) {
 		t.Error("the stage needs an id so the script can tell its size")
 	}
-	style := regexp.MustCompile(`(?s)<style>(.*?)</style>`).FindStringSubmatch(page)[1]
+	style := builtCSS(t)
 	rules := cssRules(style)
 	if got := rules.prop(`.gen-stage[data-size=compact] img`, "max-width"); got != "200px" {
 		t.Errorf("the compact preview must stop at 200px, got %q", got)

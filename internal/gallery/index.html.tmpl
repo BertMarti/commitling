@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; connect-src 'self' https://api.github.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' blob: data:; connect-src 'self' https://api.github.com; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="theme-color" content="#f3efe6" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#2b2724" media="(prefers-color-scheme: dark)">
@@ -23,127 +23,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="{{.Favicon}}" type="image/svg+xml">
-<style>
-:root{
-  --paper:#f3efe6;--ink:#2b2724;--line:#ddd5c6;--muted:#6b6259;
-  --moss:#7fb069;--honey:#e6aa68;--accent:#b8341f;--code:#ebe5d8;
-  color-scheme:light dark;
-}
-@media (prefers-color-scheme:dark){
-  :root{--paper:#2b2724;--ink:#f3efe6;--line:#4a433d;--muted:#a39a8e;--accent:#ee6e55;--code:#34302c}
-}
-*{box-sizing:border-box}
-html{background:var(--paper)}
-body{margin:0;background:var(--paper);color:var(--ink);
-  font:15px/1.7 ui-monospace,SFMono-Regular,Menlo,Consolas,"DejaVu Sans Mono","Liberation Mono",monospace}
-main,header,footer{max-width:1000px;margin:0 auto;padding:0 20px}
-a{color:inherit;text-decoration-color:var(--accent);text-underline-offset:3px;text-decoration-thickness:2px}
-a:hover{color:var(--accent)}
-:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
-.skip{position:absolute;left:-9999px;top:8px;padding:6px 12px;background:var(--paper);color:var(--ink);border:2px solid var(--ink);z-index:1}
-.skip:focus{left:8px}
-.jump{display:block;margin:0 0 6px;font-size:14px}
-header{padding-top:64px;padding-bottom:48px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,480px);gap:28px 48px;align-items:center}
-.hero img{display:block;width:100%;height:auto}
-h1{font-size:34px;line-height:1.1;margin:0 0 10px;letter-spacing:-.02em}
-h2{font-size:13px;letter-spacing:.14em;text-transform:uppercase;margin:0 0 20px;color:var(--muted);font-weight:600}
-h3{font-size:16px;margin:36px 0 14px}
-h3.species{font-size:20px;margin:56px 0 8px;padding-top:28px;border-top:2px dashed var(--line)}
-h3.species:first-of-type{margin-top:32px;padding-top:0;border-top:0}
-h4{font-size:15px;margin:32px 0 14px}
-p{margin:0 0 14px;max-width:68ch}
-.lead{font-size:17px;margin:0}
-nav{margin-top:14px;display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px}
-section{padding:56px 0;border-top:2px dashed var(--line)}
-.gen{display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);gap:28px 40px;align-items:start}
-.gen-form{display:grid;grid-template-columns:minmax(0,1fr);gap:20px}
-.gen-form label.f,.gen-form legend{display:block;font-weight:700;padding:0;margin:0 0 6px}
-.gen-form fieldset{border:0;margin:0;padding:0;min-width:0}
-.gen-form input[type=text]{display:block;width:100%;font:inherit;font-size:16px;padding:9px 12px;background:var(--paper);color:var(--ink);border:2px solid var(--ink);border-radius:0}
-.gen-form input[type=text]::placeholder{color:var(--muted);opacity:1}
-.opts{display:flex;flex-wrap:wrap;gap:8px}
-.opt{position:relative}
-.opt input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
-.opt label{display:block;padding:6px 14px;border:2px solid var(--ink);background:var(--paper)}
-.opt input:checked+label{background:var(--ink);color:var(--paper)}
-.opt input:focus-visible+label{outline:2px solid var(--accent);outline-offset:3px}
-.go{justify-self:start;font:inherit;font-weight:700;padding:10px 22px;cursor:pointer;background:var(--moss);color:#2b2724;border:2px solid var(--ink);border-radius:0}
-.go:hover{background:var(--honey)}
-.go[aria-disabled=true]{cursor:progress;background:var(--code);color:var(--muted)}
-.gen-msgs p{margin:0}
-.gen-msgs .go{margin-top:10px}
-.gen-error{color:var(--accent);font-weight:700}
-.gen-stage{margin:0;display:grid;grid-template-columns:minmax(0,1fr);gap:10px;align-content:start}
-.gen-stage img{display:block;width:100%;max-width:480px;height:auto;aspect-ratio:12/5}
-.gen-stage img[hidden],.gen-empty[hidden]{display:none}
-.gen-stage[data-size=compact] img{max-width:200px;aspect-ratio:10/3}
-.gen-stage[data-size=compact] .gen-empty{max-width:200px;aspect-ratio:10/3;padding:6px;font-size:12px;line-height:1.4}
-.gen-empty{margin:0;width:100%;max-width:480px;aspect-ratio:12/5;padding:12px;display:grid;grid-template-columns:minmax(0,1fr);place-items:center;text-align:center;color:var(--muted);border:1px solid var(--line);border-radius:8px}
-.gen-view{display:grid;grid-template-columns:minmax(0,1fr);gap:18px;min-width:0}
-.demo{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
-.demo-t{margin:0;font-size:14px}
-.demo-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
-.demo-bar .go{padding:8px 16px}
-.go.alt{background:var(--paper);color:var(--ink)}
-.go.alt:hover{background:var(--honey);color:#2b2724}
-.go:disabled,.go:disabled:hover{cursor:not-allowed;background:var(--code);color:var(--muted)}
-.demo-day{margin-left:auto;font-weight:700}
-.demo-slider{display:grid;grid-template-columns:minmax(0,1fr);gap:4px}
-.demo-slider[hidden]{display:none}
-.demo-slider label{font-weight:700}
-.demo-slider input{width:100%;accent-color:var(--moss)}
-.demo-phase{margin:0;min-height:1.7em;font-weight:700}
-.cta{margin:18px 0 0}
-.cta .go[hidden]{display:none}
-.gen-after{grid-column:1/-1}
-.gen-after h3{margin-top:0}
-a.go,a.go:hover{display:inline-block;text-decoration:none;color:#2b2724}
-.gen-stage figcaption{margin:0;max-width:480px;width:100%}
-.live{display:grid;grid-template-columns:minmax(0,1fr);justify-items:start;gap:12px}
-.live img,.grid img{display:block;width:100%;max-width:480px;height:auto}
-.badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(200px,100%),1fr));gap:18px 24px}
-.badges img{display:block;width:100%;max-width:200px;height:auto}
-.note{font-size:13px;color:var(--muted)}
-.steps{counter-reset:s;list-style:none;padding:0;margin:0;display:grid;grid-template-columns:minmax(0,1fr);gap:14px;max-width:72ch}
-.steps li{counter-increment:s;padding-left:44px;position:relative;min-width:0}
-.steps li::before{content:counter(s);position:absolute;left:0;top:1px;width:28px;height:28px;display:grid;place-items:center;
-  background:var(--moss);color:#2b2724;font-weight:700;font-size:13px}
-.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px 24px}
-figure{margin:0}
-figcaption{font-size:13px;color:var(--muted);margin-top:8px}
-.tables{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 40px}
-table{border-collapse:collapse;width:100%;font-size:14px}
-caption{text-align:left;font-weight:700;padding-bottom:8px}
-td{padding:7px 0;border-bottom:1px solid var(--line);vertical-align:top}
-td:first-child{padding-right:16px;white-space:nowrap}
-td:last-child{color:var(--muted)}
-.xp td:first-child{white-space:normal}
-.xp td:last-child{white-space:nowrap;text-align:right}
-.code{position:relative;margin:10px 0 22px}
-pre{margin:0;padding:18px 20px;background:var(--code);overflow-x:auto;font-size:13px;line-height:1.6;border-left:4px solid var(--moss)}
-code{font-family:inherit}
-p code,li code,td code{background:var(--code);padding:1px 5px;overflow-wrap:anywhere}
-pre code,li pre code{background:none;padding:0}
-.copy{position:absolute;top:10px;right:10px;font:inherit;font-size:12px;padding:4px 10px;cursor:pointer;
-  background:var(--paper);color:var(--ink);border:1px solid var(--line)}
-.copy:hover{border-color:var(--ink)}
-.copy[hidden]{display:none}
-.copy-msg{margin:6px 0 0}
-.copy-msg:empty{margin:0}
-footer{padding-top:40px;padding-bottom:64px;border-top:2px dashed var(--line);font-size:13px;color:var(--muted)}
-footer p{max-width:none}
-@media (max-width:860px){
-  header{grid-template-columns:minmax(0,1fr);padding-top:32px;gap:24px}
-  .hero{order:-1}
-}
-@media (max-width:720px){
-  h1{font-size:28px}
-  .grid,.tables{grid-template-columns:minmax(0,1fr)}
-  .gen{grid-template-columns:minmax(0,1fr)}
-  section{padding:40px 0}
-  td:first-child{white-space:normal}
-}
-</style>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 <a class="skip" href="#contenido">Saltar al contenido</a>
@@ -176,7 +56,7 @@ footer p{max-width:none}
         <div>
           <label class="f" for="gen-user">Usuario de GitHub</label>
           <input type="text" id="gen-user" name="user" maxlength="40" placeholder="BertMarti" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" aria-describedby="gen-hint gen-error">
-          <p id="gen-hint" class="note" style="margin:6px 0 0">Solo se usa tu actividad pública de los últimos 90 días. Para no gastar peticiones, los datos de cada usuario se guardan 10 minutos en esta pestaña: un commit muy reciente puede tardar en verse (abre la web en otra pestaña para empezar de cero).</p>
+          <p id="gen-hint" class="note hint">Solo se usa tu actividad pública de los últimos 90 días. Para no gastar peticiones, los datos de cada usuario se guardan 10 minutos en esta pestaña: un commit muy reciente puede tardar en verse (abre la web en otra pestaña para empezar de cero).</p>
         </div>
         <fieldset>
           <legend>Especie</legend>
@@ -328,24 +208,83 @@ footer p{max-width:none}
         <tbody>{{range .Acc}}<tr><td>{{.Name}}</td><td>{{.When}}</td></tr>{{end}}</tbody>
       </table>
     </div>
-    <p class="note" style="margin-top:22px">La racha cuenta días seguidos con actividad y se mantiene hasta el final del día siguiente, así no se rompe por la mañana antes de tu primer commit. Si GitHub no indica cuántos commits lleva un push, cuenta como uno.</p>
+    <p class="note mt">La racha cuenta días seguidos con actividad y se mantiene hasta el final del día siguiente, así no se rompe por la mañana antes de tu primer commit. Si GitHub no indica cuántos commits lleva un push, cuenta como uno.</p>
   </section>
 
   <section id="instalar" aria-labelledby="instalar-t">
     <h2 id="instalar-t">Instálalo en tu perfil</h2>
-    <ol class="steps">
-      <li>Abre (o crea) tu repositorio de perfil: el que se llama igual que tu usuario, <code>tu-usuario/tu-usuario</code>.</li>
-      <li>Crea el archivo <code>.github/workflows/commitling.yml</code> con este contenido:
+    <p>Son unos 5 minutos y todo se hace en github.com: no hay que instalar nada en tu ordenador ni crear contraseñas o tokens. Elige cómo la quieres y copia lo que sale.</p>
+    <form id="ins-form" class="gen-form ins-form" hidden novalidate>
+      <div>
+        <label class="f" for="ins-user">Tu usuario de GitHub</label>
+        <input type="text" id="ins-user" name="user" maxlength="100" placeholder="tu-usuario" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" aria-describedby="ins-hint ins-error">
+        <p id="ins-hint" class="note hint">Tal y como sale en github.com/tu-usuario (también vale pegar el enlace de tu perfil). Sirve para rellenar el workflow y los enlaces directos; aquí no se envía a ningún sitio ni se guarda.</p>
+        <p id="ins-error" class="gen-error" role="alert"></p>
+      </div>
+      <fieldset>
+        <legend>Especie</legend>
+        <div class="opts">{{range $i, $c := .GenSpecies}}
+          <div class="opt"><input type="radio" name="ins-species" value="{{$c.Value}}" id="ins-sp-{{$c.Value}}"{{if eq $i 0}} checked{{end}}><label for="ins-sp-{{$c.Value}}">{{$c.Label}}</label></div>{{end}}
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Tema</legend>
+        <div class="opts">
+          <div class="opt"><input type="radio" name="ins-theme" value="light" id="ins-th-light" checked><label for="ins-th-light">Claro</label></div>
+          <div class="opt"><input type="radio" name="ins-theme" value="dark" id="ins-th-dark"><label for="ins-th-dark">Oscuro</label></div>
+          <div class="opt"><input type="radio" name="ins-theme" value="both" id="ins-th-both"><label for="ins-th-both">Automático (claro y oscuro)</label></div>
+        </div>
+        <p class="note hint">«Automático» genera las dos tarjetas y GitHub enseña la que encaja con el tema de quien visita tu perfil.</p>
+      </fieldset>
+      <fieldset>
+        <legend>Tamaño</legend>
+        <div class="opts">{{range $i, $c := .GenSizes}}
+          <div class="opt"><input type="radio" name="ins-size" value="{{$c.Value}}" id="ins-sz-{{$c.Value}}"{{if eq $i 0}} checked{{end}}><label for="ins-sz-{{$c.Value}}">{{$c.Label}}</label></div>{{end}}
+        </div>
+      </fieldset>
+    </form>
+    <ol class="steps ins-steps">
+      <li><strong>Crea tu repositorio de perfil.</strong> Es un repositorio <strong>público</strong> que se llama exactamente igual que tu usuario (<code id="ins-repo">tu-usuario/tu-usuario</code>); marca «Add a README file» al crearlo. Si ya lo tienes, salta este paso.
+        <p class="ins-link" hidden><a id="ins-new-repo" class="go alt" href="https://github.com/new" target="_blank" rel="noopener noreferrer">Crear el repositorio en GitHub</a></p>
+      </li>
+      <li><strong>Crea el archivo del workflow.</strong> En tu repositorio pulsa <strong>Add file → Create new file</strong> y escribe como nombre <code>.github/workflows/commitling.yml</code> (al escribir cada barra, GitHub crea la carpeta). Pega este contenido y pulsa <strong>Commit changes</strong>:
         <div class="code"><button class="copy" type="button" data-copy="wf" aria-label="Copiar el workflow" hidden>Copiar</button><pre tabindex="0" aria-label="Contenido del workflow"><code id="wf">{{.Workflow}}</code></pre><p class="copy-msg note" role="status" aria-live="polite"></p></div>
+        <p class="ins-link" hidden><a id="ins-new-file" class="go alt" href="https://github.com" target="_blank" rel="noopener noreferrer">Abrir GitHub con el archivo ya relleno</a></p>
+        <p class="note ins-link" hidden>El atajo abre la página de crear archivo con el nombre y el contenido puestos (te pedirá iniciar sesión si no lo has hecho). Si tu rama principal no se llama <code>main</code>, crea el archivo a mano como arriba.</p>
       </li>
-      <li>Añade la criatura a tu <code>README.md</code>:
-        <div class="code"><button class="copy" type="button" data-copy="rd" aria-label="Copiar la línea del README" hidden>Copiar</button><pre tabindex="0" aria-label="Línea para el README"><code id="rd">{{.Readme}}</code></pre><p class="copy-msg note" role="status" aria-live="polite"></p></div>
+      <li><strong>Permisos: no tienes que hacer nada.</strong> La línea <code>permissions: contents: write</code> deja que el workflow guarde la imagen en tu repositorio, y nada más. Usa el token temporal que GitHub crea para cada ejecución: no hay secretos ni tokens que crear.</li>
+      <li><strong>Lánzalo por primera vez.</strong> Abre la pestaña <strong>Actions</strong> de tu repositorio (si te lo pregunta, pulsa «I understand my workflows, go ahead and enable them»), elige <strong>commitling</strong> a la izquierda y pulsa <strong>Run workflow</strong> y otra vez <strong>Run workflow</strong>. Después se ejecuta sola cada día a las 05:23 UTC.
+        <p class="ins-link" hidden><a id="ins-actions" class="go alt" href="https://github.com" target="_blank" rel="noopener noreferrer">Abrir Actions del repositorio</a></p>
       </li>
-      <li>Ve a la pestaña <strong>Actions</strong>, elige «commitling» y pulsa <strong>Run workflow</strong>. Después se actualizará sola cada día.</li>
+      <li><strong>Añade la criatura a tu README.</strong> Edita el <code>README.md</code> de tu repositorio de perfil (el lápiz) y pega esto donde quieras verla:
+        <div class="code"><button class="copy" type="button" data-copy="rd" aria-label="Copiar el fragmento del README" hidden>Copiar</button><pre tabindex="0" aria-label="Fragmento para el README"><code id="rd">{{.Readme}}</code></pre><p class="copy-msg note" role="status" aria-live="polite"></p></div>
+        <p class="ins-link" hidden><a id="ins-edit-readme" class="go alt" href="https://github.com" target="_blank" rel="noopener noreferrer">Editar el README en GitHub</a></p>
+      </li>
+      <li><strong>Mira el resultado.</strong> En uno o dos minutos la ejecución aparece con un ✓ verde y tu criatura sale en tu perfil. Si ves una imagen rota, la primera ejecución aún no ha terminado (o falló: mira abajo).
+        <p class="ins-link" hidden><a id="ins-profile" class="go alt" href="https://github.com" target="_blank" rel="noopener noreferrer">Ver tu perfil</a></p>
+      </li>
     </ol>
-    <h3>Opcional: tema oscuro</h3>
-    <p>Añade un segundo paso con <code>theme: dark</code> y <code>out: commitling-dark.svg</code> (y súmalo al <code>git add</code>), y usa esto en el README para que GitHub elija según el tema de quien lo mira:</p>
-    <div class="code"><button class="copy" type="button" data-copy="rdd" aria-label="Copiar el fragmento del README con tema oscuro" hidden>Copiar</button><pre tabindex="0" aria-label="Fragmento del README con tema oscuro"><code id="rdd">{{.ReadmeDrk}}</code></pre><p class="copy-msg note" role="status" aria-live="polite"></p></div>
+    <p class="note" id="ins-nolinks">Escribe tu usuario arriba y aparecerán enlaces directos a cada paso.</p>
+    <h3 id="ins-fallos">Si algo falla</h3>
+    <p>Abre la ejecución en rojo en <strong>Actions</strong>: el mensaje de commitling sale arriba, en el resumen.</p>
+    <dl class="faults">
+      <dt>«No se pudo guardar la criatura en el repositorio»</dt>
+      <dd>Comprueba que el archivo tiene <code>permissions: contents: write</code>. Si sigue fallando, en <strong>Settings → Actions → General → Workflow permissions</strong> elige <strong>Read and write permissions</strong>, y si tu rama principal está protegida, permite que <code>github-actions[bot]</code> suba cambios.</dd>
+      <dt>«no existe en GitHub (404)»</dt>
+      <dd>El usuario de <code>user:</code> está mal escrito. Va sin <code>@</code> y tal y como aparece en tu perfil; si quitas esa línea se usa el dueño del repositorio.</dd>
+      <dt>«se ha agotado el límite de peticiones»</dt>
+      <dd>Es pasajero: tu criatura anterior se conserva y se vuelve a intentar en la siguiente ejecución (o pulsa <strong>Run workflow</strong> más tarde).</dd>
+      <dt>No aparece «Run workflow»</dt>
+      <dd>El archivo debe estar en la rama principal, exactamente en <code>.github/workflows/</code> y terminar en <code>.yml</code>. Recarga la página de Actions.</dd>
+      <dt>Se dejó de actualizar</dt>
+      <dd>GitHub pausa los workflows programados tras unos 60 días sin actividad en el repositorio: entra en Actions y pulsa <strong>Enable workflow</strong>.</dd>
+    </dl>
+    <details class="more">
+      <summary>¿Ya tienes el workflow y solo quieres añadir el tema oscuro?</summary>
+      <p>Elige «Automático» arriba y sustituye tu archivo por el nuevo, o añade un segundo paso con <code>theme: dark</code> y <code>out: commitling-dark.svg</code> (y súmalo al <code>git add</code>). En el README usa:</p>
+      <div class="code"><button class="copy" type="button" data-copy="rdd" aria-label="Copiar el fragmento del README con tema oscuro" hidden>Copiar</button><pre tabindex="0" aria-label="Fragmento del README con tema oscuro"><code id="rdd">{{.ReadmeDrk}}</code></pre><p class="copy-msg note" role="status" aria-live="polite"></p></div>
+    </details>
+    <p class="note">¿Prefieres la terminal? <code>go run github.com/BertMarti/commitling/cmd/commitling@latest workflow --user tu-usuario --theme both</code> escribe el mismo archivo.</p>
   </section>
 
   <section id="privacidad" aria-labelledby="privacidad-t">
@@ -359,5 +298,6 @@ footer p{max-width:none}
 </footer>
 <script src="page.js" defer></script>
 <script src="generator.js" defer></script>
+<script src="install.js" defer></script>
 </body>
 </html>
