@@ -10,6 +10,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const assert = require('node:assert/strict');
 
+(function main() {
 const source = fs.readFileSync(process.argv[2] || 'install.js', 'utf8');
 const sandbox = { console, encodeURIComponent, window: {} };
 vm.runInNewContext(source, sandbox);
@@ -27,8 +28,10 @@ if (process.argv[3] === '--dump') {
     const result = api.build({ user, species: specie, theme, size });
     out.push({ user, species: specie, theme, size, workflow: result.workflow, readme: result.readme, files: result.files });
   }
+  // No process.exit(): on a pipe, stdout is asynchronous and exiting at
+  // once cuts the JSON (it happened in the CI). The scenarios below are skipped.
   process.stdout.write(JSON.stringify(out));
-  process.exit(0);
+  return;
 }
 
 function ok(name, fn) { fn(); console.log('ok ' + name); }
@@ -222,3 +225,4 @@ ok('no toca almacenamiento ni cookies', () => {
   p.type('octocat');
   assert.deepEqual(Array.from(p.stored), []);
 });
+})();
