@@ -101,6 +101,15 @@ jobs:
           keep-on-error: quizas
           out: out/badkeep.svg
 
+      # setup-go exports GOTOOLCHAIN=local on its first run, so every later
+      # use of the Action in the same job (a profile draws light and dark)
+      # must still get the patched Go from the go line of go.mod.
+      - name: Go parcheado en todas las llamadas
+        run: |
+          want="go$(awk '$1 == "go" {print $2}' go.mod)"
+          go version
+          go version | grep -q "$want " || { echo "la Action no instaló $want en su última llamada"; exit 1; }
+
       - name: Comprobar los SVG
         env:
           FIXTURE_PATH: ${{ steps.fixture.outputs.path }}

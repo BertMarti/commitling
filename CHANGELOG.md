@@ -21,11 +21,11 @@ Versión «Blindada»: seguridad, documentación y accesibilidad. **`action.yml`
 
 ### Seguridad
 
-- **La Action, el CI y Pages compilaban con Go 1.27.0**, que tiene 11 vulnerabilidades conocidas en la biblioteca estándar que commitling usa (`net/http`, `net/http/internal/http2`, `net/textproto`, `crypto/tls`, `crypto/x509` y `html/template`; GO-2026-6599 a GO-2026-6809), porque `setup-go` instalaba exactamente la versión de `go.mod`. `go.mod` declara ahora `toolchain go1.27.3` (la última), así que todo se compila con ella. Lo destapó el nuevo job de govulncheck.
+- **La Action, el CI y Pages compilaban con Go 1.27.0**, que tiene 11 vulnerabilidades conocidas en la biblioteca estándar que commitling usa (`net/http`, `net/http/internal/http2`, `net/textproto`, `crypto/tls`, `crypto/x509` y `html/template`; GO-2026-6599 a GO-2026-6809), porque `setup-go` instalaba exactamente la versión de `go.mod`. `go.mod` declara ahora `go 1.27.3` (la última), así que todo se compila con ella, también cuando la Action se usa varias veces en el mismo job (claro y oscuro): una línea `toolchain` no bastaba, porque el primer `setup-go` exporta `GOTOOLCHAIN=local` y el segundo volvía a instalar 1.27.0. Lo destapó el nuevo job de govulncheck; la prueba de la Action comprueba ahora la versión de Go tras varias llamadas.
 
 ### Cambiado
 
-- Workflows con permisos mínimos: el de Pages no da nada por defecto (`build` solo lee; `deploy` tiene `pages` e `id-token`, y `configure-pages` pasa a ese job) y ningún `checkout` guarda el token en `.git/config`.
+- Workflows con permisos mínimos: el de Pages no da nada por defecto (`build` solo lee; `deploy` tiene `pages` e `id-token`; `configure-pages` se quita porque nada usaba sus salidas) y ningún `checkout` guarda el token en `.git/config`.
 - La prueba de la Action pasa `github.repository_owner` al script por `env:` en vez de interpolarlo.
 - La CLI (y por tanto la Action) **escribe el SVG de forma atómica** (archivo temporal y renombrado): una ejecución cancelada a medias ya no puede dejar un SVG cortado, que `keep-on-error` necesita entero. Mismo contenido, mismos permisos (0644).
 - `.gitignore` ignora `.env*` (salvo `.env.example`).

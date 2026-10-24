@@ -1,9 +1,8 @@
 module github.com/BertMarti/commitling
 
-go 1.27.0
-
-// The toolchain that CI, Pages and the Action build with (setup-go reads it
-// from here, and the go command switches to it). Keep it on the latest patch
-// release: 1.27.0 had 11 known vulnerabilities in net/http, crypto/tls,
-// crypto/x509 and html/template that govulncheck reports.
-toolchain go1.27.3
+// The go line is also the exact Go that setup-go installs for CI, Pages and
+// the Action (go-version-file). Keep it on the latest patch release: 1.27.0
+// had 11 known vulnerabilities (net/http, crypto/tls, crypto/x509,
+// html/template). Do not use a toolchain line instead: setup-go exports
+// GOTOOLCHAIN=local, so a second use of the Action in the same job ignores it.
+go 1.27.3

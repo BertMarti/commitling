@@ -3,6 +3,7 @@ package gallery
 import (
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -256,6 +257,36 @@ func TestWorkflowsAreLeastPrivilege(t *testing.T) {
 		checkouts := strings.Count(yml, "uses: actions/checkout@")
 		if got := strings.Count(yml, "persist-credentials: false"); got != checkouts {
 			t.Errorf("%s: %d checkouts but %d with persist-credentials: false", f, checkouts, got)
+		}
+	}
+}
+
+// setup-go installs exactly the go line of go.mod for CI, Pages and the
+// Action. It must name a patched release, and there must be no toolchain
+// line: setup-go exports GOTOOLCHAIN=local, so the second use of the Action
+// in one job (light and dark) would ignore it and install the go line.
+func TestGoModPinsAPatchedGo(t *testing.T) {
+	mod := readRepoFile(t, "go.mod")
+	if regexp.MustCompile(`(?m)^toolchain\s`).MatchString(mod) {
+		t.Error("go.mod has a toolchain line; raise the go line instead")
+	}
+	m := regexp.MustCompile(`(?m)^go (\d+)\.(\d+)\.(\d+)$`).FindStringSubmatch(mod)
+	if m == nil {
+		t.Fatal("the go line of go.mod must be a full version like 1.27.3")
+	}
+	got := [3]int{}
+	for i := range got {
+		got[i], _ = strconv.Atoi(m[i+1])
+	}
+	// The first release of 1.27 without the 11 vulnerabilities govulncheck
+	// reported for 1.27.0 (net/http, crypto/tls, crypto/x509, html/template).
+	minimum := [3]int{1, 27, 3}
+	for i := range got {
+		if got[i] != minimum[i] {
+			if got[i] < minimum[i] {
+				t.Errorf("go.mod says go %s.%s.%s, want at least 1.27.3", m[1], m[2], m[3])
+			}
+			break
 		}
 	}
 }

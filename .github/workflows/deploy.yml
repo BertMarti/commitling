@@ -70,8 +70,6 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    # configure-pages reads the Pages settings, so it lives in the job that
-    # holds the pages permission (not in build).
     permissions:
       pages: write
       id-token: write
@@ -79,7 +77,5 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/configure-pages@v6
-
       - id: deployment
         uses: actions/deploy-pages@v5
