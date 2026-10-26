@@ -369,6 +369,20 @@ func TestActionPrebuiltBinaryIsSafeAndOptional(t *testing.T) {
 	if strings.Contains(bin, "exit 1") || strings.Contains(bin, "set -e") {
 		t.Error("the bin step must never fail the job: on any problem it falls back to go run")
 	}
+	// The default shell of a composite step is bash -e -o pipefail, so every
+	// command that can fail on its own must be guarded.
+	for _, want := range []string{
+		`mkdir -p "$dir" || exit 0`,
+		`got="$(sha256sum "$dir/$name" 2>/dev/null || true)"`,
+		`got="$(shasum -a 256 "$dir/$name" 2>/dev/null || true)"`,
+		`chmod +x "$dir/$name" || exit 0`,
+		`| head -n 1 || true)"`,
+		`if ! curl `,
+	} {
+		if !strings.Contains(bin, want) {
+			t.Errorf("bin step: %q is missing (a failure there would fail the job)", want)
+		}
+	}
 	if check, out := strings.Index(bin, `"$got" != "$want"`), strings.Index(bin, `echo "path=`); check < 0 || out < check {
 		t.Error("the binary path must only be published after its SHA-256 matched")
 	}
@@ -407,5 +421,18 @@ func TestReleaseChecksumsMatchTheVersion(t *testing.T) {
 		if !line.MatchString(l) {
 			t.Errorf("release/checksums.txt: %q is not a binary of v%s", l, m[1])
 		}
+	}
+}
+
+// The release binaries must not depend on the environment of whoever builds
+// them: build-release.sh resets GOFLAGS and GOEXPERIMENT before building (the
+// CI also builds with GOFLAGS=-tags=zzz and compares).
+func TestBuildReleaseResetsTheEnvironment(t *testing.T) {
+	sh := readRepoFile(t, "scripts/build-release.sh")
+	set := strings.Index(sh, "set -euo pipefail\n")
+	reset := strings.Index(sh, "export GOFLAGS=-p=2 GOEXPERIMENT= GOFIPS140=off\n")
+	build := strings.Index(sh, "go build ")
+	if set < 0 || reset < set || build < reset {
+		t.Error("build-release.sh must export GOFLAGS=-p=2 GOEXPERIMENT= GOFIPS140=off right after set -euo pipefail and before go build")
 	}
 }

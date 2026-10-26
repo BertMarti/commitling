@@ -12,6 +12,10 @@
 # `go run`, as it always did. The release workflow (.github/workflows/release.yml)
 # runs this script with --check and uploads the binaries to the release.
 set -euo pipefail
+# The environment must not change the bytes: GOFLAGS (e.g. -tags, which the
+# build info records) and GOEXPERIMENT are reset; -p only sets parallelism
+# (2 for the shared Raspberry Pi) and does not alter the output.
+export GOFLAGS=-p=2 GOEXPERIMENT= GOFIPS140=off
 
 out="${1:?uso: scripts/build-release.sh <carpeta> [--write|--check]}"
 mode="${2:-}"

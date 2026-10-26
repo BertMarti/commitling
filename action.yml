@@ -74,21 +74,21 @@ runs:
         version="${name#commitling_}"
         version="${version%%_*}"
         dir="${RUNNER_TEMP:-/tmp}/commitling-bin"
-        mkdir -p "$dir"
+        mkdir -p "$dir" || exit 0
         base="${COMMITLING_RELEASE_URL:-https://github.com/BertMarti/commitling/releases/download}"
         if ! curl -fsSL --retry 2 --connect-timeout 10 --max-time 120 -o "$dir/$name" "$base/v$version/$name"; then
           rm -f "$dir/$name"
           echo "::notice::commitling: no hay binario precompilado de v$version para $os/$arch; se compila con Go."
           exit 0
         fi
-        if command -v sha256sum >/dev/null 2>&1; then got="$(sha256sum "$dir/$name")"; else got="$(shasum -a 256 "$dir/$name")"; fi
+        if command -v sha256sum >/dev/null 2>&1; then got="$(sha256sum "$dir/$name" 2>/dev/null || true)"; else got="$(shasum -a 256 "$dir/$name" 2>/dev/null || true)"; fi
         got="${got%% *}"
         if [ "$got" != "$want" ]; then
           rm -f "$dir/$name"
           echo "::warning::commitling: el binario descargado de v$version no coincide con release/checksums.txt; se descarta y se compila con Go."
           exit 0
         fi
-        chmod +x "$dir/$name"
+        chmod +x "$dir/$name" || exit 0
         echo "path=$dir/$name" >> "$GITHUB_OUTPUT"
 
     - if: steps.bin.outputs.path == ''

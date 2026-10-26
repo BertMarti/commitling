@@ -90,6 +90,10 @@ jobs:
             scripts/build-release.sh out/rel
             echo "Sin release/checksums.txt: la Action compila con go run (los SHA-256 de arriba son los de este commit)."
           fi
+          # The environment cannot change the bytes (build-release.sh resets
+          # GOFLAGS and GOEXPERIMENT; -tags would be recorded in the binary).
+          GOFLAGS=-tags=zzz scripts/build-release.sh out/rel-env
+          diff -u out/rel/checksums.txt out/rel-env/checksums.txt
 
       # Every workflow that the web generator and `commitling workflow` can
       # produce (the web builds the same bytes; a test compares them) must be
