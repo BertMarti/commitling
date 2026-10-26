@@ -2,9 +2,10 @@
 // growth stage, its mood and the accessories it has unlocked, plus the pixel
 // maps used to draw it.
 //
-// Both species are original designs. The default one is a small moss sprout
-// with eyes that grows from a honey-coloured seed into an ancient tree; the
-// other one is a little mushroom that grows from a spore into a fairy ring.
+// All three species are original designs. The default one is a small moss
+// sprout with eyes that grows from a honey-coloured seed into an ancient tree;
+// the others are a little mushroom that grows from a spore into a fairy ring
+// and a cactus with eyes in a clay-coloured pot.
 package creature
 
 import (
@@ -21,19 +22,21 @@ type Species int
 const (
 	MossSprout Species = iota
 	Mushroom
+	Cactus
 )
 
 // AllSpecies lists every species, default first.
-var AllSpecies = []Species{MossSprout, Mushroom}
+var AllSpecies = []Species{MossSprout, Mushroom, Cactus}
 
-var speciesNames = [...]string{"Brote de musgo", "Hongo"}
+var speciesNames = [...]string{"Brote de musgo", "Hongo", "Cactus"}
 
-var speciesSlugs = [...]string{"moss", "mushroom"}
+var speciesSlugs = [...]string{"moss", "mushroom", "cactus"}
 
 // Names of the stages of each species, in growth order.
 var speciesStageNames = [...][5]string{
 	MossSprout: {"Semilla", "Brote", "Retoño", "Arbusto", "Árbol ancestral"},
 	Mushroom:   {"Espora", "Botón", "Seta", "Seta grande", "Corro de setas"},
+	Cactus:     {"Yema", "Bolita", "Cactus", "Cactus con brazos", "Cactus centenario"},
 }
 
 // Name is the Spanish name of the species.

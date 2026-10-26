@@ -59,7 +59,7 @@
   // Only the canonical values of the radios are accepted (as Go checks them
   // with SpeciesByName, ThemeByName and SizeByName); anything else is the
   // default, so nothing unexpected can reach the YAML.
-  var ALLOWED = { species: ['moss', 'mushroom'], theme: ['light', 'dark', 'both'], size: ['full', 'compact'] };
+  var ALLOWED = { species: ['moss', 'mushroom', 'cactus'], theme: ['light', 'dark', 'both'], size: ['full', 'compact'] };
   function option(kind, value) {
     var v = typeof value === 'string' ? value.trim().toLowerCase() : '';
     return ALLOWED[kind].indexOf(v) >= 0 ? v : ALLOWED[kind][0];
@@ -78,7 +78,7 @@
     function step(stepTheme, out) {
       var text = '      - uses: BertMarti/commitling@v1\n        with:\n';
       if (user) text += '          user: "' + user + '"\n';
-      if (species !== 'moss') text += '          species: mushroom\n';
+      if (species !== 'moss') text += '          species: ' + species + '\n';
       if (stepTheme === 'dark') text += '          theme: dark\n';
       if (size === 'compact') text += '          size: compact\n';
       return text + '          out: ' + out + '\n';

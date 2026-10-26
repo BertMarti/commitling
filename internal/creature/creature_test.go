@@ -216,7 +216,7 @@ func TestDrawChangesWithMoodAndAccessories(t *testing.T) {
 }
 
 func TestSpeciesNamesAndSlugs(t *testing.T) {
-	if len(AllSpecies) != 2 || AllSpecies[0] != MossSprout {
+	if len(AllSpecies) != 3 || AllSpecies[0] != MossSprout {
 		t.Fatalf("AllSpecies = %v, want the default first", AllSpecies)
 	}
 	if (Creature{}).Species != MossSprout {
@@ -243,12 +243,16 @@ func TestSpeciesNamesAndSlugs(t *testing.T) {
 	if Mushroom.StageName(Seed) != "Espora" || Mushroom.StageName(Ancient) != "Corro de setas" {
 		t.Error("unexpected mushroom stage names")
 	}
+	if Cactus.StageName(Seed) != "Yema" || Cactus.StageName(Sprout) != "Bolita" || Cactus.StageName(Sapling) != "Cactus" || Cactus.StageName(Shrub) != "Cactus con brazos" || Cactus.StageName(Ancient) != "Cactus centenario" {
+		t.Error("unexpected cactus stage names")
+	}
 }
 
 func TestSpeciesByName(t *testing.T) {
 	ok := map[string]Species{
 		"": MossSprout, "  ": MossSprout, "moss": MossSprout, "MOSS": MossSprout, "musgo": MossSprout, "Brote de musgo": MossSprout,
 		"mushroom": Mushroom, " Mushroom ": Mushroom, "hongo": Mushroom, "seta": Mushroom,
+		"cactus": Cactus, " CACTUS ": Cactus,
 	}
 	for in, want := range ok {
 		got, found := SpeciesByName(in)
@@ -285,13 +289,16 @@ func TestSpeciesDrawDifferently(t *testing.T) {
 	for _, st := range Stages {
 		for _, m := range Moods {
 			for _, acc := range []Accessories{{}, all} {
-				moss := Draw(Creature{Species: MossSprout, Stage: st, Mood: m, Accessories: acc})
-				mush := Draw(Creature{Species: Mushroom, Stage: st, Mood: m, Accessories: acc})
-				if moss == mush {
-					t.Errorf("stage %d mood %d: both species draw the same", st, m)
-				}
-				if again := Draw(Creature{Species: Mushroom, Stage: st, Mood: m, Accessories: acc}); again != mush {
-					t.Errorf("stage %d mood %d: Draw is not deterministic", st, m)
+				seen := map[Sprite]Species{}
+				for _, sp := range AllSpecies {
+					drawn := Draw(Creature{Species: sp, Stage: st, Mood: m, Accessories: acc})
+					if other, duplicate := seen[drawn]; duplicate {
+						t.Errorf("stage %d mood %d: %s and %s draw the same", st, m, other.Name(), sp.Name())
+					}
+					seen[drawn] = sp
+					if again := Draw(Creature{Species: sp, Stage: st, Mood: m, Accessories: acc}); again != drawn {
+						t.Errorf("stage %d mood %d %s: Draw is not deterministic", st, m, sp.Name())
+					}
 				}
 			}
 		}
@@ -314,6 +321,18 @@ func TestMushroomMapsAreNotTheMossOnes(t *testing.T) {
 	for _, st := range Stages {
 		if mushroomArt[st].body == mossArt[st].body {
 			t.Errorf("stage %d: mushroom body equals the moss body", st)
+		}
+	}
+}
+
+// The cactus is its own design: it must not reuse either existing species' maps.
+func TestCactusMapsAreNotTheOthers(t *testing.T) {
+	for _, st := range Stages {
+		if cactusArt[st].body == mossArt[st].body {
+			t.Errorf("stage %d: cactus body equals the moss body", st)
+		}
+		if cactusArt[st].body == mushroomArt[st].body {
+			t.Errorf("stage %d: cactus body equals the mushroom body", st)
 		}
 	}
 }

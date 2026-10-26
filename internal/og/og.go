@@ -37,11 +37,11 @@ const (
 	heroX      = 96
 	heroY      = 150
 	textX      = 496 // left edge of the text column
-	stageY     = 392 // top of the first row of small stages
+	stageY     = 380 // top of the first row of small stages (three species fit)
 	stageScale = 3
 	stageGap   = 20
-	stageRowH  = creature.Size*stageScale + 12 // distance between rows of stages
-	siteY      = 530
+	stageRowH  = creature.Size*stageScale + 8 // distance between rows of stages
+	siteY      = 556
 )
 
 // stageRowY is the top of the row of stages of the i-th species.
