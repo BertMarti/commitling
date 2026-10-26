@@ -235,6 +235,7 @@
         <div class="opts">{{range $i, $c := .GenSpecies}}
           <div class="opt"><input type="radio" name="ins-species" value="{{$c.Value}}" id="ins-sp-{{$c.Value}}"{{if eq $i 0}} checked{{end}}><label for="ins-sp-{{$c.Value}}">{{$c.Label}}</label></div>{{end}}
         </div>
+        <p class="note hint">El cactus llega a la Action con la versión 0.8.0, aún sin publicar: hasta entonces, un workflow con el cactus sale en rojo con «especie no válida». El brote de musgo y el hongo funcionan ya.</p>
       </fieldset>
       <fieldset>
         <legend>Tema</legend>

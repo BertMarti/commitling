@@ -188,6 +188,8 @@ Valores que acepta `species` (sin distinguir mayúsculas ni espacios alrededor):
 
 Cualquier otro valor (por ejemplo `dragon`) hace fallar el paso a propósito, con el mensaje `especie no válida "dragon" (usa moss, mushroom o cactus)`, para que un error tipográfico no pase desapercibido, y no escribe ningún archivo. Puedes ver todas las fases de las tres especies en la [galería](https://bertmarti.github.io/commitling/#galeria).
 
+> **Ojo:** el cactus llega a la Action con la versión 0.8.0, que aún no está publicada. Mientras `@v1` siga en la v0.7.0, `species: cactus` falla con «especie no válida» (la v0.7.0 solo conoce `moss` y `mushroom`). En la web y en la CLI compilada desde `main` ya funciona.
+
 ¿Varias a la vez? Sí: usa la Action dos veces con `out` distinto (por ejemplo `commitling.svg` y `commitling-hongo.svg`, cada uno con su `species`), suma el segundo archivo al `git add` y enseña la imagen que quieras en el README.
 
 ### Elegir el tamaño: tarjeta compacta

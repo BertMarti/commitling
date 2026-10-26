@@ -34,6 +34,8 @@ En la [web](https://bertmarti.github.io/commitling/#generador) escribes tu usuar
 
 ¿Sin usuario a mano? Pulsa **«Ver demo: míralo crecer»**: en unos 15 segundos verás a una criatura de ejemplo pasar de semilla a árbol, con pausa, parada y un control para recorrer los días. No pide nada a GitHub.
 
+En la cabecera, bajo los enlaces, eliges el tema de la web: **Sistema**, **Claro** u **Oscuro**. Cambia la página y todas las tarjetas al momento, y tu navegador lo recuerda para la próxima visita.
+
 > Sin iniciar sesión, GitHub deja hacer unas 60 consultas por hora. Si se agotan, la web te dice a qué hora vuelve a funcionar y te ofrece la demo mientras tanto. La Action de tu perfil no tiene ese límite.
 
 ## Úsalo en tu perfil en 4 pasos
@@ -90,7 +92,7 @@ jobs:
 
 No hace falta tocar nada más: la línea `permissions: contents: write` deja que el workflow guarde la imagen en tu repositorio con un token temporal que GitHub crea en cada ejecución, y la Action usa como usuario al dueño del repositorio.
 
-¿Tienes Go instalado y prefieres la terminal? `go run github.com/BertMarti/commitling/cmd/commitling@latest workflow --user tu-usuario --theme both` escribe el mismo archivo (con `--theme both`, claro y oscuro).
+¿Tienes Go instalado y prefieres la terminal? Desde la versión 0.8.0, `go run github.com/BertMarti/commitling/cmd/commitling@latest workflow --user tu-usuario --theme both` escribe el mismo archivo (con `--theme both`, claro y oscuro).
 
 ## Opciones
 
@@ -130,6 +132,9 @@ Las tres especies son originales y tienen las mismas reglas, fases, ánimos y ac
 </table>
 
 `species` también acepta `musgo`, `hongo` y `seta`, sin distinguir mayúsculas.
+
+> [!IMPORTANT]
+> **El cactus llega a la Action con la versión 0.8.0, que aún no está publicada.** Hasta entonces `@v1` es la v0.7.0, que solo conoce el brote de musgo y el hongo: con `species: cactus` el workflow sale en rojo con «especie no válida». En la [web](https://bertmarti.github.io/commitling/#generador) ya puedes ver el cactus con tu usuario y descargar su SVG.
 
 ### Tarjeta compacta
 
@@ -260,6 +265,20 @@ No. Es un diseño original, dibujado píxel a píxel para este proyecto.
 
 Usa `BertMarti/commitling@v1` para recibir mejoras compatibles. Si quieres fijar una versión concreta, usa una etiqueta exacta (por ejemplo `@v0.7.0`) o el SHA de un commit. Evita `@main`: es la rama de desarrollo.
 </details>
+
+## Lo que tienes que hacer tú (mantenedor)
+
+Esto es solo para Alberto, que publica las versiones:
+
+1. **Publicar la v0.8.0 y mover `v1` a ella.** Desde un clon con `main` al día (las notas salen del `CHANGELOG.md`):
+
+   ```bash
+   gh release create v0.8.0 --repo BertMarti/commitling --target main --title "v0.8.0 · Blindada" --notes "$(awk '/^## \[0.8.0\]/{f=1;next} /^## \[0.7.0\]/{f=0} f' CHANGELOG.md)"
+   git fetch --tags && git tag -f v1 v0.8.0 && git push -f origin v1
+   ```
+
+   Es compatible con la v0.7.0 (mismas entradas, misma salida y las tarjetas del musgo y del hongo idénticas), así que los perfiles que usan `@v1` siguen igual y ganan el cactus y los mensajes de error nuevos. Opcional, **antes** de la release: activar el binario precompilado (pasos en la [guía de desarrollo](docs/DESARROLLO.md#binario-precompilado-preparado-inactivo-hasta-una-release)).
+2. **Después**, quitar el aviso «El cactus llega a la Action con la versión 0.8.0» de este README, de la guía de uso (`docs/USO.md`, apartado de especies) y de la web (`internal/gallery/index.html.tmpl`, sección «Instálalo en tu perfil»), y el «Desde la versión 0.8.0» de la orden `go run`.
 
 ## Privacidad
 
