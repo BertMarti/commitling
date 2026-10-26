@@ -11,7 +11,7 @@ Hoja de ruta priorizada. Fechada el 24/10/2026 y actualizada el 26/10/2026 (vers
 
 ## Siguiente (por orden)
 1. **Orquestador/Alberto**: fusionar el PR de `v1-2026-10-26`, publicar la release `v1.0.0` desde ese commit (título y notas en el informe de la fase 5) y mover `v1` a ella (orden exacta en el README, «Lo que tienes que hacer tú»). Comprobar que el workflow «Release» sube los 6 binarios y `checksums.txt`.
-2. **Orquestador**: abrir el PR de la rama `v1-tras-publicar` (quita los avisos de «aún no publicada», pone los ejemplos `@v1.0.0` y borra `release/checksums.txt`) y fusionarlo.
+2. ~~**Orquestador**: PR de la rama `v1-tras-publicar`~~ Hecho: avisos de «aún no publicada» fuera, ejemplos `@v1.0.0` y `release/checksums.txt` borrado de `main`.
 3. Tras el despliegue: abrir https://bertmarti.github.io/commitling/ con la consola y comprobar 0 violaciones de CSP/Trusted Types (demo, generador con un usuario real, selector de tema). La primera ejecución del perfil de BertMarti tras mover `v1` no debe tener el paso de `setup-go` (usa el binario).
 4. Subir la línea `go` de `go.mod` con cada parche de Go (y el mínimo de `TestGoModPinsAPatchedGo`); govulncheck en el CI avisará.
 

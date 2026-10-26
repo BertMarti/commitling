@@ -22,6 +22,6 @@ Respondo en cuanto pueda (proyecto personal, sin plazos garantizados).
 
 ## Buenas prácticas para quien usa la Action
 
-- Fíjala a `@v1`, a una versión exacta (por ejemplo `@v0.7.0`) o a un SHA, nunca a `@main`.
+- Fíjala a `@v1`, a una versión exacta (por ejemplo `@v1.0.0`) o a un SHA, nunca a `@main`.
 - Da a tu workflow solo `permissions: contents: write` (lo necesita para guardar el SVG) y nada más.
 - No hace falta ningún token personal: basta el `GITHUB_TOKEN` del propio workflow.

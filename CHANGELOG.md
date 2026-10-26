@@ -6,6 +6,11 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ## [Sin publicar]
 
+### Cambiado
+
+- Con la v1.0.0 publicada y `v1` apuntando a ella, el README, la guía de uso y la web dejan de avisar de que el cactus y `go run …@latest workflow` necesitan una versión aún sin publicar, y los ejemplos de versión exacta pasan a `@v1.0.0`.
+- `release/checksums.txt` sale de `main`: describe los binarios de la v1.0.0 ya publicada (va en su etiqueta) y no los de `main`, que ha cambiado. La próxima versión lo vuelve a generar en su commit.
+
 ## [1.0.0] - 2026-10-26
 
 Primera versión estable (la 0.8.0 preparada nunca se publicó: todo sale aquí). Reúne todo lo hecho desde la v0.7.0: las fases de seguridad y documentación, la instalación guiada paso a paso, la tercera especie cactus, el selector de tema de la web y el binario precompilado. **La interfaz de `action.yml` no cambia** (mismas entradas, misma salida `path`, mismos archivos) y las tarjetas SVG del brote de musgo y del hongo son byte a byte las de v0.7.0 (las 96 huellas de v0.5.0 pasan). Quien usa `BertMarti/commitling@v1` la recibe sin tocar nada.
