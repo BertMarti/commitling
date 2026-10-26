@@ -188,7 +188,7 @@ Valores que acepta `species` (sin distinguir mayúsculas ni espacios alrededor):
 
 Cualquier otro valor (por ejemplo `dragon`) hace fallar el paso a propósito, con el mensaje `especie no válida "dragon" (usa moss, mushroom o cactus)`, para que un error tipográfico no pase desapercibido, y no escribe ningún archivo. Puedes ver todas las fases de las tres especies en la [galería](https://bertmarti.github.io/commitling/#galeria).
 
-> **Ojo:** el cactus llega a la Action con la versión 0.8.0, que aún no está publicada. Mientras `@v1` siga en la v0.7.0, `species: cactus` falla con «especie no válida» (la v0.7.0 solo conoce `moss` y `mushroom`). En la web y en la CLI compilada desde `main` ya funciona.
+> **Ojo:** el cactus llega a la Action con la versión 1.0.0, que aún no está publicada. Mientras `@v1` siga en la v0.7.0, `species: cactus` falla con «especie no válida» (la v0.7.0 solo conoce `moss` y `mushroom`). En la web y en la CLI compilada desde `main` ya funciona.
 
 ¿Varias a la vez? Sí: usa la Action dos veces con `out` distinto (por ejemplo `commitling.svg` y `commitling-hongo.svg`, cada uno con su `species`), suma el segundo archivo al `git add` y enseña la imagen que quieras en el README.
 
@@ -341,9 +341,9 @@ En el workflow, la línea `uses: BertMarti/commitling@...` decide qué versión 
 
 No hay que tocar nada más: las entradas (`out`, `theme`, `user`, `token`) siguen igual, y `species` es opcional (sin ella, sigues con el brote de musgo).
 
-Si el workflow falla con «unable to find version `v1`» es que la etiqueta `v1` aún no existe (la crea el responsable del proyecto al publicar la versión 1). Mientras tanto usa `@main`.
+Si el workflow falla con «unable to find version», revisa que la línea `uses:` diga exactamente `BertMarti/commitling@v1` (con la `v` en minúscula y sin espacios) o una versión que exista en las [releases](https://github.com/BertMarti/commitling/releases).
 
-La Action aparece en el [GitHub Marketplace](https://github.com/marketplace?type=actions) buscando «commitling»; el uso es el mismo que el del ejemplo del paso 2.
+No hace falta buscarla en ningún catálogo ni instalar nada: basta la línea `uses: BertMarti/commitling@v1` del paso 2.
 
 ## 7. Desde la línea de órdenes y la imagen de vista previa
 

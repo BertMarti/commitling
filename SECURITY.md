@@ -4,7 +4,7 @@
 
 | Versión | Soporte |
 |---|---|
-| `v1` (la etiqueta móvil de la Action) y la última `v0.x` publicada | ✅ |
+| `v1` (la etiqueta móvil de la Action) y la última versión publicada | ✅ |
 | Versiones anteriores | ❌ (actualiza a `@v1`) |
 
 ## Cómo avisar de un problema
