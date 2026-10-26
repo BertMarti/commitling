@@ -16,7 +16,7 @@ go run ./cmd/commitling render --fixture testdata/events.json --out out/commitli
 # Tema oscuro y fecha de referencia fija, a la salida estándar
 go run ./cmd/commitling render --fixture testdata/events.json --theme dark --now 2026-10-01T12:00:00Z --out -
 
-# La otra especie (moss por defecto, o mushroom)
+# Otra especie (moss por defecto, mushroom o cactus)
 go run ./cmd/commitling render --fixture testdata/events.json --species mushroom --out out/hongo.svg
 
 # Si la API tiene una caída transitoria y out/commitling.svg ya existe, lo conserva (aviso, código de salida 0)
@@ -31,7 +31,7 @@ go run ./cmd/commitling og --out out/og.png
 go run ./cmd/commitling version
 ```
 
-Con `--fixture` y sin `--now`, se usa la fecha del último evento del fixture. `--species` acepta `moss` o `mushroom` y `--size` acepta `full` o `compact`.
+Con `--fixture` y sin `--now`, se usa la fecha del último evento del fixture. `--species` acepta `moss`, `mushroom` o `cactus` y `--size` acepta `full` o `compact`.
 
 ## Stack
 
@@ -108,6 +108,17 @@ La entrada de la Action `keep-on-error` está activa por defecto. Si la caída e
 - Una etiqueta exacta (`@v0.7.0`) o el SHA de un commit es lo más reproducible.
 - `@main` funciona, pero es la rama de desarrollo; los ejemplos nunca la usan (`TestExamplesUseV1`).
 - La Action declara nombre, descripción y `branding` (icono `feather`, color `green`) en `action.yml`, que es lo que muestra el Marketplace. **La interfaz de `action.yml` (entradas, salida `path`, archivos y formato del SVG) no se rompe**: hay perfiles que la usan a diario.
+
+## Binario precompilado (preparado, inactivo hasta una release)
+
+La Action compila la CLI con `go run` en cada ejecución. Puede usar en su lugar un binario precompilado de la release, **solo** si el árbol de la Action (la etiqueta a la que apunta `@v1`) contiene `release/checksums.txt` y el binario descargado tiene exactamente ese SHA-256. Si falta el archivo, no hay release, la plataforma no está en la lista, falla la red o el SHA-256 no coincide, la Action compila con Go como siempre (con un aviso en el log); nunca falla por esto.
+
+- `scripts/build-release.sh <carpeta>` compila los 6 binarios (Linux, macOS y Windows; amd64 y arm64) de forma **reproducible** (`CGO_ENABLED=0`, `-trimpath`, `-buildvcs=false`, `-buildid=`, la versión exacta de Go de `go.mod`): el mismo código da los mismos bytes en cualquier máquina, así que el SHA-256 se puede subir **antes** de que exista la release.
+- `--write` copia los SHA-256 a `release/checksums.txt`; `--check` falla si no coinciden.
+- `.github/workflows/release.yml` se dispara al **publicar** una release: comprueba que la etiqueta es `v` + la versión de la CLI, recompila con `--check` y sube los binarios y `checksums.txt` a la release. Sin `release/checksums.txt` no sube nada.
+- El CI recompila y compara en cada PR si el archivo existe (un cambio de código sin regenerarlo falla), y el job `binario` de `action-test.yml` prueba las tres rutas (binario bueno, manipulado y sin release) contra un servidor local.
+
+Para activarlo en una versión (lo hace Alberto, ver `.claude/skills/publicar-version`): `scripts/build-release.sh out/rel --write`, commit de `release/checksums.txt` en `main`, y publicar la release `vX.Y.Z` desde ese commit. A partir de ahí, cambiar código sin volver a ejecutar `--write` (o borrar el archivo) hace fallar el CI.
 
 ## Cómo se ha hecho
 

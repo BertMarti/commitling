@@ -6,17 +6,20 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ## [Sin publicar]
 
-## [0.8.0] - 2026-10-24
+## [0.8.0] - 2026-10-26
 
-Versión «Blindada»: seguridad, documentación, accesibilidad y una instalación guiada. **La interfaz de `action.yml` no cambia** (mismas entradas, misma salida `path`, mismos archivos) y las tarjetas SVG son byte a byte las de v0.7.0 (las 96 huellas de v0.5.0 pasan).
+Versión «Blindada»: seguridad, documentación, accesibilidad, una instalación guiada y una tercera especie. **La interfaz de `action.yml` no cambia** (mismas entradas, misma salida `path`, mismos archivos) y las tarjetas SVG del brote de musgo y del hongo son byte a byte las de v0.7.0 (las 96 huellas de v0.5.0 pasan).
 
 ### Añadido
 
+- **Tercera especie: el cactus** (`species: cactus`), de diseño propio: un cactus con ojos en su maceta de barro que pasa por **Yema**, **Bolita**, **Cactus**, **Cactus con brazos** y **Cactus centenario**, con las mismas reglas, ánimos y accesorios. Sale en la galería (claro, oscuro y compacta), en los dos generadores de la web, en `--species` y en la imagen de vista previa.
+- **Selector de tema de la web** (Sistema · Claro · Oscuro) en la cabecera: cambia la página y todas las tarjetas sin recargar, se aplica antes de pintar (sin parpadeo) y se recuerda en el navegador con la clave `commitling:theme` (solo `light` o `dark`; «Sistema» la borra y cualquier otro valor se ignora). Sin JavaScript, la web sigue al sistema como antes.
+- **Binario precompilado preparado** (inactivo hasta que una release lo active): `scripts/build-release.sh` compila los binarios de forma reproducible, `release.yml` los sube al publicar una release y la Action los usa en vez de compilar **solo** si el SHA-256 coincide con el `release/checksums.txt` de su propio árbol; si no, compila con Go como siempre.
 - **Generador del workflow en la web** («Instálalo en tu perfil»): escribes tu usuario (o pegas el enlace de tu perfil), eliges especie, tema (claro, oscuro o **automático**, con las dos tarjetas y un `<picture>`) y tamaño, y copias el `.github/workflows/commitling.yml` y el fragmento del README ya rellenos. Seis pasos explicados para quien nunca ha usado Actions (repositorio de perfil, crear el archivo, permisos, primera ejecución con «Run workflow», README y resultado), enlaces directos a cada paso en GitHub (incluido «Abrir GitHub con el archivo ya relleno») y una lista «Si algo falla» con cada mensaje y qué hacer. Funciona sin red y sin wasm (`install.js`), no guarda nada y produce byte a byte lo mismo que `generate.Install` (test en Node y Go).
 - **`commitling workflow`** (alias `init`): imprime ese mismo workflow (`--user`, `--species`, `--theme light|dark|both`, `--size`) y dice qué pegar en el README.
 - **Mensajes de error que dicen qué hacer**, en español: usuario inexistente (404), token rechazado (401), acceso denegado (403), límite de peticiones (con la hora UTC a la que se restablece y si había token) y caídas de GitHub (5xx); el login no válido explica por qué («quita la @ del principio»…). Dentro de GitHub Actions el error sale también como anotación `::error` en el resumen de la ejecución.
 - El workflow de ejemplo explica en el propio log por qué falla el `git push` («No se pudo guardar la criatura en el repositorio»: `permissions: contents: write` o rama protegida). El paso se llama ahora «Guardar la criatura si ha cambiado».
-- CI: los 13 workflows que pueden generarse se validan con **actionlint** (con shellcheck) y deben usar `@v1`; la prueba de la Action comprueba que un usuario inexistente falla.
+- CI: los 19 workflows que pueden generarse se validan con **actionlint** (con shellcheck) y deben usar `@v1`; la prueba de la Action comprueba que un usuario inexistente falla.
 
 - **Content-Security-Policy estricta en la web**: solo scripts propios (más `'wasm-unsafe-eval'` para el generador), conexiones solo a la propia web y a `api.github.com`, sin `object`, `base` ni formularios externos; `referrer` `strict-origin-when-cross-origin` y `theme-color` para claro y oscuro. El script de los botones «Copiar» y el aviso de criatura en vivo no disponible pasan a `page.js` (antes eran un `<script>` y un `onerror` en línea, que la CSP bloquearía). Test `TestPageHasStrictCSP`.
 - **Job «seguridad» en el CI**: `govulncheck` (sin vulnerabilidades con Go 1.27.3), `staticcheck` (también del wasm, sin avisos) y `gitleaks` sobre todo el historial (binario oficial con SHA-256 fijado).
@@ -27,8 +30,10 @@ Versión «Blindada»: seguridad, documentación, accesibilidad y una instalaci�
 
 ### Seguridad
 
+- **Trusted Types en la web** (`require-trusted-types-for 'script'; trusted-types commitling`): ninguna cadena puede llegar a `innerHTML`, `script.src`, `eval` ni similares; la única política, «commitling», solo crea la URL de `wasm_exec.js` (probado en Chromium: 0 violaciones con la demo, el generador y la criatura en vivo, y una asignación de prueba a `innerHTML` queda bloqueada).
+- **Acciones de terceros fijadas por SHA** (con la versión en un comentario, que dependabot mantiene) en los workflows y en `action.yml` (`TestThirdPartyActionsArePinnedBySHA`).
 - La Action **enmascara el token** (`::add-mask::`) antes de ejecutar nada, también si alguien lo pega en claro en `token:`; los mensajes de error nunca lo incluyen (test).
-- **CSP sin `'unsafe-inline'` en estilos**: el CSS pasa a `style.css` y desaparecen los atributos `style=` (todas las webs de `bertmarti.github.io` comparten origen). La web no guarda nada en `localStorage` ni cookies.
+- **CSP sin `'unsafe-inline'` en estilos**: el CSS pasa a `style.css` y desaparecen los atributos `style=` (todas las webs de `bertmarti.github.io` comparten origen). La web no usa cookies; en `localStorage` solo guarda, si la eliges, la preferencia de tema (`commitling:theme`).
 
 - **La Action, el CI y Pages compilaban con Go 1.27.0**, que tiene 11 vulnerabilidades conocidas en la biblioteca estándar que commitling usa (`net/http`, `net/http/internal/http2`, `net/textproto`, `crypto/tls`, `crypto/x509` y `html/template`; GO-2026-6599 a GO-2026-6809), porque `setup-go` instalaba exactamente la versión de `go.mod`. `go.mod` declara ahora `go 1.27.3` (la última), así que todo se compila con ella, también cuando la Action se usa varias veces en el mismo job (claro y oscuro): una línea `toolchain` no bastaba, porque el primer `setup-go` exporta `GOTOOLCHAIN=local` y el segundo volvía a instalar 1.27.0. Lo destapó el nuevo job de govulncheck; la prueba de la Action comprueba ahora la versión de Go tras varias llamadas.
 
