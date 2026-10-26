@@ -21,7 +21,7 @@ Hoja de ruta priorizada. Fechada el 24/10/2026 y actualizada el 26/10/2026. Las 
 
 ## Siguiente (por orden)
 1. **Alberto**: fusionar el PR, crear la release `v0.8.0` con las notas del CHANGELOG y mover `v1` a ella (la Action es compatible: mismas entradas, salida y SVG byte a byte).
-2. **Alberto**: activar «Private vulnerability reporting» en Settings → Security (lo enlaza `SECURITY.md`).
+2. ~~**Alberto**: activar «Private vulnerability reporting»~~ Hecho (comprobado activo el 26/10/2026).
 3. Tras el despliegue: abrir https://bertmarti.github.io/commitling/ con la consola abierta y comprobar que no hay violaciones de CSP (demo, generador con un usuario y descarga).
 4. Publicar la Action en el Marketplace si aún no lo está (nombre `commitling`, branding ya declarado).
 5. Subir la línea `go` de `go.mod` con cada parche de Go (y el mínimo de `TestGoModPinsAPatchedGo`) (govulncheck en el CI avisará).
