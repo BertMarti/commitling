@@ -16,6 +16,12 @@ concurrency:
 jobs:
   action:
     runs-on: ubuntu-latest
+    # This job tests the go run path (and the patched Go of every call), so it
+    # must not depend on whether the release of release/checksums.txt is
+    # published: no download can succeed here. The binary path, with the real
+    # release and with a local one, is the job «binario».
+    env:
+      COMMITLING_RELEASE_URL: http://127.0.0.1:9/sin-release
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -191,10 +197,39 @@ jobs:
           go-version-file: go.mod
           cache: false
 
+      # What a profile gets right after the merge: the release/checksums.txt
+      # committed in this tree and the real release URL. Before the release
+      # is published the download fails and the Action compiles with go run;
+      # after it, the verified binary is used. Same SVG either way.
+      - name: Action con el checksums.txt del repositorio y la release real
+        uses: ./
+        with:
+          user: ""
+          fixture: testdata/events.json
+          species: cactus
+          out: out/real-release.svg
+
+      - name: Comprobar la Action con la release real
+        run: |
+          set -euo pipefail
+          go run ./cmd/commitling render --fixture testdata/events.json --species cactus --out out/expected-real.svg
+          cmp out/real-release.svg out/expected-real.svg
+          version="$(sed -n 's/^var version = "\(.*\)"$/\1/p' cmd/commitling/main.go)"
+          if [ ! -f release/checksums.txt ]; then
+            echo "Sin release/checksums.txt: la Action compila con go run."
+          elif [ -x "$RUNNER_TEMP/commitling-bin/commitling_${version}_linux_amd64" ]; then
+            echo "La release v$version está publicada: la Action usó su binario verificado."
+          else
+            echo "La release v$version aún no tiene binarios: la Action compiló con go run (lo esperado antes de publicarla)."
+          fi
+          rm -rf "$RUNNER_TEMP/commitling-bin"
+
       - name: Binarios reproducibles y release falsa en 127.0.0.1
         run: |
           set -euo pipefail
           scripts/build-release.sh "$RUNNER_TEMP/rel"
+          # A committed release/checksums.txt must be exactly these binaries.
+          if [ -f release/checksums.txt ]; then diff -u release/checksums.txt "$RUNNER_TEMP/rel/checksums.txt"; fi
           version="$(sed -n 's/^var version = "\(.*\)"$/\1/p' cmd/commitling/main.go)"
           mkdir -p release "$RUNNER_TEMP/www/v$version"
           cp "$RUNNER_TEMP/rel/checksums.txt" release/checksums.txt
