@@ -91,6 +91,7 @@ function loadPage(storage, opts = {}) {
       return storage;
     },
   });
+  if (opts.trustedTypes) sandbox.trustedTypes = opts.trustedTypes;
   sandbox.window = sandbox;
 
   function stub() {
@@ -310,6 +311,31 @@ const tests = {
     await submit(p, 'octo');
     assert.equal(p.alt.hidden, true);
     assert.equal(p.error(), '');
+  },
+
+  async 'Trusted Types: wasm_exec.js goes through the «commitling» policy, created once'() {
+    const created = [];
+    const trustedTypes = {
+      createPolicy(name, rules) {
+        created.push(name);
+        return { createScriptURL: (input) => ({ trusted: rules.createScriptURL(input) }) };
+      },
+    };
+    const p = loadPage(memoryStorage(), { api: ok([push(1)]), trustedTypes });
+    await submit(p, 'octo');
+    await submit(p, 'other');
+    assert.deepEqual(created, ['commitling'], 'one policy, with the name the CSP allows');
+    const scripts = p.doc.head.children.filter((c) => c.tagName === 'SCRIPT');
+    assert.equal(scripts.length, 1);
+    assert.deepEqual(scripts[0].src, { trusted: 'wasm_exec.js' }, 'the script URL is a trusted value, not a string');
+    assert.equal(p.calls.render.length, 2);
+  },
+
+  async 'without Trusted Types the script URL is the plain allowed string'() {
+    const p = loadPage(memoryStorage(), { api: ok([push(1)]) });
+    await submit(p, 'octo');
+    const scripts = p.doc.head.children.filter((c) => c.tagName === 'SCRIPT');
+    assert.equal(scripts[0].src, 'wasm_exec.js');
   },
 
   async 'a server error does not offer the demo'() {

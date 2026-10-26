@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' blob: data:; connect-src 'self' https://api.github.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' blob: data:; connect-src 'self' https://api.github.com; object-src 'none'; base-uri 'self'; form-action 'self'; require-trusted-types-for 'script'; trusted-types commitling">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="theme-color" content="#f3efe6" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#2b2724" media="(prefers-color-scheme: dark)">
@@ -17,12 +17,13 @@
 <meta property="og:description" content="{{.Description}}">
 <meta property="og:url" content="{{.SiteURL}}">
 <meta property="og:image" content="{{.OGImage}}">
-<meta property="og:image:alt" content="commitling: un retoño pixel-art con una flor y, debajo del nombre, las cinco fases de cada una de las dos especies, el brote de musgo y el hongo">
+<meta property="og:image:alt" content="commitling: un retoño pixel-art con una flor y, debajo del nombre, las cinco fases de cada una de las tres especies: el brote de musgo, el hongo y el cactus">
 <meta property="og:image:type" content="image/png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="{{.Favicon}}" type="image/svg+xml">
+<script src="theme.js"></script>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -40,6 +41,14 @@
       <a href="#instalar">Instalar</a>
       <a href="https://github.com/BertMarti/commitling">Código</a>
     </nav>
+    <fieldset class="theme-pick" id="theme-pick" hidden>
+      <legend>Tema de la web</legend>
+      <div class="opts">
+        <div class="opt"><input type="radio" name="site-theme" value="system" id="theme-system" checked><label for="theme-system">Sistema</label></div>
+        <div class="opt"><input type="radio" name="site-theme" value="light" id="theme-light"><label for="theme-light">Claro</label></div>
+        <div class="opt"><input type="radio" name="site-theme" value="dark" id="theme-dark"><label for="theme-dark">Oscuro</label></div>
+      </div>
+    </fieldset>
   </div>
   <picture class="hero">
     <source media="(prefers-color-scheme: dark)" srcset="{{.Hero.Dark}}">

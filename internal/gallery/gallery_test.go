@@ -37,10 +37,10 @@ func TestBuild(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Per species, 20 stage×mood cards and 4 accessory cards, light and
-	// dark, plus favicon, og.png, generator.js, page.js, install.js, style.css and index (the hero of the header is
+	// dark, plus favicon, og.png, generator.js, page.js, theme.js, install.js, style.css and index (the hero of the header is
 	// one of the accessory cards), plus the compact badges: per species, one
 	// per stage, light and dark.
-	if want := 2*(20+4)*2 + 7 + 2*5*2; n != want {
+	if want := 3*(20+4)*2 + 8 + 3*5*2; n != want {
 		t.Fatalf("Build wrote %d files, want %d", n, want)
 	}
 
@@ -331,7 +331,7 @@ func TestPageColoursReachAA(t *testing.T) {
 	}
 	css := builtCSS(t)
 	light := vars(regexp.MustCompile(`(?s):root\{(.*?)\}`).FindStringSubmatch(css)[1])
-	darkOver := vars(regexp.MustCompile(`(?s)prefers-color-scheme:dark\)\{\s*:root\{(.*?)\}`).FindStringSubmatch(css)[1])
+	darkOver := vars(regexp.MustCompile(`(?s)prefers-color-scheme:dark\)\{\s*:root:not\(\[data-theme=light\]\)\{(.*?)\}`).FindStringSubmatch(css)[1])
 	dark := map[string]string{}
 	for k, v := range light {
 		dark[k] = v
@@ -659,6 +659,10 @@ func TestPageHasStrictCSP(t *testing.T) {
 		"img-src 'self' blob: data:",
 		"object-src 'none'",
 		"base-uri 'self'",
+		// Trusted Types: no string reaches a DOM sink that runs code; the
+		// only policy is generator.js's «commitling», for wasm_exec.js.
+		"require-trusted-types-for 'script'",
+		"trusted-types commitling",
 	} {
 		if !strings.Contains(csp, want) {
 			t.Errorf("CSP %q lacks %q", csp, want)
@@ -677,8 +681,11 @@ func TestPageHasStrictCSP(t *testing.T) {
 			t.Errorf("inline script %q would be blocked by the CSP", s)
 		}
 	}
-	if len(scripts) != 3 {
-		t.Errorf("scripts = %v, want page.js, generator.js and install.js", scripts)
+	if tt := regexp.MustCompile(`trusted-types ([^;]*)`).FindStringSubmatch(csp); tt == nil || strings.TrimSpace(tt[1]) != "commitling" {
+		t.Errorf("Trusted Types must allow only the policy commitling: %q", csp)
+	}
+	if len(scripts) != 4 {
+		t.Errorf("scripts = %v, want theme.js, page.js, generator.js and install.js", scripts)
 	}
 	// Styles come only from style.css: no <style> block and no style
 	// attribute, so style-src needs no 'unsafe-inline' either (all the sites
