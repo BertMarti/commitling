@@ -125,10 +125,30 @@
   // needed, which is when the person interacts with the generator.
   var loading = null;
 
+  // Trusted Types: the CSP says require-trusted-types-for 'script' and only
+  // allows the policy «commitling», so a plain string can never become a
+  // script URL, HTML or code. This policy is the only way to make one, and it
+  // only accepts wasm_exec.js, next to the page (base-uri 'self' keeps a
+  // <base> from moving it to another origin). It creates no HTML or scripts.
+  var SCRIPT_URLS = ['wasm_exec.js'];
+  var scriptPolicy = null;
+
+  function allowedScript(src) {
+    if (SCRIPT_URLS.indexOf(src) < 0) throw new TypeError('URL de script no permitida: ' + src);
+    return src;
+  }
+
+  function scriptURL(src) {
+    var tt = window.trustedTypes;
+    if (!tt || typeof tt.createPolicy !== 'function') return allowedScript(src); // no API: the same check
+    if (!scriptPolicy) scriptPolicy = tt.createPolicy('commitling', { createScriptURL: allowedScript });
+    return scriptPolicy.createScriptURL(src);
+  }
+
   function loadScript(src) {
     return new Promise(function (resolve, reject) {
       var s = document.createElement('script');
-      s.src = src;
+      s.src = scriptURL(src);
       s.onload = resolve;
       s.onerror = function () { reject(new Error('no se pudo cargar ' + src)); };
       document.head.appendChild(s);

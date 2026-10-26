@@ -23,7 +23,7 @@ inputs:
     required: false
     default: ${{ github.token }}
   species:
-    description: Especie de la criatura, moss (brote de musgo, la predeterminada) o mushroom (hongo).
+    description: Especie de la criatura, moss (brote de musgo, la predeterminada), mushroom (hongo) o cactus.
     required: false
     default: moss
   size:
@@ -53,7 +53,46 @@ runs:
       shell: bash
       run: echo "gomod=$GITHUB_ACTION_PATH/go.mod" >> "$GITHUB_OUTPUT"
 
-    - uses: actions/setup-go@v7
+    # Precompiled binary of a release, only if this very tree lists its
+    # SHA-256 in release/checksums.txt (scripts/build-release.sh --write) and
+    # the download matches it. Otherwise (no file, unknown platform, no
+    # release yet, network error, mismatch) path stays empty and the Action
+    # compiles with go run, as it always did. Never fails the job.
+    # COMMITLING_RELEASE_URL only exists for the Action's own CI test; the
+    # binary must still match the committed checksum.
+    - id: bin
+      shell: bash
+      run: |
+        sums="$GITHUB_ACTION_PATH/release/checksums.txt"
+        [ -f "$sums" ] || exit 0
+        case "${RUNNER_OS:-}" in Linux) os=linux ;; macOS) os=darwin ;; Windows) os=windows ;; *) exit 0 ;; esac
+        case "${RUNNER_ARCH:-}" in X64) arch=amd64 ;; ARM64) arch=arm64 ;; *) exit 0 ;; esac
+        line="$(grep -E "^[0-9a-f]{64}  commitling_[0-9A-Za-z.+-]+_${os}_${arch}(\.exe)?$" "$sums" | head -n 1 || true)"
+        [ -n "$line" ] || exit 0
+        want="${line%%  *}"
+        name="${line#*  }"
+        version="${name#commitling_}"
+        version="${version%%_*}"
+        dir="${RUNNER_TEMP:-/tmp}/commitling-bin"
+        mkdir -p "$dir" || exit 0
+        base="${COMMITLING_RELEASE_URL:-https://github.com/BertMarti/commitling/releases/download}"
+        if ! curl -fsSL --retry 2 --connect-timeout 10 --max-time 120 -o "$dir/$name" "$base/v$version/$name"; then
+          rm -f "$dir/$name"
+          echo "::notice::commitling: no hay binario precompilado de v$version para $os/$arch; se compila con Go."
+          exit 0
+        fi
+        if command -v sha256sum >/dev/null 2>&1; then got="$(sha256sum "$dir/$name" 2>/dev/null || true)"; else got="$(shasum -a 256 "$dir/$name" 2>/dev/null || true)"; fi
+        got="${got%% *}"
+        if [ "$got" != "$want" ]; then
+          rm -f "$dir/$name"
+          echo "::warning::commitling: el binario descargado de v$version no coincide con release/checksums.txt; se descarta y se compila con Go."
+          exit 0
+        fi
+        chmod +x "$dir/$name" || exit 0
+        echo "path=$dir/$name" >> "$GITHUB_OUTPUT"
+
+    - if: steps.bin.outputs.path == ''
+      uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
       with:
         go-version-file: ${{ steps.paths.outputs.gomod }}
         cache: false
@@ -69,6 +108,7 @@ runs:
         CL_SIZE: ${{ inputs.size }}
         CL_FIXTURE: ${{ inputs.fixture }}
         CL_KEEP_ON_ERROR: ${{ inputs.keep-on-error }}
+        CL_BIN: ${{ steps.bin.outputs.path }}
       run: |
         set -euo pipefail
         # Defence in depth: GitHub already hides secrets and github.token in
@@ -92,5 +132,9 @@ runs:
           *) echo "::error::keep-on-error debe ser true o false, no '$CL_KEEP_ON_ERROR'"; exit 2 ;;
         esac
         cd "$GITHUB_ACTION_PATH"
-        go run ./cmd/commitling "${args[@]}"
+        if [ -n "$CL_BIN" ]; then
+          "$CL_BIN" "${args[@]}"
+        else
+          go run ./cmd/commitling "${args[@]}"
+        fi
         echo "path=$out" >> "$GITHUB_OUTPUT"

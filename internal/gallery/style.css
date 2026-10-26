@@ -6,8 +6,10 @@
   color-scheme:light dark;
 }
 @media (prefers-color-scheme:dark){
-  :root{--paper:#2b2724;--ink:#f3efe6;--line:#4a433d;--muted:#a39a8e;--accent:#ee6e55;--code:#34302c}
+  :root:not([data-theme=light]){--paper:#2b2724;--ink:#f3efe6;--line:#4a433d;--muted:#a39a8e;--accent:#ee6e55;--code:#34302c}
 }
+:root[data-theme=light]{color-scheme:light}
+:root[data-theme=dark]{--paper:#2b2724;--ink:#f3efe6;--line:#4a433d;--muted:#a39a8e;--accent:#ee6e55;--code:#34302c;color-scheme:dark}
 *{box-sizing:border-box}
 html{background:var(--paper)}
 body{margin:0;background:var(--paper);color:var(--ink);
@@ -30,6 +32,11 @@ h4{font-size:15px;margin:32px 0 14px}
 p{margin:0 0 14px;max-width:68ch}
 .lead{font-size:17px;margin:0}
 nav{margin-top:14px;display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px}
+.theme-pick{border:0;margin:18px 0 0;padding:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:13px;min-width:0}
+.theme-pick legend{font-weight:700;padding:0}
+.theme-pick .opts{gap:5px}
+.theme-pick .opt label{padding:4px 8px}
+.theme-pick[hidden]{display:none}
 section{padding:56px 0;border-top:2px dashed var(--line)}
 .gen{display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);gap:28px 40px;align-items:start}
 .gen-form{display:grid;grid-template-columns:minmax(0,1fr);gap:20px}

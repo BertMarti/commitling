@@ -18,7 +18,7 @@ Respondo en cuanto pueda (proyecto personal, sin plazos garantizados).
 
 - La **GitHub Action** (`action.yml`): solo lee la API pública de eventos con el token que le pases; no escribe en tu repositorio (el commit lo hace tu workflow) y sus entradas llegan al script por variables de entorno, nunca interpoladas en el código.
 - El **SVG generado**: todo texto que viene de fuera (usuario, nombres) se escapa como XML; el SVG no lleva scripts ni enlaces externos.
-- La **web** (GitHub Pages): sin dependencias de terceros, con Content-Security-Policy estricta; el generador solo habla con `api.github.com` y no usa cookies ni `localStorage`.
+- La **web** (GitHub Pages): sin dependencias de terceros, con Content-Security-Policy estricta; Trusted Types (la única política crea la URL de `wasm_exec.js`); el generador solo habla con `api.github.com`, no hay cookies y en `localStorage` solo se guarda la preferencia de tema (`commitling:theme`, `light` o `dark`).
 
 ## Buenas prácticas para quien usa la Action
 

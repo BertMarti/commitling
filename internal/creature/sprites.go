@@ -93,10 +93,14 @@ type stageArt struct {
 
 // artFor returns the pixel map of a stage of a species.
 func artFor(sp Species, st Stage) stageArt {
-	if sp == Mushroom {
+	switch sp {
+	case Mushroom:
 		return mushroomArt[st]
+	case Cactus:
+		return cactusArt[st]
+	default:
+		return mossArt[st]
 	}
-	return mossArt[st]
 }
 
 // Pixel maps of the moss sprout. K ink, P paper, G moss, H honey, R accent,

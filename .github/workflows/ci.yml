@@ -24,11 +24,11 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - uses: actions/setup-go@v7
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
           cache: false
@@ -78,6 +78,23 @@ jobs:
       - name: versión
         run: go run ./cmd/commitling version
 
+      # The Action trusts release/checksums.txt: if it is committed, it must
+      # still be what this tree compiles to (reproducible build), or the
+      # Action would refuse the release binaries.
+      - name: binarios de release reproducibles
+        if: runner.os == 'Linux'
+        run: |
+          if [ -f release/checksums.txt ]; then
+            scripts/build-release.sh out/rel --check
+          else
+            scripts/build-release.sh out/rel
+            echo "Sin release/checksums.txt: la Action compila con go run (los SHA-256 de arriba son los de este commit)."
+          fi
+          # The environment cannot change the bytes (build-release.sh resets
+          # GOFLAGS and GOEXPERIMENT; -tags would be recorded in the binary).
+          GOFLAGS=-tags=zzz scripts/build-release.sh out/rel-env
+          diff -u out/rel/checksums.txt out/rel-env/checksums.txt
+
       # Every workflow that the web generator and `commitling workflow` can
       # produce (the web builds the same bytes; a test compares them) must be
       # a valid GitHub Actions workflow that uses @v1: actionlint (official
@@ -92,7 +109,7 @@ jobs:
           go build -o "$RUNNER_TEMP/commitling" ./cmd/commitling
           mkdir -p out/wf
           "$RUNNER_TEMP/commitling" workflow > out/wf/base.yml 2>/dev/null
-          for sp in moss mushroom; do for th in light dark both; do for sz in full compact; do
+          for sp in moss mushroom cactus; do for th in light dark both; do for sz in full compact; do
             "$RUNNER_TEMP/commitling" workflow --user octocat --species "$sp" --theme "$th" --size "$sz" > "out/wf/$sp-$th-$sz.yml" 2>/dev/null
           done; done; done
           if grep -L 'uses: BertMarti/commitling@v1$' out/wf/*.yml | grep .; then echo "sin @v1"; exit 1; fi
@@ -118,12 +135,12 @@ jobs:
       GOVULNCHECK_VERSION: "v1.9.0"
       STATICCHECK_VERSION: "2026.2.2"
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
 
-      - uses: actions/setup-go@v7
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
           cache: false

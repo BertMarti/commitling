@@ -61,6 +61,9 @@ var generatorJS []byte
 //go:embed page.js
 var pageJS []byte
 
+//go:embed theme.js
+var themeJS []byte
+
 // installJS is the workflow generator of «Instálalo en tu perfil»: plain
 // JavaScript, no wasm and no network (a test compares it with generate.Install).
 //
@@ -202,6 +205,7 @@ func Build(dir, version string) (int, error) {
 	intros := map[creature.Species]string{
 		creature.MossSprout: "La especie predeterminada: un brote de musgo con ojos que acaba siendo un árbol ancestral.",
 		creature.Mushroom:   "Una seta pequeña con ojos que empieza siendo una espora y acaba en un corro de setas. Se elige con <code>species: mushroom</code>.",
+		creature.Cactus:     "Un cactus pequeño en su maceta que empieza siendo una semilla y acaba en un cactus centenario. Se elige con <code>species: cactus</code>.",
 	}
 	for _, sp := range creature.AllSpecies {
 		// The default species keeps the file names of the first release.
@@ -257,6 +261,9 @@ func Build(dir, version string) (int, error) {
 		return n, err
 	}
 	if err := write("page.js", pageJS); err != nil {
+		return n, err
+	}
+	if err := write("theme.js", themeJS); err != nil {
 		return n, err
 	}
 	if err := write("install.js", installJS); err != nil {

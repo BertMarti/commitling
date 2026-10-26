@@ -28,14 +28,14 @@ Antes de instalar nada puedes ver todas las fases y ánimos en la web del proyec
 
 https://bertmarti.github.io/commitling/
 
-Ahí verás las dos especies, cada una con sus 5 fases y los 4 ánimos de cada una (20 tarjetas por especie, en versión clara y oscura), los accesorios, las reglas y las instrucciones de instalación con botones para copiar. También hay una criatura «en vivo» del autor del proyecto, que se actualiza cada día.
+Arriba a la izquierda puedes elegir el **tema de la web** (Sistema, Claro u Oscuro); se recuerda en tu navegador con la clave `commitling:theme` y «Sistema» la borra. Ahí verás las tres especies, cada una con sus 5 fases y los 4 ánimos de cada una (20 tarjetas por especie, en versión clara y oscura), los accesorios, las reglas y las instrucciones de instalación con botones para copiar. También hay una criatura «en vivo» del autor del proyecto, que se actualiza cada día.
 
 ### Generar la tuya en la web (sin instalar nada)
 
 Arriba de todo, en la sección **Pruébalo con tu usuario**, puedes ver tu propia criatura al instante:
 
 1. Escribe tu usuario de GitHub (vale con o sin `@`).
-2. Elige la especie (brote de musgo u hongo) y el tema (claro u oscuro).
+2. Elige la especie (brote de musgo, hongo o cactus) y el tema (claro u oscuro).
 3. Pulsa **Dibujar** (o Intro). En unos segundos aparece tu criatura. Si cambias la especie o el tema, se redibuja sola, sin volver a preguntar a GitHub.
 4. Con **Descargar SVG** te llevas la imagen (`commitling-<usuario>.svg`), y debajo tienes el **workflow ya relleno** con tu usuario, la especie y el tema que has elegido, con botón de copiar. Pégalo en `.github/workflows/commitling.yml` de tu repositorio de perfil y sigue los pasos de la sección 3.
 
@@ -159,7 +159,7 @@ Dentro de `with:` puedes ajustar:
 
 ### Elegir la especie
 
-Hay dos especies, las dos de diseño propio y con las mismas reglas (XP, ánimos y accesorios). Por defecto tu criatura es un **brote de musgo** (`moss`). Si prefieres el **hongo** (`mushroom`), una seta pequeña de sombrero miel, añade `species: mushroom` en `with:`:
+Hay tres especies, todas de diseño propio y con las mismas reglas (XP, ánimos y accesorios). Por defecto tu criatura es un **brote de musgo** (`moss`). Si prefieres el **hongo** (`mushroom`), una seta pequeña de sombrero miel, añade `species: mushroom` en `with:` (o `species: cactus` para el **cactus**, un cactus con ojos en su maceta de barro):
 
 ```yaml
       - uses: BertMarti/commitling@v1
@@ -170,13 +170,13 @@ Hay dos especies, las dos de diseño propio y con las mismas reglas (XP, ánimos
 
 Solo cambian el dibujo y el nombre de las fases:
 
-| Fase | Desde | Brote de musgo (`moss`) | Hongo (`mushroom`) |
-|---|---|---|---|
-| 1 | 0 XP | Semilla | Espora |
-| 2 | 100 XP | Brote | Botón |
-| 3 | 400 XP | Retoño | Seta |
-| 4 | 1.000 XP | Arbusto | Seta grande |
-| 5 | 2.500 XP | Árbol ancestral | Corro de setas |
+| Fase | Desde | Brote de musgo (`moss`) | Hongo (`mushroom`) | Cactus (`cactus`) |
+|---|---|---|---|---|
+| 1 | 0 XP | Semilla | Espora | Yema |
+| 2 | 100 XP | Brote | Botón | Bolita |
+| 3 | 400 XP | Retoño | Seta | Cactus |
+| 4 | 1.000 XP | Arbusto | Seta grande | Cactus con brazos |
+| 5 | 2.500 XP | Árbol ancestral | Corro de setas | Cactus centenario |
 
 Valores que acepta `species` (sin distinguir mayúsculas ni espacios alrededor):
 
@@ -184,10 +184,11 @@ Valores que acepta `species` (sin distinguir mayúsculas ni espacios alrededor):
 |---|---|
 | Brote de musgo | `moss`, `musgo`, `brote de musgo` (y vacío, que es la predeterminada) |
 | Hongo | `mushroom`, `hongo`, `seta`, `setas` |
+| Cactus | `cactus` |
 
-Cualquier otro valor (por ejemplo `dragon`) hace fallar el paso a propósito, con el mensaje `especie no válida "dragon" (usa moss o mushroom)`, para que un error tipográfico no pase desapercibido, y no escribe ningún archivo. Puedes ver todas las fases de las dos especies en la [galería](https://bertmarti.github.io/commitling/#galeria).
+Cualquier otro valor (por ejemplo `dragon`) hace fallar el paso a propósito, con el mensaje `especie no válida "dragon" (usa moss, mushroom o cactus)`, para que un error tipográfico no pase desapercibido, y no escribe ningún archivo. Puedes ver todas las fases de las tres especies en la [galería](https://bertmarti.github.io/commitling/#galeria).
 
-¿Las dos a la vez? Sí: usa la Action dos veces con `out` distinto (por ejemplo `commitling.svg` y `commitling-hongo.svg`, cada uno con su `species`), suma el segundo archivo al `git add` y enseña la imagen que quieras en el README.
+¿Varias a la vez? Sí: usa la Action dos veces con `out` distinto (por ejemplo `commitling.svg` y `commitling-hongo.svg`, cada uno con su `species`), suma el segundo archivo al `git add` y enseña la imagen que quieras en el README.
 
 ### Elegir el tamaño: tarjeta compacta
 
@@ -200,7 +201,7 @@ Por defecto la tarjeta mide 480x200 (`size: full`). Si la quieres más pequeña,
           size: compact
 ```
 
-Verás la compacta en las cinco fases de las dos especies en la [galería](https://bertmarti.github.io/commitling/#compacta), y en el generador de la web (sección «Pruébalo con tu usuario») el selector **Tamaño** te la enseña con tu usuario y rellena el workflow con `size: compact`.
+Verás la compacta en las cinco fases de las tres especies en la [galería](https://bertmarti.github.io/commitling/#compacta), y en el generador de la web (sección «Pruébalo con tu usuario») el selector **Tamaño** te la enseña con tu usuario y rellena el workflow con `size: compact`.
 
 Sin `size`, o con `size: full`, el dibujo es exactamente el de siempre, byte a byte. Cualquier otro valor (por ejemplo `grande`) hace fallar el paso a propósito, con el mensaje `tamaño no válido "grande" (usa full o compact)`. Puedes usar la Action dos veces (una con cada tamaño) con `out` distinto y suma los dos archivos al `git add`.
 
@@ -283,7 +284,7 @@ Ejemplo: en los últimos 90 días has hecho 20 commits (200 XP), abierto 2 pull 
 | Arbusto | 1.000 XP |
 | Árbol ancestral | 2.500 XP |
 
-En el hongo, las cinco fases se llaman Espora, Botón, Seta, Seta grande y Corro de setas, con las mismas XP. Con 285 XP estarías en **Brote** (fase 2 de 5) y te faltarían 115 XP para ser Retoño. La tarjeta muestra la XP total, la meta siguiente y una barra de progreso (24 casillas) hasta la próxima fase; en el Árbol ancestral la barra va siempre llena.
+En el hongo, las cinco fases se llaman Espora, Botón, Seta, Seta grande y Corro de setas, y en el cactus Yema, Bolita, Cactus, Cactus con brazos y Cactus centenario, con las mismas XP. Con 285 XP estarías en **Brote** (fase 2 de 5) y te faltarían 115 XP para ser Retoño. La tarjeta muestra la XP total, la meta siguiente y una barra de progreso (24 casillas) hasta la próxima fase; en el Árbol ancestral la barra va siempre llena.
 
 ### Ánimos
 
@@ -377,7 +378,7 @@ go run ./cmd/commitling version
 
 **Conservar el SVG ante una caída de la API (`--keep-on-error`).** Con esta opción, si la API de GitHub sigue fallando tras los reintentos por una causa **transitoria** (error de red, 5xx o límite de peticiones: 429, o 403 con cabeceras de límite) y el archivo de `--out` ya existe y es un SVG completo, commitling lo deja intacto, escribe un aviso («la API de GitHub no responde… se conserva … sin cambios») y termina con código 0. Los fallos **permanentes** siguen siendo un error aunque haya archivo previo: 401 (token inválido o caducado), 404 (usuario inexistente), 422 y 403 sin cabeceras de límite (permisos). Sin archivo previo, con un archivo vacío o cortado, o con `--out -`, el error también se mantiene, y no afecta a otros errores (un `--fixture` que no existe, una especie no válida…). En la Action equivale a la entrada `keep-on-error`, que está activada por defecto.
 
-**La imagen de vista previa (`og`).** Es el PNG de 1200×630 píxeles que muestran Slack, X, LinkedIn o Telegram cuando alguien pega el enlace de la web del proyecto (formato «Open Graph»). Enseña una criatura grande y las cinco fases de las dos especies, en la paleta de la criatura, sin suavizado y en unos 3 KB. `commitling og --out og.png` la dibuja donde le digas (con `--out -` va a la salida estándar); no necesita red ni usuario, y sale siempre igual. Solo te hace falta si mantienes tu propia web: `commitling gallery` ya la genera como `og.png` dentro de la carpeta de salida y las etiquetas `og:image` de la página apuntan a ella. Ten en cuenta que las redes sociales guardan las vistas previas en caché, así que un cambio puede tardar en verse.
+**La imagen de vista previa (`og`).** Es el PNG de 1200×630 píxeles que muestran Slack, X, LinkedIn o Telegram cuando alguien pega el enlace de la web del proyecto (formato «Open Graph»). Enseña una criatura grande y las cinco fases de las tres especies, en la paleta de la criatura, sin suavizado y en unos 3 KB. `commitling og --out og.png` la dibuja donde le digas (con `--out -` va a la salida estándar); no necesita red ni usuario, y sale siempre igual. Solo te hace falta si mantienes tu propia web: `commitling gallery` ya la genera como `og.png` dentro de la carpeta de salida y las etiquetas `og:image` de la página apuntan a ella. Ten en cuenta que las redes sociales guardan las vistas previas en caché, así que un cambio puede tardar en verse.
 
 ## 8. Preguntas frecuentes
 

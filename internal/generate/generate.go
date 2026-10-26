@@ -21,7 +21,7 @@ import (
 // events, the moss sprout, the light theme, the full card and "now".
 type Options struct {
 	User    string    // GitHub login; empty takes the most common actor of the events
-	Species string    // moss or mushroom (or an alias); empty is moss
+	Species string    // moss, mushroom or cactus (or an alias); empty is moss
 	Theme   string    // light or dark; empty is light
 	Size    string    // full or compact; empty is full
 	Now     time.Time // reference date; zero is the current time
@@ -41,7 +41,7 @@ func (o Options) Check() error {
 		return errors.New("tema no válido " + strconv.Quote(o.Theme) + " (usa light o dark)")
 	}
 	if _, ok := creature.SpeciesByName(o.speciesName()); !ok {
-		return errors.New("especie no válida " + strconv.Quote(o.Species) + " (usa moss o mushroom)")
+		return errors.New("especie no válida " + strconv.Quote(o.Species) + " (usa moss, mushroom o cactus)")
 	}
 	if _, ok := render.SizeByName(o.Size); !ok {
 		return errors.New("tamaño no válido " + strconv.Quote(o.Size) + " (usa full o compact)")

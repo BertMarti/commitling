@@ -191,7 +191,7 @@ func TestRenderInvalidSpeciesFailsEarlyAndClearly(t *testing.T) {
 			t.Errorf("%q: err = %v, want a usage error", bad, err)
 			continue
 		}
-		for _, want := range []string{"especie no válida", bad, "moss", "mushroom"} {
+		for _, want := range []string{"especie no válida", bad, "moss", "mushroom", "cactus"} {
 			if !strings.Contains(err.Error(), want) {
 				t.Errorf("%q: message %q should contain %q", bad, err, want)
 			}
@@ -409,7 +409,7 @@ func TestRenderMatchesGenerateRender(t *testing.T) {
 		t.Fatal(err)
 	}
 	now := time.Date(2026, 9, 29, 12, 0, 0, 0, time.UTC)
-	for _, sp := range []string{"moss", "mushroom"} {
+	for _, sp := range []string{"moss", "mushroom", "cactus"} {
 		for _, th := range []string{"light", "dark"} {
 			var stdout, stderr bytes.Buffer
 			args := []string{"render", "--fixture", fixture, "--user", "octoexample", "--species", sp, "--theme", th,

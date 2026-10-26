@@ -310,3 +310,129 @@ func TestActionMasksTheToken(t *testing.T) {
 		}
 	}
 }
+
+// Third-party actions in the workflows and in action.yml are pinned to a full
+// commit SHA with the version as a comment (dependabot keeps both current): a
+// moved tag upstream cannot change what runs here or in the profiles.
+func TestThirdPartyActionsArePinnedBySHA(t *testing.T) {
+	files := []string{"action.yml"}
+	entries, err := os.ReadDir("../../.github/workflows")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, e := range entries {
+		files = append(files, ".github/workflows/"+e.Name())
+	}
+	uses := regexp.MustCompile(`(?m)^\s*(?:-\s+)?uses:\s*(\S+)(.*)$`)
+	pinned := regexp.MustCompile(`^[A-Za-z0-9-]+/[A-Za-z0-9._/-]+@[0-9a-f]{40}$`)
+	version := regexp.MustCompile(`^\s+# v\d+\.\d+\.\d+$`)
+	total := 0
+	for _, f := range files {
+		for _, m := range uses.FindAllStringSubmatch(readRepoFile(t, f), -1) {
+			ref := m[1]
+			if strings.HasPrefix(ref, "./") {
+				continue // this repository's own Action
+			}
+			total++
+			if !pinned.MatchString(ref) || !version.MatchString(m[2]) {
+				t.Errorf("%s: %q must be owner/repo@<40-hex SHA> # vX.Y.Z", f, strings.TrimSpace(m[0]))
+			}
+		}
+	}
+	if total < 5 {
+		t.Errorf("only %d third-party uses found: is the parser still right?", total)
+	}
+}
+
+// The precompiled binary is opt-in per tree: the Action only looks for one if
+// its own release/checksums.txt lists it, checks the SHA-256 before using it,
+// never fails because of it, and keeps setup-go and go run as the fallback.
+// The token is masked before either way of running the CLI.
+func TestActionPrebuiltBinaryIsSafeAndOptional(t *testing.T) {
+	yml := readRepoFile(t, "action.yml")
+	start := strings.Index(yml, "- id: bin\n")
+	end := strings.Index(yml, "uses: actions/setup-go@")
+	if start < 0 || end < start {
+		t.Fatal("action.yml must have the bin step before setup-go")
+	}
+	bin := yml[start:end]
+	for _, want := range []string{
+		`sums="$GITHUB_ACTION_PATH/release/checksums.txt"`,
+		`[ -f "$sums" ] || exit 0`,
+		`if [ "$got" != "$want" ]; then`,
+		`https://github.com/BertMarti/commitling/releases/download`,
+	} {
+		if !strings.Contains(bin, want) {
+			t.Errorf("bin step lacks %q", want)
+		}
+	}
+	if strings.Contains(bin, "exit 1") || strings.Contains(bin, "set -e") {
+		t.Error("the bin step must never fail the job: on any problem it falls back to go run")
+	}
+	// The default shell of a composite step is bash -e -o pipefail, so every
+	// command that can fail on its own must be guarded.
+	for _, want := range []string{
+		`mkdir -p "$dir" || exit 0`,
+		`got="$(sha256sum "$dir/$name" 2>/dev/null || true)"`,
+		`got="$(shasum -a 256 "$dir/$name" 2>/dev/null || true)"`,
+		`chmod +x "$dir/$name" || exit 0`,
+		`| head -n 1 || true)"`,
+		`if ! curl `,
+	} {
+		if !strings.Contains(bin, want) {
+			t.Errorf("bin step: %q is missing (a failure there would fail the job)", want)
+		}
+	}
+	if check, out := strings.Index(bin, `"$got" != "$want"`), strings.Index(bin, `echo "path=`); check < 0 || out < check {
+		t.Error("the binary path must only be published after its SHA-256 matched")
+	}
+	if !strings.Contains(yml, "- if: steps.bin.outputs.path == ''\n      uses: actions/setup-go@") {
+		t.Error("setup-go must run whenever there is no verified binary")
+	}
+	mask := strings.Index(yml, `printf '::add-mask::%s\n'`)
+	for _, run := range []string{`"$CL_BIN" "${args[@]}"`, "go run ./cmd/commitling"} {
+		if i := strings.Index(yml, run); i < 0 || mask < 0 || i < mask {
+			t.Errorf("%s must exist and come after the token is masked", run)
+		}
+	}
+}
+
+// If release/checksums.txt is committed, it describes this version of the CLI
+// on the six platforms (the CI also rebuilds them and compares the bytes).
+func TestReleaseChecksumsMatchTheVersion(t *testing.T) {
+	data, err := os.ReadFile("../../release/checksums.txt")
+	if os.IsNotExist(err) {
+		t.Log("no release/checksums.txt: the Action compiles with go run")
+		return
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := regexp.MustCompile(`(?m)^var version = "([^"]+)"$`).FindStringSubmatch(readRepoFile(t, "cmd/commitling/main.go"))
+	if m == nil {
+		t.Fatal("no version in cmd/commitling/main.go")
+	}
+	lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+	if len(lines) != 6 {
+		t.Errorf("release/checksums.txt has %d lines, want 6", len(lines))
+	}
+	line := regexp.MustCompile(`^[0-9a-f]{64}  commitling_` + regexp.QuoteMeta(m[1]) + `_(linux|darwin|windows)_(amd64|arm64)(\.exe)?$`)
+	for _, l := range lines {
+		if !line.MatchString(l) {
+			t.Errorf("release/checksums.txt: %q is not a binary of v%s", l, m[1])
+		}
+	}
+}
+
+// The release binaries must not depend on the environment of whoever builds
+// them: build-release.sh resets GOFLAGS and GOEXPERIMENT before building (the
+// CI also builds with GOFLAGS=-tags=zzz and compares).
+func TestBuildReleaseResetsTheEnvironment(t *testing.T) {
+	sh := readRepoFile(t, "scripts/build-release.sh")
+	set := strings.Index(sh, "set -euo pipefail\n")
+	reset := strings.Index(sh, "export GOFLAGS=-p=2 GOEXPERIMENT= GOFIPS140=off\n")
+	build := strings.Index(sh, "go build ")
+	if set < 0 || reset < set || build < reset {
+		t.Error("build-release.sh must export GOFLAGS=-p=2 GOEXPERIMENT= GOFIPS140=off right after set -euo pipefail and before go build")
+	}
+}

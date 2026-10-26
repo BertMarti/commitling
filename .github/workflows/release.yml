@@ -1,0 +1,71 @@
+name: Release
+
+# Uploads the precompiled binaries to a release when it is published. It only
+# runs then (nothing here creates releases or moves tags). The binaries are
+# rebuilt from the tag with scripts/build-release.sh and must match the
+# release/checksums.txt committed in that tag: that file is what the Action
+# trusts. Without it, nothing is uploaded and the Action keeps compiling with
+# go run.
+on:
+  release:
+    types: [published]
+
+permissions: {}
+
+concurrency:
+  group: release-${{ github.event.release.tag_name }}
+  cancel-in-progress: false
+
+jobs:
+  binaries:
+    name: binarios
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      TAG: ${{ github.event.release.tag_name }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          persist-credentials: false
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Comprobar la versión y release/checksums.txt
+        id: check
+        run: |
+          set -euo pipefail
+          version="$(sed -n 's/^var version = "\(.*\)"$/\1/p' cmd/commitling/main.go)"
+          if [ "$TAG" != "v$version" ]; then
+            echo "::error::La etiqueta $TAG no coincide con la versión de la CLI (v$version)."
+            exit 1
+          fi
+          if [ ! -f release/checksums.txt ]; then
+            echo "::warning::$TAG no tiene release/checksums.txt: no se suben binarios y la Action seguirá compilando con go run."
+            echo "upload=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "upload=true" >> "$GITHUB_OUTPUT"
+
+      - name: Compilar y verificar los binarios
+        if: steps.check.outputs.upload == 'true'
+        run: scripts/build-release.sh "$RUNNER_TEMP/dist" --check
+
+      - name: Subir los binarios a la release
+        if: steps.check.outputs.upload == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          gh release upload "$TAG" "$RUNNER_TEMP"/dist/commitling_* "$RUNNER_TEMP/dist/checksums.txt" --clobber
+          {
+            echo "### Binarios de $TAG"
+            echo '```'
+            cat "$RUNNER_TEMP/dist/checksums.txt"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
