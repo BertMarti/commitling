@@ -22,8 +22,8 @@ func TestThemeBehaviourInNode(t *testing.T) {
 func TestThemeSectionAndScript(t *testing.T) {
 	dir := buildDir(t)
 	page := readBuilt(t, dir, "index.html")
-	if strings.Index(page, `<script src="theme.js"></script>`) < 0 ||
-		strings.Index(page, `<script src="theme.js"></script>`) > strings.Index(page, `<link rel="stylesheet" href="style.css">`) {
+	script := strings.Index(page, `<script src="theme.js"></script>`)
+	if script < 0 || script > strings.Index(page, `<link rel="stylesheet" href="style.css">`) {
 		t.Error("theme.js must be in head before style.css")
 	}
 	for _, value := range []string{"system", "light", "dark"} {
