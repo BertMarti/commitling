@@ -17,7 +17,7 @@ jobs:
   action:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -37,6 +37,15 @@ jobs:
           fixture: testdata/events.json
           species: mushroom
           out: out/mushroom.svg
+
+      - name: Action con la especie cactus (sin red)
+        id: cactus
+        uses: ./
+        with:
+          user: ""
+          fixture: testdata/events.json
+          species: cactus
+          out: out/cactus.svg
 
       - name: Action con la tarjeta compacta (sin red)
         id: compact
@@ -129,6 +138,7 @@ jobs:
         env:
           FIXTURE_PATH: ${{ steps.fixture.outputs.path }}
           MUSHROOM_PATH: ${{ steps.mushroom.outputs.path }}
+          CACTUS_PATH: ${{ steps.cactus.outputs.path }}
           COMPACT_PATH: ${{ steps.compact.outputs.path }}
           BADSIZE_OUTCOME: ${{ steps.badsize.outcome }}
           REAL_PATH: ${{ steps.real.outputs.path }}
@@ -149,7 +159,7 @@ jobs:
           test "$NOUSER_OUTCOME" = failure || { echo 'un usuario inexistente debería fallar'; exit 1; }
           cmp out/nouser.svg "$FIXTURE_PATH" || { echo 'el SVG previo del usuario inexistente cambió'; exit 1; }
           cmp out/keep.svg "$FIXTURE_PATH" || { echo 'el SVG previo cambió'; exit 1; }
-          for f in "$FIXTURE_PATH" "$MUSHROOM_PATH" "$COMPACT_PATH" "$REAL_PATH"; do
+          for f in "$FIXTURE_PATH" "$MUSHROOM_PATH" "$CACTUS_PATH" "$COMPACT_PATH" "$REAL_PATH"; do
             test -s "$f"
             head -c 120 "$f"; echo
             grep -q '</svg>' "$f"
@@ -160,5 +170,85 @@ jobs:
           grep -q 'Retoño' "$FIXTURE_PATH"
           grep -q 'Seta' "$MUSHROOM_PATH"
           if grep -q 'Retoño' "$MUSHROOM_PATH"; then echo 'la especie hongo no se aplicó'; exit 1; fi
+          grep -q 'Cactus' "$CACTUS_PATH"
+          if grep -q 'Retoño' "$CACTUS_PATH"; then echo 'la especie cactus no se aplicó'; exit 1; fi
           grep -q "@$OWNER" "$REAL_PATH"
           grep -q '#2b2724' "$REAL_PATH"
+
+  # The precompiled binary path of the Action (release/checksums.txt plus a
+  # release download), tested against a local server that plays the role of
+  # the release: a binary that matches is used without compiling; a tampered
+  # one or a missing release fall back to go run with the same SVG.
+  binario:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Binarios reproducibles y release falsa en 127.0.0.1
+        run: |
+          set -euo pipefail
+          scripts/build-release.sh "$RUNNER_TEMP/rel"
+          version="$(sed -n 's/^var version = "\(.*\)"$/\1/p' cmd/commitling/main.go)"
+          mkdir -p release "$RUNNER_TEMP/www/v$version"
+          cp "$RUNNER_TEMP/rel/checksums.txt" release/checksums.txt
+          cp "$RUNNER_TEMP"/rel/commitling_* "$RUNNER_TEMP/www/v$version/"
+          nohup python3 -m http.server 8765 --bind 127.0.0.1 --directory "$RUNNER_TEMP/www" > "$RUNNER_TEMP/http.log" 2>&1 &
+          for _ in $(seq 1 20); do curl -fsS -o /dev/null http://127.0.0.1:8765/ && break; sleep 0.5; done
+          echo "COMMITLING_RELEASE_URL=http://127.0.0.1:8765" >> "$GITHUB_ENV"
+          echo "CL_VERSION=$version" >> "$GITHUB_ENV"
+          go run ./cmd/commitling render --fixture testdata/events.json --species cactus --out out/expected.svg
+
+      - name: Action con el binario precompilado
+        id: prebuilt
+        uses: ./
+        with:
+          user: ""
+          fixture: testdata/events.json
+          species: cactus
+          out: out/prebuilt.svg
+
+      - name: Se usó el binario y el SVG es el mismo
+        run: |
+          set -euo pipefail
+          test -x "$RUNNER_TEMP/commitling-bin/commitling_${CL_VERSION}_linux_amd64"
+          grep -q "GET /v${CL_VERSION}/commitling_${CL_VERSION}_linux_amd64 " "$RUNNER_TEMP/http.log"
+          cmp out/prebuilt.svg out/expected.svg
+
+      - name: Binario manipulado en la release
+        run: |
+          set -euo pipefail
+          rm -rf "$RUNNER_TEMP/commitling-bin"
+          printf '#!/bin/sh\necho manipulado\n' > "$RUNNER_TEMP/www/v${CL_VERSION}/commitling_${CL_VERSION}_linux_amd64"
+
+      - name: Action con el binario manipulado (se descarta)
+        uses: ./
+        with:
+          user: ""
+          fixture: testdata/events.json
+          species: cactus
+          out: out/tampered.svg
+
+      - name: Sin release publicada
+        run: echo "COMMITLING_RELEASE_URL=http://127.0.0.1:8765/no-existe" >> "$GITHUB_ENV"
+
+      - name: Action sin release (compila con Go)
+        uses: ./
+        with:
+          user: ""
+          fixture: testdata/events.json
+          species: cactus
+          out: out/norelease.svg
+
+      - name: Comprobar las alternativas
+        run: |
+          set -euo pipefail
+          test ! -e "$RUNNER_TEMP/commitling-bin/commitling_${CL_VERSION}_linux_amd64" || { echo 'el binario manipulado no se borró'; exit 1; }
+          cmp out/tampered.svg out/expected.svg
+          cmp out/norelease.svg out/expected.svg
