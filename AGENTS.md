@@ -57,7 +57,7 @@ Una mascota pixel-art **original** que vive en el README de tu perfil de GitHub.
 - Tests de comportamiento del generador en Node: `node internal/gallery/testdata/generator.test.js <generator.js>` (DOM, `fetch`, `sessionStorage` y wasm simulados, sin dependencias); lo lanza `TestGeneratorBehaviourInNode`, que en el CI falla si no hay `node` y en otros sitios se salta.
 - El lector de CSS de los tests (`css_test.go`) ignora comentarios y cadenas y entiende `@media` y `@supports`; sigue siendo un lector mínimo, no un analizador completo.
 
-## Blindada (v0.8.0, 24/10/2026)
+## Blindada (24/10/2026, camino a la 1.0.0)
 - **La interfaz de `action.yml` es sagrada**: entradas (`user`, `out`, `theme`, `token`, `species`, `size`, `fixture`, `keep-on-error`), salida `path`, nombres de archivo y formato del SVG. El perfil de BertMarti (y otros) la usan a diario con `@v1`; un cambio incompatible rompe perfiles al día siguiente de mover `v1`.
 - **Nada de `${{ }}` dentro de un script `run:`** (ni en `action.yml` ni en los workflows): las entradas y contextos llegan por `env:`. Lo vigila `TestNoExpressionsInRunScripts`.
 - Workflows con `permissions` explícitos (Pages: `{}` arriba y lo justo por job) y `persist-credentials: false` en cada `checkout` (`TestWorkflowsAreLeastPrivilege`).
@@ -73,7 +73,12 @@ Una mascota pixel-art **original** que vive en el README de tu perfil de GitHub.
 - **Selector de tema** (`internal/gallery/theme.js`, en `<head>` sin `defer` para no parpadear): `data-theme` en `<html>`, cambia el `media` de los `<source>` y de `theme-color` (original en `data-media`). `localStorage` `commitling:theme` con lista cerrada (`light`, `dark`); «Sistema» borra la clave. CSS: oscuro en `@media (prefers-color-scheme:dark){:root:not([data-theme=light])…}` y `:root[data-theme=dark]`. Test en Node: `node internal/gallery/testdata/theme.test.js internal/gallery/theme.js`.
 - **Trusted Types**: la CSP lleva `require-trusted-types-for 'script'; trusted-types commitling`. La única política es la de `generator.js` (`scriptURL`), que solo acepta `wasm_exec.js`. Nada de `innerHTML`/`eval`/`script.src` con cadenas: si hace falta un sumidero nuevo, pasa por esa política y por `TestPageHasStrictCSP`.
 - **Acciones por SHA** con `# vX.Y.Z` (`TestThirdPartyActionsArePinnedBySHA`); dependabot actualiza ambos. Los workflows que genera la web para las personas usuarias siguen con `actions/checkout@v7` (legibles; son suyos).
-- **Binario precompilado** (inactivo): paso `bin` de `action.yml`, `scripts/build-release.sh`, `.github/workflows/release.yml`, job `binario` de `action-test.yml`. Solo se activa con `release/checksums.txt` en el árbol de la etiqueta (ver `docs/DESARROLLO.md`). Si ese archivo existe, todo cambio de código exige regenerarlo (`--write`) o el CI falla.
+- **Binario precompilado**: paso `bin` de `action.yml`, `scripts/build-release.sh`, `.github/workflows/release.yml`, job `binario` de `action-test.yml`. Solo se activa con `release/checksums.txt` en el árbol de la etiqueta (ver `docs/DESARROLLO.md`). Si ese archivo existe, todo cambio de código (también la plantilla de la web, que va embebida) exige regenerarlo (`--write`) o borrarlo, o el CI falla.
+
+## Versión 1.0.0 (26/10/2026)
+- Se publica directamente la **1.0.0** (la 0.8.0 nunca salió): CLI y Action alineadas en 1.0.0 y `v1` pasa de v0.7.0 a v1.0.0. El commit de la versión lleva `release/checksums.txt` (binario precompilado activo al publicar).
+- Lo que solo es cierto tras publicar (quitar «el cactus aún no está en `@v1`», «desde la versión 1.0.0» de `go run …@latest`, ejemplos `@v1.0.0`) va en la rama `v1-tras-publicar`, que además borra `release/checksums.txt` (cambia la plantilla embebida).
+- Semver a partir de aquí: la interfaz de `action.yml` y el formato del SVG solo cambian de forma incompatible en una `v2`; mejoras compatibles → 1.x (menor), arreglos → parche.
 
 ## Reglas de contenido
 - El personaje es **diseño propio**. Prohibido imitar criaturas de videojuegos, anime o marcas.

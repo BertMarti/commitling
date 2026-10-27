@@ -235,7 +235,7 @@
         <div class="opts">{{range $i, $c := .GenSpecies}}
           <div class="opt"><input type="radio" name="ins-species" value="{{$c.Value}}" id="ins-sp-{{$c.Value}}"{{if eq $i 0}} checked{{end}}><label for="ins-sp-{{$c.Value}}">{{$c.Label}}</label></div>{{end}}
         </div>
-        <p class="note hint">El cactus llega a la Action con la versión 0.8.0, aún sin publicar: hasta entonces, un workflow con el cactus sale en rojo con «especie no válida». El brote de musgo y el hongo funcionan ya.</p>
+        <p class="note hint">El cactus llega a la Action con la versión 1.0.0, aún sin publicar: hasta entonces, un workflow con el cactus sale en rojo con «especie no válida». El brote de musgo y el hongo funcionan ya.</p>
       </fieldset>
       <fieldset>
         <legend>Tema</legend>
@@ -294,7 +294,7 @@
       <p>Elige «Automático» arriba y sustituye tu archivo por el nuevo, o añade un segundo paso con <code>theme: dark</code> y <code>out: commitling-dark.svg</code> (y súmalo al <code>git add</code>). En el README usa:</p>
       <div class="code"><button class="copy" type="button" data-copy="rdd" aria-label="Copiar el fragmento del README con tema oscuro" hidden>Copiar</button><pre tabindex="0" aria-label="Fragmento del README con tema oscuro"><code id="rdd">{{.ReadmeDrk}}</code></pre><p class="copy-msg note" role="status" aria-live="polite"></p></div>
     </details>
-    <p class="note">¿Prefieres la terminal? <code>go run github.com/BertMarti/commitling/cmd/commitling@latest workflow --user tu-usuario --theme both</code> escribe el mismo archivo.</p>
+    <p class="note">¿Prefieres la terminal? Con Go instalado y a partir de la versión 1.0.0, <code>go run github.com/BertMarti/commitling/cmd/commitling@latest workflow --user tu-usuario --theme both</code> escribe el mismo archivo.</p>
   </section>
 
   <section id="privacidad" aria-labelledby="privacidad-t">

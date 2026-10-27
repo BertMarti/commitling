@@ -6,15 +6,15 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ## [Sin publicar]
 
-## [0.8.0] - 2026-10-26
+## [1.0.0] - 2026-10-26
 
-Versión «Blindada»: seguridad, documentación, accesibilidad, una instalación guiada y una tercera especie. **La interfaz de `action.yml` no cambia** (mismas entradas, misma salida `path`, mismos archivos) y las tarjetas SVG del brote de musgo y del hongo son byte a byte las de v0.7.0 (las 96 huellas de v0.5.0 pasan).
+Primera versión estable (la 0.8.0 preparada nunca se publicó: todo sale aquí). Reúne todo lo hecho desde la v0.7.0: las fases de seguridad y documentación, la instalación guiada paso a paso, la tercera especie cactus, el selector de tema de la web y el binario precompilado. **La interfaz de `action.yml` no cambia** (mismas entradas, misma salida `path`, mismos archivos) y las tarjetas SVG del brote de musgo y del hongo son byte a byte las de v0.7.0 (las 96 huellas de v0.5.0 pasan). Quien usa `BertMarti/commitling@v1` la recibe sin tocar nada.
 
 ### Añadido
 
 - **Tercera especie: el cactus** (`species: cactus`), de diseño propio: un cactus con ojos en su maceta de barro que pasa por **Yema**, **Bolita**, **Cactus**, **Cactus con brazos** y **Cactus centenario**, con las mismas reglas, ánimos y accesorios. Sale en la galería (claro, oscuro y compacta), en los dos generadores de la web, en `--species` y en la imagen de vista previa.
 - **Selector de tema de la web** (Sistema · Claro · Oscuro) en la cabecera: cambia la página y todas las tarjetas sin recargar, se aplica antes de pintar (sin parpadeo) y se recuerda en el navegador con la clave `commitling:theme` (solo `light` o `dark`; «Sistema» la borra y cualquier otro valor se ignora). Sin JavaScript, la web sigue al sistema como antes.
-- **Binario precompilado preparado** (inactivo hasta que una release lo active): `scripts/build-release.sh` compila los binarios de forma reproducible, `release.yml` los sube al publicar una release y la Action los usa en vez de compilar **solo** si el SHA-256 coincide con el `release/checksums.txt` de su propio árbol; si no, compila con Go como siempre.
+- **Binario precompilado, activo desde esta versión**: `scripts/build-release.sh` compila los binarios (Linux, macOS y Windows; amd64 y arm64) de forma reproducible, `release.yml` los sube al publicar la release y la Action los usa en vez de instalar Go y compilar **solo** si el SHA-256 coincide con el `release/checksums.txt` de su propio árbol (el de la 1.0.0 va en este commit); si no hay binario o algo falla, compila con Go como siempre. Los perfiles se ahorran el `setup-go` y la compilación en cada ejecución.
 - **Generador del workflow en la web** («Instálalo en tu perfil»): escribes tu usuario (o pegas el enlace de tu perfil), eliges especie, tema (claro, oscuro o **automático**, con las dos tarjetas y un `<picture>`) y tamaño, y copias el `.github/workflows/commitling.yml` y el fragmento del README ya rellenos. Seis pasos explicados para quien nunca ha usado Actions (repositorio de perfil, crear el archivo, permisos, primera ejecución con «Run workflow», README y resultado), enlaces directos a cada paso en GitHub (incluido «Abrir GitHub con el archivo ya relleno») y una lista «Si algo falla» con cada mensaje y qué hacer. Funciona sin red y sin wasm (`install.js`), no guarda nada y produce byte a byte lo mismo que `generate.Install` (test en Node y Go).
 - **`commitling workflow`** (alias `init`): imprime ese mismo workflow (`--user`, `--species`, `--theme light|dark|both`, `--size`) y dice qué pegar en el README.
 - **Mensajes de error que dicen qué hacer**, en español: usuario inexistente (404), token rechazado (401), acceso denegado (403), límite de peticiones (con la hora UTC a la que se restablece y si había token) y caídas de GitHub (5xx); el login no válido explica por qué («quita la @ del principio»…). Dentro de GitHub Actions el error sale también como anotación `::error` en el resumen de la ejecución.
@@ -43,11 +43,13 @@ Versión «Blindada»: seguridad, documentación, accesibilidad, una instalació
 - La prueba de la Action pasa `github.repository_owner` al script por `env:` en vez de interpolarlo.
 - La CLI (y por tanto la Action) **escribe el SVG de forma atómica** (archivo temporal y renombrado): una ejecución cancelada a medias ya no puede dejar un SVG cortado, que `keep-on-error` necesita entero. Mismo contenido, mismos permisos (0644).
 - `.gitignore` ignora `.env*` (salvo `.env.example`).
-- Versión de la CLI: `0.8.0`.
+- Versión de la CLI: `1.0.0` (la Action y la CLI van alineadas).
+- CI: el job `action` prueba siempre la ruta de `go run` (y el Go parcheado de cada llamada), sea cual sea el estado de la release, y el job `binario` prueba además la Action con el `release/checksums.txt` del repositorio contra la release real y exige que coincida con los binarios recompilados.
 
 ### Corregido
 
-- `docs/USO.md` recomendaba fijar `@v1.0.0`, una etiqueta que no existe (el workflow fallaría): ahora remite a las releases (`@v0.7.0`).
+- `docs/USO.md` recomendaba fijar `@v1.0.0` cuando esa etiqueta aún no existía (el workflow fallaba): ahora remite a las releases.
+- `docs/USO.md` decía que la Action aparece en el GitHub Marketplace (aún no está publicada allí) y que la etiqueta `v1` podía no existir (existe y apunta a la última versión publicada): ahora explica que basta la línea `uses:` y qué revisar si sale «unable to find version».
 
 ## [0.7.0] - 2026-10-01
 
@@ -175,8 +177,8 @@ Primera versión: el MVP.
 
 - Las acciones de los workflows suben de versión para evitar Node 20 (`checkout@v7`, `setup-go@v7`, `configure-pages@v6`, `upload-pages-artifact@v5` y `deploy-pages@v5`) (PR #2).
 
-[Sin publicar]: https://github.com/BertMarti/commitling/compare/v0.8.0...HEAD
-[0.8.0]: https://github.com/BertMarti/commitling/compare/v0.7.0...v0.8.0
+[Sin publicar]: https://github.com/BertMarti/commitling/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/BertMarti/commitling/compare/v0.7.0...v1.0.0
 [0.7.0]: https://github.com/BertMarti/commitling/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/BertMarti/commitling/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/BertMarti/commitling/compare/v0.4.0...v0.5.0
