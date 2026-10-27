@@ -92,7 +92,7 @@ jobs:
 
 No hace falta tocar nada más: la línea `permissions: contents: write` deja que el workflow guarde la imagen en tu repositorio con un token temporal que GitHub crea en cada ejecución, y la Action usa como usuario al dueño del repositorio.
 
-¿Tienes Go instalado y prefieres la terminal? Desde la versión 1.0.0, `go run github.com/BertMarti/commitling/cmd/commitling@latest workflow --user tu-usuario --theme both` escribe el mismo archivo (con `--theme both`, claro y oscuro).
+¿Tienes Go instalado y prefieres la terminal? `go run github.com/BertMarti/commitling/cmd/commitling@latest workflow --user tu-usuario --theme both` escribe el mismo archivo (con `--theme both`, claro y oscuro).
 
 ## Opciones
 
@@ -132,9 +132,6 @@ Las tres especies son originales y tienen las mismas reglas, fases, ánimos y ac
 </table>
 
 `species` también acepta `musgo`, `hongo` y `seta`, sin distinguir mayúsculas.
-
-> [!IMPORTANT]
-> **El cactus llega a la Action con la versión 1.0.0, que aún no está publicada.** Hasta entonces `@v1` es la v0.7.0, que solo conoce el brote de musgo y el hongo: con `species: cactus` el workflow sale en rojo con «especie no válida». En la [web](https://bertmarti.github.io/commitling/#generador) ya puedes ver el cactus con tu usuario y descargar su SVG.
 
 ### Tarjeta compacta
 
@@ -263,22 +260,22 @@ No. Es un diseño original, dibujado píxel a píxel para este proyecto.
 
 <details><summary>¿Qué versión uso?</summary>
 
-Usa `BertMarti/commitling@v1` para recibir mejoras compatibles. Si quieres fijar una versión concreta, usa una etiqueta exacta (por ejemplo `@v0.7.0`) o el SHA de un commit. Evita `@main`: es la rama de desarrollo.
+Usa `BertMarti/commitling@v1` para recibir mejoras compatibles. Si quieres fijar una versión concreta, usa una etiqueta exacta (por ejemplo `@v1.0.0`) o el SHA de un commit. Evita `@main`: es la rama de desarrollo.
 </details>
 
 ## Lo que tienes que hacer tú (mantenedor)
 
 Esto es solo para Alberto, que publica las versiones:
 
-1. **Publicar la v1.0.0 y mover `v1` a ella.** Desde un clon con `main` al día (las notas salen del `CHANGELOG.md`):
+1. **Publicar una versión nueva** (la guía paso a paso está en `.claude/skills/publicar-version/SKILL.md`). Con el PR de la versión fusionado y `main` al día, cambiando `X.Y.Z` por la versión:
 
    ```bash
-   gh release create v1.0.0 --repo BertMarti/commitling --target main --title "v1.0.0 · Primera versión estable" --notes "$(awk '/^## \[1.0.0\]/{f=1;next} /^## \[0.7.0\]/{f=0} f' CHANGELOG.md)"
-   git fetch --tags && git tag -f v1 v1.0.0 && git push -f origin v1
+   gh release create vX.Y.Z --repo BertMarti/commitling --target main --title "vX.Y.Z · …" --notes "$(awk '/^## \[X.Y.Z\]/{f=1;next} /^## \[/{f=0} f' CHANGELOG.md)"
+   git fetch --tags && git tag -f v1 vX.Y.Z && git push -f origin v1
    ```
 
-   Es compatible con la v0.7.0 (mismas entradas, misma salida y las tarjetas del musgo y del hongo idénticas), así que los perfiles que usan `@v1` siguen igual y ganan el cactus, los mensajes de error nuevos y el binario precompilado. Al publicar la release, el workflow «Release» sube los binarios (su SHA-256 ya está en `release/checksums.txt`); mientras tanto, o si algo falla, la Action compila con Go como siempre ([guía de desarrollo](docs/DESARROLLO.md#binario-precompilado)).
-2. **Después**, fusionar la rama `v1-tras-publicar` (ya preparada): quita el aviso «El cactus llega a la Action con la versión 1.0.0» de este README, de la guía de uso y de la web, y el «Desde la versión 1.0.0» de la orden `go run`.
+   Mueve `v1` solo si la versión es compatible (mismas entradas y salida de la Action). Si el commit de la versión lleva `release/checksums.txt`, el workflow «Release» sube los binarios precompilados ([guía de desarrollo](docs/DESARROLLO.md#binario-precompilado)).
+2. **Opcional:** publicar la Action en el GitHub Marketplace: edita la release en GitHub, marca «Publish this Action to the GitHub Marketplace» y acepta el acuerdo (solo la primera vez).
 
 ## Privacidad
 

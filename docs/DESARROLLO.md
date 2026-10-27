@@ -105,13 +105,13 @@ La entrada de la Action `keep-on-error` está activa por defecto. Si la caída e
 ## Versiones y GitHub Marketplace
 
 - `BertMarti/commitling@v1` sigue la versión mayor 1: la etiqueta móvil `v1` apunta a la última versión compatible y la mueve Alberto al publicar.
-- Una etiqueta exacta (`@v0.7.0`) o el SHA de un commit es lo más reproducible.
+- Una etiqueta exacta (`@v1.0.0`) o el SHA de un commit es lo más reproducible.
 - `@main` funciona, pero es la rama de desarrollo; los ejemplos nunca la usan (`TestExamplesUseV1`).
 - La Action declara nombre, descripción y `branding` (icono `feather`, color `green`) en `action.yml`, que es lo que muestra el Marketplace. **La interfaz de `action.yml` (entradas, salida `path`, archivos y formato del SVG) no se rompe**: hay perfiles que la usan a diario.
 
 ## Binario precompilado
 
-Sin binario, la Action compila la CLI con `go run` en cada ejecución. Desde la v1.0.0 usa en su lugar el binario precompilado de la release, **solo** si el árbol de la Action (la etiqueta a la que apunta `@v1`) contiene `release/checksums.txt` y el binario descargado tiene exactamente ese SHA-256. Si falta el archivo, la release aún no tiene binarios, la plataforma no está en la lista, falla la red o el SHA-256 no coincide, la Action compila con Go como siempre (con un aviso en el log); nunca falla por esto. El commit de la v1.0.0 lleva su `release/checksums.txt`, así que entre la fusión y la publicación de la release (y si el workflow «Release» fallara) los perfiles siguen compilando con Go.
+Sin binario, la Action compila la CLI con `go run` en cada ejecución. Desde la v1.0.0 usa en su lugar el binario precompilado de la release, **solo** si el árbol de la Action (la etiqueta a la que apunta `@v1`) contiene `release/checksums.txt` y el binario descargado tiene exactamente ese SHA-256. Si falta el archivo, la release aún no tiene binarios, la plataforma no está en la lista, falla la red o el SHA-256 no coincide, la Action compila con Go como siempre (con un aviso en el log); nunca falla por esto. El commit de cada versión (el de la etiqueta) lleva su `release/checksums.txt`; en `main` se borra tras publicarla (ver abajo), así que `@main` compila siempre con Go.
 
 - `scripts/build-release.sh <carpeta>` compila los 6 binarios (Linux, macOS y Windows; amd64 y arm64) de forma **reproducible** (`CGO_ENABLED=0`, `-trimpath`, `-buildvcs=false`, `-buildid=`, la versión exacta de Go de `go.mod`): el mismo código da los mismos bytes en cualquier máquina, así que el SHA-256 se puede subir **antes** de que exista la release.
 - `--write` copia los SHA-256 a `release/checksums.txt`; `--check` falla si no coinciden.

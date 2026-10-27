@@ -113,7 +113,7 @@ Qué hace este archivo, en cristiano:
 - `schedule` / `cron`: lo ejecuta solo cada día a las 05:23 UTC (07:23 en el horario de verano de la España peninsular, 06:23 en invierno). GitHub puede retrasar unos minutos las ejecuciones programadas.
 - `workflow_dispatch`: añade el botón **Run workflow** para lanzarlo a mano.
 - `permissions: contents: write`: le permite guardar la imagen en tu repositorio. Sin esto fallaría al guardar.
-- `BertMarti/commitling@v1`: es la Action de commitling, que crea el archivo `commitling.svg`. `@v1` significa «la versión 1»: recibes las mejoras compatibles sin tocar nada. Si prefieres fijar una versión exacta, usa una etiqueta exacta de las [releases](https://github.com/BertMarti/commitling/releases), por ejemplo `@v0.7.0`.
+- `BertMarti/commitling@v1`: es la Action de commitling, que crea el archivo `commitling.svg`. `@v1` significa «la versión 1»: recibes las mejoras compatibles sin tocar nada. Si prefieres fijar una versión exacta, usa una etiqueta exacta de las [releases](https://github.com/BertMarti/commitling/releases), por ejemplo `@v1.0.0`.
 - El último paso guarda `commitling.svg` en tu repositorio solo si ha cambiado, con un commit «chore: actualiza commitling».
 
 ### Paso 3. Añade la imagen a tu README
@@ -187,8 +187,6 @@ Valores que acepta `species` (sin distinguir mayúsculas ni espacios alrededor):
 | Cactus | `cactus` |
 
 Cualquier otro valor (por ejemplo `dragon`) hace fallar el paso a propósito, con el mensaje `especie no válida "dragon" (usa moss, mushroom o cactus)`, para que un error tipográfico no pase desapercibido, y no escribe ningún archivo. Puedes ver todas las fases de las tres especies en la [galería](https://bertmarti.github.io/commitling/#galeria).
-
-> **Ojo:** el cactus llega a la Action con la versión 1.0.0, que aún no está publicada. Mientras `@v1` siga en la v0.7.0, `species: cactus` falla con «especie no válida» (la v0.7.0 solo conoce `moss` y `mushroom`). En la web y en la CLI compilada desde `main` ya funciona.
 
 ¿Varias a la vez? Sí: usa la Action dos veces con `out` distinto (por ejemplo `commitling.svg` y `commitling-hongo.svg`, cada uno con su `species`), suma el segundo archivo al `git add` y enseña la imagen que quieras en el README.
 
@@ -329,7 +327,7 @@ En el workflow, la línea `uses: BertMarti/commitling@...` decide qué versión 
 | Escribes | Qué significa | Cuándo usarla |
 |---|---|---|
 | `@v1` | La versión mayor 1: la etiqueta `v1` se mueve con cada versión 1.x compatible, así que recibes mejoras y correcciones sin tocar nada | Lo recomendado |
-| `@v0.7.0` (o la última de las releases) | Una versión exacta, que nunca cambia | Si quieres controlar tú cuándo actualizas |
+| `@v1.0.0` (o la última de las releases) | Una versión exacta, que nunca cambia | Si quieres controlar tú cuándo actualizas |
 | `@<sha>` (huella de un commit) | Una copia exacta del código, la opción más reproducible | Si te importa la máxima seguridad |
 | `@main` | La rama de desarrollo, que puede cambiar en cualquier momento (y romper tu workflow) | Solo para probar cambios |
 
