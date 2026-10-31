@@ -518,6 +518,18 @@ func TestPageDoesNotOverflowOnPhones(t *testing.T) {
 	if got := rules.propIn(t, phone, "td:first-child", "white-space"); got != "normal" {
 		t.Errorf("on a phone the first column of a table must be able to wrap, white-space = %q", got)
 	}
+	// The stages table lists the names of every species in one cell
+	// («Semilla / Espora / Yema / Pepita»): with nowrap it pushed the page
+	// wider between ~720 and ~1350 px. The names wrap; «desde 2.500 XP» does not.
+	if got := rules.prop(".fases td:first-child", "white-space"); got != "normal" {
+		t.Errorf("the names of the stages table must wrap at every width, white-space = %q", got)
+	}
+	if got := rules.prop(".fases td:last-child", "white-space"); got != "nowrap" {
+		t.Errorf("the XP of the stages table must stay on one line, white-space = %q", got)
+	}
+	if !strings.Contains(readRepoFile(t, "internal/gallery/index.html.tmpl"), `<table class="fases">`+"\n        <caption>Fases</caption>") {
+		t.Error(`the stages table must have class="fases"`)
+	}
 
 	for _, r := range rules {
 		last := r.sel[strings.LastIndex(r.sel, " ")+1:]
