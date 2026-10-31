@@ -21,7 +21,7 @@ go run ./cmd/commitling render --fixture testdata/events.json --out out/commitli
 # Con tu usuario real (GITHUB_TOKEN es opcional, sube el límite de peticiones)
 go run ./cmd/commitling render --user tu-usuario --out out/commitling.svg
 
-# Otra especie (moss por defecto, mushroom o cactus)
+# Otra especie (moss por defecto, mushroom, cactus o pumpkin)
 go run ./cmd/commitling render --fixture testdata/events.json --species mushroom --out out/hongo.svg
 
 # Web con todas las fases, ánimos y accesorios (y og.png)
@@ -87,26 +87,26 @@ Archivos exactos, en este orden:
 
 1. `internal/creature/creature.go`: añade la constante de `Species` **después** de `Mushroom` (así el valor cero sigue siendo el brote de musgo) y una entrada, en el mismo orden, en cada uno de estos cuatro sitios: `AllSpecies`, `speciesNames` (nombre en español), `speciesSlugs` (ASCII: es lo que se escribe en `species:` y en `--species`) y `speciesStageNames` (los nombres en español de sus cinco fases). Si quieres alias, añádelos al `switch` de `SpeciesByName`.
 2. Un archivo nuevo en `internal/creature/` (como `mushroom.go`) con su `[...]stageArt` de cinco mapas 16×16 (`body`, `face`, `hat`, `scarf`, `flower`), y engánchalo en `artFor` de `internal/creature/sprites.go` (un `switch`: añade un `case`). La cara (8×4) va sobre un relleno, la fila de la bufanda debe ser un tramo continuo y el gorro y la flor no pueden tapar la cara. Usa solo la paleta de 5 colores y no copies mapas de otra especie ni de ninguna obra ajena.
-3. `cmd/commitling/main.go`: el mensaje «especie no válida … (usa moss, mushroom o cactus)» y la ayuda de `--species` (en el comentario del archivo y en `usage`) listan los valores; añade el nuevo. Igual el texto de la entrada `species` de `action.yml`.
+3. `cmd/commitling/main.go`: el mensaje «especie no válida … (usa moss, mushroom, cactus o pumpkin)» y la ayuda de `--species` (en el comentario del archivo y en `usage`) listan los valores; añade el nuevo. Igual el texto de la entrada `species` de `action.yml`.
 4. La galería (`internal/gallery`), la tarjeta SVG y la imagen Open Graph (`internal/og`) recorren `AllSpecies`, así que la nueva especie sale sin más cambios: genera la web y la imagen y revísalas en claro y oscuro.
 5. Actualiza las tablas de especies del `README.md` y de `docs/USO.md` (valores de `species` y nombres de las fases), el `CHANGELOG.md` y `MEMORY.md`.
 
 Tests que deben pasar (y qué tocar en ellos):
 
-- `internal/creature`: `TestSpeciesNamesAndSlugs` (fija `len(AllSpecies) != 3`: sube el número; comprueba nombres, slugs únicos y cinco nombres de fase), `TestSpeciesByName` (añade los alias), `TestAnchorsFitTheBody` (cara sobre relleno, bufanda continua, gorro y flor sin tapar la cara, para todas las especies y fases), `TestDrawUsesPalette` (solo colores de la paleta), `TestSpeciesDrawDifferently` (cada especie se dibuja distinta y de forma determinista, y cada fase distinta de las demás) y un test como `TestCactusMapsAreNotTheOthers` para tu especie (ningún mapa igual a los de las demás).
+- `internal/creature`: `TestSpeciesNamesAndSlugs` (fija `len(AllSpecies) != 4`: sube el número; comprueba nombres, slugs únicos y cinco nombres de fase), `TestSpeciesByName` (añade los alias), `TestAnchorsFitTheBody` (cara sobre relleno, bufanda continua, gorro y flor sin tapar la cara, para todas las especies y fases), `TestDrawUsesPalette` (solo colores de la paleta), `TestSpeciesDrawDifferently` (cada especie se dibuja distinta y de forma determinista, y cada fase distinta de las demás) y un test como `TestCactusMapsAreNotTheOthers` para tu especie (ningún mapa igual a los de las demás).
 - `internal/render`: la tarjeta es XML válido, determinista y el texto cabe, para todas las especies (`TestMushroomCard` es el modelo).
 - `internal/gallery`: `TestBuildShowsBothSpecies`, `TestBuildIsDeterministic`, `TestGalleryAltsAreUnique` y `TestPageHasSkipLinkAndSpeciesNav`.
 - `internal/og`: las cinco fases de cada especie aparecen (`TestStageRowsShowAllStages`) y todo cabe en el marco.
 - `cmd/commitling`: la especie inválida sigue fallando antes de tocar la red y el mensaje lista los valores.
 - `internal/gallery/action_test.go`: `action.yml` y la tabla de entradas del README siguen coincidiendo.
-- `.github/workflows/action-test.yml` prueba `species: mushroom` y `species: cactus`; añade un paso para la nueva. También el bucle `for sp in …` de los workflows generados en `ci.yml`, la lista `ALLOWED.species` de `internal/gallery/install.js` y la de `internal/gallery/testdata/install.test.js` (y el número de casos de `TestInstallJSMatchesGo`).
-- `internal/og`: si la fila de fases ya no cabe sobre el nombre de la web, ajusta `stageY`, `stageRowH` y `siteY` (con tres especies, 380, 56 y 556).
+- `.github/workflows/action-test.yml` prueba `species: mushroom`, `species: cactus` y `species: pumpkin`; el bucle `for sp in …` de `ci.yml`, la lista `ALLOWED.species` de `internal/gallery/install.js` y la de `internal/gallery/testdata/install.test.js` cubren las cuatro especies (96 casos en `TestInstallJSMatchesGo`).
+- `internal/og`: la imagen OG coloca dos especies por fila (`stagePos`); con más de cuatro hay que añadir una fila y comprobar que cabe sobre `siteY`.
 - `internal/gallery`: el número de archivos de `TestBuild` y los `alt` únicos (`TestGalleryAltsAreUnique`): un nombre de fase no puede repetir el de otra especie con las mismas estadísticas (por eso la primera fase del cactus es «Yema» y no «Semilla»).
 - Comprueba que las especies existentes no cambian ni un byte: genera la galería en `main` y en tu rama y compara con `diff -r` (solo deben aparecer archivos nuevos de tu especie, `index.html`, `og.png` y los scripts).
 
 ## Regla de diseño: personaje original
 
-Las criaturas son **diseño propio**: un brote de musgo con ojos, una seta pequeña con ojos y un cactus con ojos en su maceta, dibujados píxel a píxel. Está prohibido imitar criaturas de videojuegos, anime o marcas, y no se aceptan sprites, nombres ni siluetas tomados de otras obras.
+Las criaturas son **diseño propio**: un brote de musgo con ojos, una seta pequeña con ojos, un cactus con ojos en su maceta y una calabaza de huerto con ojos, dibujados píxel a píxel. Está prohibido imitar criaturas de videojuegos, anime o marcas, y no se aceptan sprites, nombres ni siluetas tomados de otras obras.
 
 Respeta también el estilo «papel y píxel» de [AGENTS.md](AGENTS.md): paleta de la criatura limitada a 5 colores (`#2b2724`, `#f3efe6`, `#7fb069`, `#e6aa68`, `#ca3c25`), píxeles nítidos, sin degradados ni sombras, animaciones suaves y respetando `prefers-reduced-motion`.
 
