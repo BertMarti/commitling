@@ -205,7 +205,8 @@ func Build(dir, version string) (int, error) {
 	intros := map[creature.Species]string{
 		creature.MossSprout: "La especie predeterminada: un brote de musgo con ojos que acaba siendo un árbol ancestral.",
 		creature.Mushroom:   "Una seta pequeña con ojos que empieza siendo una espora y acaba en un corro de setas. Se elige con <code>species: mushroom</code>.",
-		creature.Cactus:     "Un cactus pequeño en su maceta que empieza siendo una semilla y acaba en un cactus centenario. Se elige con <code>species: cactus</code>.",
+		creature.Cactus:     "Un cactus pequeño en su maceta que empieza siendo una yema y acaba en un cactus centenario. Se elige con <code>species: cactus</code>.",
+		creature.Pumpkin:    "Una calabaza de huerto con ojos que empieza siendo una pepita y acaba en una calabaza gigante. Se elige con <code>species: pumpkin</code>.",
 	}
 	for _, sp := range creature.AllSpecies {
 		// The default species keeps the file names of the first release.

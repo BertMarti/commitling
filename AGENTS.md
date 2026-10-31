@@ -80,6 +80,10 @@ Una mascota pixel-art **original** que vive en el README de tu perfil de GitHub.
 - Lo que solo es cierto tras publicar (quitar «el cactus aún no está en `@v1`», «desde la versión 1.0.0» de `go run …@latest`, ejemplos `@v1.0.0`) va en la rama `v1-tras-publicar`, que además borra `release/checksums.txt` (cambia la plantilla embebida).
 - Semver a partir de aquí: la interfaz de `action.yml` y el formato del SVG solo cambian de forma incompatible en una `v2`; mejoras compatibles → 1.x (menor), arreglos → parche.
 
+## Versión 1.1.0 (31/10/2026)
+- **Cuarta especie `pumpkin`** (`internal/creature/pumpkin.go`, «Calabaza»). La OG coloca dos especies por fila (`stagePos` en `internal/og/og.go`).
+- Mismo ciclo que la 1.0.0: el último commit del PR lleva `release/checksums.txt`; lo que solo es cierto tras publicar (quitar «la calabaza llega con la 1.1.0», borrar `release/checksums.txt` de `main`) va en la rama `v1.1-tras-publicar`.
+
 ## Reglas de contenido
 - El personaje es **diseño propio**. Prohibido imitar criaturas de videojuegos, anime o marcas.
 - Las reglas de fase y ánimo están documentadas en el README y son deterministas (mismos datos, mismo SVG).

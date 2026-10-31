@@ -53,6 +53,15 @@ jobs:
           species: cactus
           out: out/cactus.svg
 
+      - name: Action con la especie calabaza (sin red)
+        id: pumpkin
+        uses: ./
+        with:
+          user: ""
+          fixture: testdata/events.json
+          species: pumpkin
+          out: out/pumpkin.svg
+
       - name: Action con la tarjeta compacta (sin red)
         id: compact
         uses: ./
@@ -145,6 +154,7 @@ jobs:
           FIXTURE_PATH: ${{ steps.fixture.outputs.path }}
           MUSHROOM_PATH: ${{ steps.mushroom.outputs.path }}
           CACTUS_PATH: ${{ steps.cactus.outputs.path }}
+          PUMPKIN_PATH: ${{ steps.pumpkin.outputs.path }}
           COMPACT_PATH: ${{ steps.compact.outputs.path }}
           BADSIZE_OUTCOME: ${{ steps.badsize.outcome }}
           REAL_PATH: ${{ steps.real.outputs.path }}
@@ -165,7 +175,7 @@ jobs:
           test "$NOUSER_OUTCOME" = failure || { echo 'un usuario inexistente debería fallar'; exit 1; }
           cmp out/nouser.svg "$FIXTURE_PATH" || { echo 'el SVG previo del usuario inexistente cambió'; exit 1; }
           cmp out/keep.svg "$FIXTURE_PATH" || { echo 'el SVG previo cambió'; exit 1; }
-          for f in "$FIXTURE_PATH" "$MUSHROOM_PATH" "$CACTUS_PATH" "$COMPACT_PATH" "$REAL_PATH"; do
+          for f in "$FIXTURE_PATH" "$MUSHROOM_PATH" "$CACTUS_PATH" "$PUMPKIN_PATH" "$COMPACT_PATH" "$REAL_PATH"; do
             test -s "$f"
             head -c 120 "$f"; echo
             grep -q '</svg>' "$f"
@@ -178,6 +188,8 @@ jobs:
           if grep -q 'Retoño' "$MUSHROOM_PATH"; then echo 'la especie hongo no se aplicó'; exit 1; fi
           grep -q 'Cactus' "$CACTUS_PATH"
           if grep -q 'Retoño' "$CACTUS_PATH"; then echo 'la especie cactus no se aplicó'; exit 1; fi
+          grep -q 'Calabacita' "$PUMPKIN_PATH"
+          if grep -q 'Retoño' "$PUMPKIN_PATH"; then echo 'la especie calabaza no se aplicó'; exit 1; fi
           grep -q "@$OWNER" "$REAL_PATH"
           grep -q '#2b2724' "$REAL_PATH"
 

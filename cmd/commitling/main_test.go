@@ -94,7 +94,7 @@ func TestMissingFixture(t *testing.T) {
 
 func TestVersionAndGallery(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	if err := run([]string{"version"}, &stdout, &stderr); err != nil || stdout.String() != "commitling 1.0.0\n" {
+	if err := run([]string{"version"}, &stdout, &stderr); err != nil || stdout.String() != "commitling 1.1.0\n" {
 		t.Fatalf("version: %v %q", err, stdout.String())
 	}
 	dir := t.TempDir()
@@ -191,7 +191,7 @@ func TestRenderInvalidSpeciesFailsEarlyAndClearly(t *testing.T) {
 			t.Errorf("%q: err = %v, want a usage error", bad, err)
 			continue
 		}
-		for _, want := range []string{"especie no válida", bad, "moss", "mushroom", "cactus"} {
+		for _, want := range []string{"especie no válida", bad, "moss", "mushroom", "cactus", "pumpkin"} {
 			if !strings.Contains(err.Error(), want) {
 				t.Errorf("%q: message %q should contain %q", bad, err, want)
 			}
@@ -409,7 +409,7 @@ func TestRenderMatchesGenerateRender(t *testing.T) {
 		t.Fatal(err)
 	}
 	now := time.Date(2026, 9, 29, 12, 0, 0, 0, time.UTC)
-	for _, sp := range []string{"moss", "mushroom", "cactus"} {
+	for _, sp := range []string{"moss", "mushroom", "cactus", "pumpkin"} {
 		for _, th := range []string{"light", "dark"} {
 			var stdout, stderr bytes.Buffer
 			args := []string{"render", "--fixture", fixture, "--user", "octoexample", "--species", sp, "--theme", th,

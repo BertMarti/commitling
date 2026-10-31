@@ -23,7 +23,7 @@ inputs:
     required: false
     default: ${{ github.token }}
   species:
-    description: Especie de la criatura, moss (brote de musgo, la predeterminada), mushroom (hongo) o cactus.
+    description: Especie de la criatura, moss (brote de musgo, la predeterminada), mushroom (hongo), cactus o pumpkin (calabaza).
     required: false
     default: moss
   size:

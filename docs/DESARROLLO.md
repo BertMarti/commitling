@@ -16,7 +16,7 @@ go run ./cmd/commitling render --fixture testdata/events.json --out out/commitli
 # Tema oscuro y fecha de referencia fija, a la salida estándar
 go run ./cmd/commitling render --fixture testdata/events.json --theme dark --now 2026-10-01T12:00:00Z --out -
 
-# Otra especie (moss por defecto, mushroom o cactus)
+# Otra especie (moss por defecto, mushroom, cactus o pumpkin)
 go run ./cmd/commitling render --fixture testdata/events.json --species mushroom --out out/hongo.svg
 
 # Si la API tiene una caída transitoria y out/commitling.svg ya existe, lo conserva (aviso, código de salida 0)
@@ -31,7 +31,7 @@ go run ./cmd/commitling og --out out/og.png
 go run ./cmd/commitling version
 ```
 
-Con `--fixture` y sin `--now`, se usa la fecha del último evento del fixture. `--species` acepta `moss`, `mushroom` o `cactus` y `--size` acepta `full` o `compact`.
+Con `--fixture` y sin `--now`, se usa la fecha del último evento del fixture. `--species` acepta `moss`, `mushroom`, `cactus` o `pumpkin` y `--size` acepta `full` o `compact`.
 
 ## Stack
 

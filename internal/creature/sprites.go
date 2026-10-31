@@ -98,6 +98,8 @@ func artFor(sp Species, st Stage) stageArt {
 		return mushroomArt[st]
 	case Cactus:
 		return cactusArt[st]
+	case Pumpkin:
+		return pumpkinArt[st]
 	default:
 		return mossArt[st]
 	}

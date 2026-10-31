@@ -6,10 +6,21 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ## [Sin publicar]
 
+## [1.1.0] - 2026-10-31
+
+Una especie nueva y nada más que cambie para quien ya usa commitling: **la interfaz de `action.yml` es la misma** (mismas entradas con los mismos valores por defecto, misma salida `path`, mismos archivos; solo cambia el texto de ayuda de `species` para nombrar la nueva) y las tarjetas del brote de musgo, el hongo y el cactus son byte a byte las de la v1.0.0. Con `@v1` no hay que hacer nada.
+
+### Añadido
+
+- **Cuarta especie: la calabaza** (`species: pumpkin`, también vale `calabaza`), de diseño propio: una calabaza de huerto con ojos que pasa por **Pepita** (una pepita con un brote), **Plántula** (dos hojas redondas con la cáscara de la pepita encima), **Calabacita** (verde y rayada), **Calabaza** (naranja, con gajos, hoja y zarcillo) y **Calabaza gigante**, con las mismas reglas, ánimos y accesorios. Está en la Action, en `--species` de la CLI (`render` y `workflow`), en la galería de la web (claro, oscuro y tarjeta compacta), en los dos generadores de la web y en la imagen de vista previa.
+
 ### Cambiado
 
-- Con la v1.0.0 publicada y `v1` apuntando a ella, el README, la guía de uso y la web dejan de avisar de que el cactus y `go run …@latest workflow` necesitan una versión aún sin publicar, y los ejemplos de versión exacta pasan a `@v1.0.0`.
-- `release/checksums.txt` sale de `main`: describe los binarios de la v1.0.0 ya publicada (va en su etiqueta) y no los de `main`, que ha cambiado. La próxima versión lo vuelve a generar en su commit.
+- La imagen de vista previa (`og.png`) coloca las fases de dos especies por fila para que quepan las cuatro.
+- La web describía el cactus como «una semilla» al empezar; su primera fase es la **yema**.
+- Con la v1.0.0 publicada y `v1` apuntando a ella, el README, la guía de uso y la web dejaron de avisar de que el cactus y `go run …@latest workflow` necesitaban una versión aún sin publicar, y los ejemplos de versión exacta pasaron a `@v1.0.0`.
+- `release/checksums.txt` vuelve con los SHA-256 de los binarios de la 1.1.0 (tras la 1.0.0 había salido de `main`).
+- Versión de la CLI: `1.1.0`.
 
 ## [1.0.0] - 2026-10-26
 
@@ -182,7 +193,8 @@ Primera versión: el MVP.
 
 - Las acciones de los workflows suben de versión para evitar Node 20 (`checkout@v7`, `setup-go@v7`, `configure-pages@v6`, `upload-pages-artifact@v5` y `deploy-pages@v5`) (PR #2).
 
-[Sin publicar]: https://github.com/BertMarti/commitling/compare/v1.0.0...HEAD
+[Sin publicar]: https://github.com/BertMarti/commitling/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/BertMarti/commitling/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/BertMarti/commitling/compare/v0.7.0...v1.0.0
 [0.7.0]: https://github.com/BertMarti/commitling/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/BertMarti/commitling/compare/v0.5.0...v0.6.0

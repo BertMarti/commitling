@@ -17,7 +17,7 @@
 <meta property="og:description" content="{{.Description}}">
 <meta property="og:url" content="{{.SiteURL}}">
 <meta property="og:image" content="{{.OGImage}}">
-<meta property="og:image:alt" content="commitling: un retoño pixel-art con una flor y, debajo del nombre, las cinco fases de cada una de las tres especies: el brote de musgo, el hongo y el cactus">
+<meta property="og:image:alt" content="commitling: un retoño pixel-art con una flor y, debajo del nombre, las cinco fases de cada una de las cuatro especies: el brote de musgo, el hongo, el cactus y la calabaza">
 <meta property="og:image:type" content="image/png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -204,7 +204,7 @@
         <caption>Experiencia</caption>
         <tbody>{{range .XP}}<tr><td>{{.Name}}</td><td>{{.When}}</td></tr>{{end}}</tbody>
       </table>
-      <table>
+      <table class="fases">
         <caption>Fases</caption>
         <tbody>{{range .Stages}}<tr><td>{{.Name}}</td><td>{{.When}}</td></tr>{{end}}</tbody>
       </table>
@@ -235,6 +235,7 @@
         <div class="opts">{{range $i, $c := .GenSpecies}}
           <div class="opt"><input type="radio" name="ins-species" value="{{$c.Value}}" id="ins-sp-{{$c.Value}}"{{if eq $i 0}} checked{{end}}><label for="ins-sp-{{$c.Value}}">{{$c.Label}}</label></div>{{end}}
         </div>
+        <p class="note hint">La calabaza llega con la versión 1.1.0: si tu workflow falla con «especie no válida», es que <code>@v1</code> aún no la incluye; vuelve a ejecutarlo cuando se publique.</p>
       </fieldset>
       <fieldset>
         <legend>Tema</legend>

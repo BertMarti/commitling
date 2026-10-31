@@ -216,7 +216,7 @@ func TestDrawChangesWithMoodAndAccessories(t *testing.T) {
 }
 
 func TestSpeciesNamesAndSlugs(t *testing.T) {
-	if len(AllSpecies) != 3 || AllSpecies[0] != MossSprout {
+	if len(AllSpecies) != 4 || AllSpecies[0] != MossSprout {
 		t.Fatalf("AllSpecies = %v, want the default first", AllSpecies)
 	}
 	if (Creature{}).Species != MossSprout {
@@ -246,6 +246,9 @@ func TestSpeciesNamesAndSlugs(t *testing.T) {
 	if Cactus.StageName(Seed) != "Yema" || Cactus.StageName(Sprout) != "Bolita" || Cactus.StageName(Sapling) != "Cactus" || Cactus.StageName(Shrub) != "Cactus con brazos" || Cactus.StageName(Ancient) != "Cactus centenario" {
 		t.Error("unexpected cactus stage names")
 	}
+	if Pumpkin.StageName(Seed) != "Pepita" || Pumpkin.StageName(Sprout) != "Plántula" || Pumpkin.StageName(Sapling) != "Calabacita" || Pumpkin.StageName(Shrub) != "Calabaza" || Pumpkin.StageName(Ancient) != "Calabaza gigante" {
+		t.Error("unexpected pumpkin stage names")
+	}
 }
 
 func TestSpeciesByName(t *testing.T) {
@@ -253,6 +256,7 @@ func TestSpeciesByName(t *testing.T) {
 		"": MossSprout, "  ": MossSprout, "moss": MossSprout, "MOSS": MossSprout, "musgo": MossSprout, "Brote de musgo": MossSprout,
 		"mushroom": Mushroom, " Mushroom ": Mushroom, "hongo": Mushroom, "seta": Mushroom,
 		"cactus": Cactus, " CACTUS ": Cactus,
+		"pumpkin": Pumpkin, " PUMPKIN ": Pumpkin, "calabaza": Pumpkin, "Calabaza": Pumpkin,
 	}
 	for in, want := range ok {
 		got, found := SpeciesByName(in)
@@ -333,6 +337,17 @@ func TestCactusMapsAreNotTheOthers(t *testing.T) {
 		}
 		if cactusArt[st].body == mushroomArt[st].body {
 			t.Errorf("stage %d: cactus body equals the mushroom body", st)
+		}
+	}
+}
+
+// The pumpkin is its own design: it must not reuse another species' maps.
+func TestPumpkinMapsAreNotTheOthers(t *testing.T) {
+	for _, st := range Stages {
+		for name, other := range map[string]stageArt{"moss": mossArt[st], "mushroom": mushroomArt[st], "cactus": cactusArt[st]} {
+			if pumpkinArt[st].body == other.body {
+				t.Errorf("stage %d: pumpkin body equals the %s body", st, name)
+			}
 		}
 	}
 }

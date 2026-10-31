@@ -26,7 +26,7 @@ commitling es una GitHub Action que lee tu actividad pública, calcula tu experi
 - Crece con tus commits, pull requests, issues y demás actividad pública.
 - Cambia de ánimo según tu actividad reciente y tu racha.
 - Desbloquea gorro, bufanda y flor.
-- Tiene tema claro u oscuro y tres especies: brote de musgo, hongo o cactus.
+- Tiene tema claro u oscuro y cuatro especies: brote de musgo, hongo, cactus o calabaza.
 
 ## 🎮 Pruébalo sin instalar nada
 
@@ -103,7 +103,7 @@ Puedes añadir estas entradas dentro de `with:`:
 | `user` | `${{ github.repository_owner }}` | Usuario cuya actividad pública se dibuja |
 | `out` | `commitling.svg` | Archivo donde se guarda el SVG |
 | `theme` | `light` | Usa `light` (papel) o `dark` (tinta) |
-| `species` | `moss` | Elige `moss` (brote de musgo), `mushroom` (hongo) o `cactus` |
+| `species` | `moss` | Elige `moss` (brote de musgo), `mushroom` (hongo), `cactus` o `pumpkin` (calabaza) |
 | `size` | `full` | Usa la tarjeta completa o la insignia `compact` de 200x60 |
 | `token` | `${{ github.token }}` | Token de la API; normalmente basta el del workflow |
 | `fixture` | vacío | Archivo de eventos para probar sin red |
@@ -113,25 +113,28 @@ La salida `path` contiene la ruta absoluta del SVG generado. La Action crea el a
 
 ## Especies
 
-Las tres especies son originales y tienen las mismas reglas, fases, ánimos y accesorios.
+Las cuatro especies son originales y tienen las mismas reglas, fases, ánimos y accesorios.
 
-| Fase | Desde | Brote de musgo (`moss`) | Hongo (`mushroom`) | Cactus (`cactus`) |
-|---|---|---|---|---|
-| 1 | 0 XP | Semilla | Espora | Yema |
-| 2 | 100 XP | Brote | Botón | Bolita |
-| 3 | 400 XP | Retoño | Seta | Cactus |
-| 4 | 1.000 XP | Arbusto | Seta grande | Cactus con brazos |
-| 5 | 2.500 XP | Árbol ancestral | Corro de setas | Cactus centenario |
+| Fase | Desde | Brote de musgo (`moss`) | Hongo (`mushroom`) | Cactus (`cactus`) | Calabaza (`pumpkin`) |
+|---|---|---|---|---|---|
+| 1 | 0 XP | Semilla | Espora | Yema | Pepita |
+| 2 | 100 XP | Brote | Botón | Bolita | Plántula |
+| 3 | 400 XP | Retoño | Seta | Cactus | Calabacita |
+| 4 | 1.000 XP | Arbusto | Seta grande | Cactus con brazos | Calabaza |
+| 5 | 2.500 XP | Árbol ancestral | Corro de setas | Cactus centenario | Calabaza gigante |
 
 <table>
   <tr>
     <td align="center"><img alt="Árbol ancestral radiante (brote de musgo)" src="https://bertmarti.github.io/commitling/svg/ancient-radiant.svg" width="260"><br><sub><code>moss</code>: árbol ancestral, radiante</sub></td>
     <td align="center"><img alt="Corro de setas radiante (hongo)" src="https://bertmarti.github.io/commitling/svg/mushroom-ancient-radiant.svg" width="260"><br><sub><code>mushroom</code>: corro de setas, radiante</sub></td>
     <td align="center"><img alt="Cactus centenario radiante (cactus)" src="https://bertmarti.github.io/commitling/svg/cactus-ancient-radiant.svg" width="260"><br><sub><code>cactus</code>: cactus centenario, radiante</sub></td>
+    <td align="center"><img alt="Calabaza gigante radiante (calabaza)" src="https://bertmarti.github.io/commitling/svg/pumpkin-ancient-radiant.svg" width="260"><br><sub><code>pumpkin</code>: calabaza gigante, radiante</sub></td>
   </tr>
 </table>
 
-`species` también acepta `musgo`, `hongo` y `seta`, sin distinguir mayúsculas.
+La calabaza llega con la versión 1.1.0. Si al usarla el paso falla con «especie no válida», es que `@v1` aún no apunta a la 1.1.0: vuelve a intentarlo cuando se publique.
+
+`species` también acepta `musgo`, `hongo`, `seta` y `calabaza`, sin distinguir mayúsculas.
 
 ### Tarjeta compacta
 
@@ -151,6 +154,7 @@ Si la añades como un paso más, suma `commitling-compact.svg` al `git add` del 
     <td align="center"><img alt="Arbusto contento, tarjeta compacta (brote de musgo)" src="https://bertmarti.github.io/commitling/svg/compact-shrub.svg" width="200" height="60"></td>
     <td align="center"><img alt="Seta grande contenta, tarjeta compacta (hongo)" src="https://bertmarti.github.io/commitling/svg/compact-mushroom-shrub.svg" width="200" height="60"></td>
     <td align="center"><img alt="Cactus con brazos contento, tarjeta compacta (cactus)" src="https://bertmarti.github.io/commitling/svg/compact-cactus-shrub.svg" width="200" height="60"></td>
+    <td align="center"><img alt="Calabaza contenta, tarjeta compacta (calabaza)" src="https://bertmarti.github.io/commitling/svg/compact-pumpkin-shrub.svg" width="200" height="60"></td>
   </tr>
 </table>
 
@@ -250,7 +254,7 @@ Sí. Solo cuentan los últimos 90 días, así que la XP y los accesorios pueden 
 
 <details><summary>¿Cómo cambio a la seta o al tema oscuro?</summary>
 
-Añade `species: mushroom` (o `species: cactus`) o `theme: dark` en `with:`. Para el tema oscuro, genera las dos imágenes y usa el bloque `<picture>` de esta página.
+Añade `species: mushroom` (o `species: cactus` o `species: pumpkin`) o `theme: dark` en `with:`. Para el tema oscuro, genera las dos imágenes y usa el bloque `<picture>` de esta página.
 </details>
 
 <details><summary>¿La criatura es de algún videojuego?</summary>

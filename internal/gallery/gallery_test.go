@@ -40,7 +40,7 @@ func TestBuild(t *testing.T) {
 	// dark, plus favicon, og.png, generator.js, page.js, theme.js, install.js, style.css and index (the hero of the header is
 	// one of the accessory cards), plus the compact badges: per species, one
 	// per stage, light and dark.
-	if want := 3*(20+4)*2 + 8 + 3*5*2; n != want {
+	if want := 4*(20+4)*2 + 8 + 4*5*2; n != want {
 		t.Fatalf("Build wrote %d files, want %d", n, want)
 	}
 
@@ -518,6 +518,18 @@ func TestPageDoesNotOverflowOnPhones(t *testing.T) {
 	if got := rules.propIn(t, phone, "td:first-child", "white-space"); got != "normal" {
 		t.Errorf("on a phone the first column of a table must be able to wrap, white-space = %q", got)
 	}
+	// The stages table lists the names of every species in one cell
+	// («Semilla / Espora / Yema / Pepita»): with nowrap it pushed the page
+	// wider between ~720 and ~1350 px. The names wrap; «desde 2.500 XP» does not.
+	if got := rules.prop(".fases td:first-child", "white-space"); got != "normal" {
+		t.Errorf("the names of the stages table must wrap at every width, white-space = %q", got)
+	}
+	if got := rules.prop(".fases td:last-child", "white-space"); got != "nowrap" {
+		t.Errorf("the XP of the stages table must stay on one line, white-space = %q", got)
+	}
+	if !strings.Contains(readRepoFile(t, "internal/gallery/index.html.tmpl"), `<table class="fases">`+"\n        <caption>Fases</caption>") {
+		t.Error(`the stages table must have class="fases"`)
+	}
 
 	for _, r := range rules {
 		last := r.sel[strings.LastIndex(r.sel, " ")+1:]
@@ -582,6 +594,43 @@ func TestFullCardsAreByteIdenticalToV050(t *testing.T) {
 	}
 	if want := 2*(20+4)*2 + 1; n != want { // 96 cards and favicon.svg
 		t.Errorf("the golden list has %d files, want %d (96 cards and favicon.svg)", n, want)
+	}
+}
+
+// A new species must not change a single byte of what v1.0.0 drew for the
+// species it already had: every card (full and compact, light and dark) of
+// the moss sprout, the mushroom and the cactus, and favicon.svg.
+// testdata/golden/v1.0.0-sha256.txt holds their SHA-256, taken from the
+// v1.0.0 gallery.
+func TestCardsAreByteIdenticalToV100(t *testing.T) {
+	list, err := os.ReadFile("../../testdata/golden/v1.0.0-sha256.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	if _, err := Build(dir, "test"); err != nil {
+		t.Fatal(err)
+	}
+	n := 0
+	for _, line := range strings.Split(strings.TrimSpace(strings.ReplaceAll(string(list), "\r\n", "\n")), "\n") {
+		sum, name, ok := strings.Cut(line, "  ")
+		if !ok {
+			t.Fatalf("bad line in the golden list: %q", line)
+		}
+		data, err := os.ReadFile(filepath.Join(dir, filepath.FromSlash(name)))
+		if err != nil {
+			t.Errorf("%s: %v", name, err)
+			continue
+		}
+		if got := fmt.Sprintf("%x", sha256.Sum256(data)); got != sum {
+			t.Errorf("%s changed: sha256 %s, v1.0.0 had %s", name, got, sum)
+		}
+		n++
+	}
+	// Three species × (20 stage cards + 4 accessory cards + 5 compact
+	// badges) × light and dark, plus favicon.svg.
+	if want := 3*(20+4+5)*2 + 1; n != want {
+		t.Errorf("the golden list has %d files, want %d", n, want)
 	}
 }
 
