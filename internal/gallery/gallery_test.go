@@ -585,6 +585,43 @@ func TestFullCardsAreByteIdenticalToV050(t *testing.T) {
 	}
 }
 
+// A new species must not change a single byte of what v1.0.0 drew for the
+// species it already had: every card (full and compact, light and dark) of
+// the moss sprout, the mushroom and the cactus, and favicon.svg.
+// testdata/golden/v1.0.0-sha256.txt holds their SHA-256, taken from the
+// v1.0.0 gallery.
+func TestCardsAreByteIdenticalToV100(t *testing.T) {
+	list, err := os.ReadFile("../../testdata/golden/v1.0.0-sha256.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	if _, err := Build(dir, "test"); err != nil {
+		t.Fatal(err)
+	}
+	n := 0
+	for _, line := range strings.Split(strings.TrimSpace(strings.ReplaceAll(string(list), "\r\n", "\n")), "\n") {
+		sum, name, ok := strings.Cut(line, "  ")
+		if !ok {
+			t.Fatalf("bad line in the golden list: %q", line)
+		}
+		data, err := os.ReadFile(filepath.Join(dir, filepath.FromSlash(name)))
+		if err != nil {
+			t.Errorf("%s: %v", name, err)
+			continue
+		}
+		if got := fmt.Sprintf("%x", sha256.Sum256(data)); got != sum {
+			t.Errorf("%s changed: sha256 %s, v1.0.0 had %s", name, got, sum)
+		}
+		n++
+	}
+	// Three species × (20 stage cards + 4 accessory cards + 5 compact
+	// badges) × light and dark, plus favicon.svg.
+	if want := 3*(20+4+5)*2 + 1; n != want {
+		t.Errorf("the golden list has %d files, want %d", n, want)
+	}
+}
+
 // The gallery shows the compact badge for every stage of both species, light
 // and dark, at its real size, with its own text alternative.
 func TestGalleryShowsTheCompactBadge(t *testing.T) {

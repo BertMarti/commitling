@@ -102,6 +102,7 @@ Tests que deben pasar (y qué tocar en ellos):
 - `.github/workflows/action-test.yml` prueba `species: mushroom`, `species: cactus` y `species: pumpkin`; el bucle `for sp in …` de `ci.yml`, la lista `ALLOWED.species` de `internal/gallery/install.js` y la de `internal/gallery/testdata/install.test.js` cubren las cuatro especies (96 casos en `TestInstallJSMatchesGo`).
 - `internal/og`: la imagen OG coloca dos especies por fila (`stagePos`); con más de cuatro hay que añadir una fila y comprobar que cabe sobre `siteY`.
 - `internal/gallery`: el número de archivos de `TestBuild` y los `alt` únicos (`TestGalleryAltsAreUnique`): un nombre de fase no puede repetir el de otra especie con las mismas estadísticas (por eso la primera fase del cactus es «Yema» y no «Semilla»).
+- `internal/gallery`: `TestCardsAreByteIdenticalToV100` (huellas de `testdata/golden/v1.0.0-sha256.txt`) y `TestFullCardsAreByteIdenticalToV050` deben seguir pasando sin tocar las listas: las especies que ya estaban no pueden cambiar.
 - Comprueba que las especies existentes no cambian ni un byte: genera la galería en `main` y en tu rama y compara con `diff -r` (solo deben aparecer archivos nuevos de tu especie, `index.html`, `og.png` y los scripts).
 
 ## Regla de diseño: personaje original
