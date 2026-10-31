@@ -235,7 +235,6 @@
         <div class="opts">{{range $i, $c := .GenSpecies}}
           <div class="opt"><input type="radio" name="ins-species" value="{{$c.Value}}" id="ins-sp-{{$c.Value}}"{{if eq $i 0}} checked{{end}}><label for="ins-sp-{{$c.Value}}">{{$c.Label}}</label></div>{{end}}
         </div>
-        <p class="note hint">La calabaza llega con la versión 1.1.0: si tu workflow falla con «especie no válida», es que <code>@v1</code> aún no la incluye; vuelve a ejecutarlo cuando se publique.</p>
       </fieldset>
       <fieldset>
         <legend>Tema</legend>

@@ -6,6 +6,11 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ## [Sin publicar]
 
+### Cambiado
+
+- Con la v1.1.0 publicada y `v1` apuntando a ella, el README, la guía de uso y el instalador de la web dejan de avisar de que la calabaza necesita una versión aún sin publicar, y los ejemplos de versión exacta pasan a `@v1.1.0`.
+- `release/checksums.txt` sale de `main`: describe los binarios de la v1.1.0 ya publicada (va en su etiqueta) y no los de `main`, que ha cambiado. La próxima versión lo vuelve a generar en su commit.
+
 ## [1.1.0] - 2026-10-31
 
 Una especie nueva y nada más que cambie para quien ya usa commitling: **la interfaz de `action.yml` es la misma** (mismas entradas con los mismos valores por defecto, misma salida `path`, mismos archivos; solo cambia el texto de ayuda de `species` para nombrar la nueva) y las tarjetas del brote de musgo, el hongo y el cactus son byte a byte las de la v1.0.0. Con `@v1` no hay que hacer nada.
