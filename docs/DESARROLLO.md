@@ -105,7 +105,7 @@ La entrada de la Action `keep-on-error` está activa por defecto. Si la caída e
 ## Versiones y GitHub Marketplace
 
 - `BertMarti/commitling@v1` sigue la versión mayor 1: la etiqueta móvil `v1` apunta a la última versión compatible y la mueve Alberto al publicar.
-- Una etiqueta exacta (`@v1.0.0`) o el SHA de un commit es lo más reproducible.
+- Una etiqueta exacta (`@v1.1.0`) o el SHA de un commit es lo más reproducible.
 - `@main` funciona, pero es la rama de desarrollo; los ejemplos nunca la usan (`TestExamplesUseV1`).
 - La Action declara nombre, descripción y `branding` (icono `feather`, color `green`) en `action.yml`, que es lo que muestra el Marketplace. **La interfaz de `action.yml` (entradas, salida `path`, archivos y formato del SVG) no se rompe**: hay perfiles que la usan a diario.
 
