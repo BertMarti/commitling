@@ -2,10 +2,11 @@
 // growth stage, its mood and the accessories it has unlocked, plus the pixel
 // maps used to draw it.
 //
-// All three species are original designs. The default one is a small moss
+// All four species are original designs. The default one is a small moss
 // sprout with eyes that grows from a honey-coloured seed into an ancient tree;
-// the others are a little mushroom that grows from a spore into a fairy ring
-// and a cactus with eyes in a clay-coloured pot.
+// the others are a little mushroom that grows from a spore into a fairy ring,
+// a cactus with eyes in a clay-coloured pot and a garden pumpkin that grows
+// from a seed into a giant pumpkin.
 package creature
 
 import (
@@ -23,20 +24,22 @@ const (
 	MossSprout Species = iota
 	Mushroom
 	Cactus
+	Pumpkin
 )
 
 // AllSpecies lists every species, default first.
-var AllSpecies = []Species{MossSprout, Mushroom, Cactus}
+var AllSpecies = []Species{MossSprout, Mushroom, Cactus, Pumpkin}
 
-var speciesNames = [...]string{"Brote de musgo", "Hongo", "Cactus"}
+var speciesNames = [...]string{"Brote de musgo", "Hongo", "Cactus", "Calabaza"}
 
-var speciesSlugs = [...]string{"moss", "mushroom", "cactus"}
+var speciesSlugs = [...]string{"moss", "mushroom", "cactus", "pumpkin"}
 
 // Names of the stages of each species, in growth order.
 var speciesStageNames = [...][5]string{
 	MossSprout: {"Semilla", "Brote", "Retoño", "Arbusto", "Árbol ancestral"},
 	Mushroom:   {"Espora", "Botón", "Seta", "Seta grande", "Corro de setas"},
 	Cactus:     {"Yema", "Bolita", "Cactus", "Cactus con brazos", "Cactus centenario"},
+	Pumpkin:    {"Pepita", "Plántula", "Calabacita", "Calabaza", "Calabaza gigante"},
 }
 
 // Name is the Spanish name of the species.

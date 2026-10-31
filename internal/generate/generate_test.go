@@ -186,7 +186,7 @@ func TestCheckMessagesAreTheOnesOfTheCLI(t *testing.T) {
 	if err := (Options{Theme: "sepia"}).Check(); err == nil || err.Error() != `tema no válido "sepia" (usa light o dark)` {
 		t.Errorf("theme: %v", err)
 	}
-	if err := (Options{Species: "dragon"}).Check(); err == nil || err.Error() != `especie no válida "dragon" (usa moss, mushroom o cactus)` {
+	if err := (Options{Species: "dragon"}).Check(); err == nil || err.Error() != `especie no válida "dragon" (usa moss, mushroom, cactus o pumpkin)` {
 		t.Errorf("species: %v", err)
 	}
 	if err := (Options{User: "a b"}).Check(); err == nil || err.Error() != `nombre de usuario no válido: "a b" (solo letras, números y guiones, sin espacios ni guion al principio)` {

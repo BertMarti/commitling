@@ -1,9 +1,9 @@
 // Command commitling draws a pixel-art creature that grows with your public
 // GitHub activity.
 //
-//	commitling render --user <login> [--theme light|dark] [--species moss|mushroom|cactus] [--size full|compact] [--keep-on-error] [--now RFC3339] --out commitling.svg
+//	commitling render --user <login> [--theme light|dark] [--species moss|mushroom|cactus|pumpkin] [--size full|compact] [--keep-on-error] [--now RFC3339] --out commitling.svg
 //	commitling render --fixture testdata/events.json --out commitling.svg
-//	commitling workflow --user <login> [--species moss|mushroom|cactus] [--theme light|dark|both] [--size full|compact]
+//	commitling workflow --user <login> [--species moss|mushroom|cactus|pumpkin] [--theme light|dark|both] [--size full|compact]
 //	commitling gallery --out site/
 //	commitling og --out og.png
 //	commitling version
@@ -33,9 +33,9 @@ var version = "1.0.0"
 const usage = `commitling: una mascota pixel-art que crece con tus commits.
 
 Uso:
-  commitling render --user <usuario> [--theme light|dark] [--species moss|mushroom|cactus] [--size full|compact] [--keep-on-error] [--now RFC3339] --out <archivo.svg>
-  commitling render --fixture <eventos.json> [--user <nombre>] [--theme light|dark] [--species moss|mushroom|cactus] [--size full|compact] [--now RFC3339] --out <archivo.svg>
-  commitling workflow [--user <usuario>] [--species moss|mushroom|cactus] [--theme light|dark|both] [--size full|compact]
+  commitling render --user <usuario> [--theme light|dark] [--species moss|mushroom|cactus|pumpkin] [--size full|compact] [--keep-on-error] [--now RFC3339] --out <archivo.svg>
+  commitling render --fixture <eventos.json> [--user <nombre>] [--theme light|dark] [--species moss|mushroom|cactus|pumpkin] [--size full|compact] [--now RFC3339] --out <archivo.svg>
+  commitling workflow [--user <usuario>] [--species moss|mushroom|cactus|pumpkin] [--theme light|dark|both] [--size full|compact]
   commitling gallery --out <directorio>
   commitling og --out <archivo.png>
   commitling version
@@ -112,7 +112,7 @@ func runRender(args []string, stdout, stderr io.Writer) error {
 	user := fs.String("user", "", "usuario de GitHub")
 	fixture := fs.String("fixture", "", "archivo JSON de eventos para trabajar sin red")
 	theme := fs.String("theme", "light", "tema: light o dark")
-	speciesFlag := fs.String("species", "moss", "especie: moss (brote de musgo), mushroom (hongo) o cactus")
+	speciesFlag := fs.String("species", "moss", "especie: moss (brote de musgo), mushroom (hongo), cactus o pumpkin (calabaza)")
 	sizeFlag := fs.String("size", "full", "tamaño: full (480x200) o compact (insignia de 200x60)")
 	nowFlag := fs.String("now", "", "fecha de referencia en RFC3339 (por defecto, ahora; con --fixture, el último evento)")
 	out := fs.String("out", "commitling.svg", "archivo SVG de salida (- para la salida estándar)")
@@ -255,7 +255,7 @@ func runWorkflow(args []string, stdout, stderr io.Writer) error {
 	fs := flag.NewFlagSet("workflow", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	user := fs.String("user", "", "usuario de GitHub (por defecto, el dueño del repositorio donde corre el workflow)")
-	speciesFlag := fs.String("species", "moss", "especie: moss (brote de musgo), mushroom (hongo) o cactus")
+	speciesFlag := fs.String("species", "moss", "especie: moss (brote de musgo), mushroom (hongo), cactus o pumpkin (calabaza)")
 	theme := fs.String("theme", "light", "tema: light, dark o both (claro y oscuro, según quien mire tu perfil)")
 	sizeFlag := fs.String("size", "full", "tamaño: full (480x200) o compact (insignia de 200x60)")
 	if err := fs.Parse(args); err != nil {

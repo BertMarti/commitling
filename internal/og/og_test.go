@@ -112,18 +112,18 @@ func TestSpriteIsScaledInWholeBlocks(t *testing.T) {
 	}
 }
 
-// Every stage of every species appears, small, in the rows under the tagline.
+// Every stage of every species appears, small, under the tagline.
 func TestStageRowsShowAllStages(t *testing.T) {
 	img := Image(Hero)
 	for i, sp := range creature.AllSpecies {
-		x := textX
 		for _, st := range creature.Stages {
+			x, y := stagePos(i, st)
 			sprite := creature.Draw(creature.Creature{Species: sp, Stage: st, Mood: creature.Happy})
 			ink := 0
 			for gy := 0; gy < creature.Size; gy++ {
 				for gx := 0; gx < creature.Size; gx++ {
 					if sprite.Outline[gy][gx] == creature.PInk {
-						if img.ColorIndexAt(x+gx*stageScale, stageRowY(i)+gy*stageScale) != iInk {
+						if img.ColorIndexAt(x+gx*stageScale, y+gy*stageScale) != iInk {
 							t.Fatalf("%s/%s: outline pixel (%d,%d) is not ink", sp.Name(), sp.StageName(st), gx, gy)
 						}
 						ink++
@@ -133,19 +133,35 @@ func TestStageRowsShowAllStages(t *testing.T) {
 			if ink == 0 {
 				t.Fatalf("%s/%s has no outline?", sp.Name(), sp.StageName(st))
 			}
-			x += creature.Size*stageScale + stageGap
 		}
 	}
-	// The rows fit above the site name and inside the frame.
-	last := stageRowY(len(creature.AllSpecies)-1) + creature.Size*stageScale
-	if last >= siteY {
-		t.Errorf("stage rows end at y=%d, overlapping the site name at y=%d", last, siteY)
+	// The stages fit under the tagline, above the site name and inside the
+	// frame, and no two of them overlap.
+	type box struct{ x, y int }
+	seen := map[box]bool{}
+	const side = creature.Size * stageScale
+	for i := range creature.AllSpecies {
+		for _, st := range creature.Stages {
+			x, y := stagePos(i, st)
+			if y < 326+glyphH*4 {
+				t.Errorf("species %d stage %d starts at y=%d, over the tagline", i, st, y)
+			}
+			if y+side >= siteY {
+				t.Errorf("species %d stage %d ends at y=%d, overlapping the site name at y=%d", i, st, y+side, siteY)
+			}
+			if x+side > Width-24-6-16 {
+				t.Errorf("species %d stage %d reaches x=%d, too close to the frame", i, st, x+side)
+			}
+			for b := range seen {
+				if x < b.x+side && b.x < x+side && y < b.y+side && b.y < y+side {
+					t.Errorf("species %d stage %d at (%d,%d) overlaps another stage at (%d,%d)", i, st, x, y, b.x, b.y)
+				}
+			}
+			seen[box{x, y}] = true
+		}
 	}
 	if siteY+glyphH*3 > Height-24-6 {
 		t.Error("the site name touches the frame")
-	}
-	if end := textX + 5*(creature.Size*stageScale+stageGap) - stageGap; end > Width-24-6-16 {
-		t.Errorf("stage rows reach x=%d, too close to the frame", end)
 	}
 }
 

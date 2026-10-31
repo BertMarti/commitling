@@ -18,7 +18,7 @@ const api = sandbox.window.commitlingInstall;
 assert.ok(api);
 
 const users = ['', 'octocat', '007', 'a-b-9'];
-const species = ['moss', 'mushroom', 'cactus'];
+const species = ['moss', 'mushroom', 'cactus', 'pumpkin'];
 const themes = ['light', 'dark', 'both'];
 const sizes = ['full', 'compact'];
 

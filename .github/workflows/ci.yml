@@ -109,7 +109,7 @@ jobs:
           go build -o "$RUNNER_TEMP/commitling" ./cmd/commitling
           mkdir -p out/wf
           "$RUNNER_TEMP/commitling" workflow > out/wf/base.yml 2>/dev/null
-          for sp in moss mushroom cactus; do for th in light dark both; do for sz in full compact; do
+          for sp in moss mushroom cactus pumpkin; do for th in light dark both; do for sz in full compact; do
             "$RUNNER_TEMP/commitling" workflow --user octocat --species "$sp" --theme "$th" --size "$sz" > "out/wf/$sp-$th-$sz.yml" 2>/dev/null
           done; done; done
           if grep -L 'uses: BertMarti/commitling@v1$' out/wf/*.yml | grep .; then echo "sin @v1"; exit 1; fi

@@ -40,7 +40,7 @@ func TestBuild(t *testing.T) {
 	// dark, plus favicon, og.png, generator.js, page.js, theme.js, install.js, style.css and index (the hero of the header is
 	// one of the accessory cards), plus the compact badges: per species, one
 	// per stage, light and dark.
-	if want := 3*(20+4)*2 + 8 + 3*5*2; n != want {
+	if want := 4*(20+4)*2 + 8 + 4*5*2; n != want {
 		t.Fatalf("Build wrote %d files, want %d", n, want)
 	}
 

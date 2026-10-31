@@ -59,8 +59,8 @@ func TestInstallJSMatchesGo(t *testing.T) {
 	if err := json.Unmarshal(out, &cases); err != nil {
 		t.Fatalf("--dump is not JSON: %v\n%.300s", err, out)
 	}
-	if len(cases) != 4*3*3*2 {
-		t.Fatalf("%d cases, want 72", len(cases))
+	if len(cases) != 4*4*3*2 {
+		t.Fatalf("%d cases, want 96", len(cases))
 	}
 	for _, c := range cases {
 		want, err := generate.Install(generate.Options{User: c.User, Species: c.Species, Theme: c.Theme, Size: c.Size})
