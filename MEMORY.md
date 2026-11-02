@@ -2,6 +2,8 @@
 Última actualización: 2026-10-31 por Claude Code (Opus 5.5, jefe de la fase 6, rama `v1.1-2026-10-31`)
 
 ## Estado actual
+**Tras publicar la v1.1.0 (rama `v1.1-tras-publicar`, se fusiona después de la release y de mover `v1`)**: sin el aviso «la calabaza llega con la 1.1.0» (README, `docs/USO.md`, instalador de la web), ejemplos `@v1.1.0` y sin `release/checksums.txt` en `main` (va en la etiqueta v1.1.0). `@main` compila siempre con Go.
+
 **Versión 1.1.0 (fase 6, 31/10/2026, rama `v1.1-2026-10-31`, PR contra `main`)**: v1.0.0 publicada y `v1` apuntando a ella. Cuarta especie **calabaza** (`pumpkin`; fases Pepita, Plántula, Calabacita, Calabaza y Calabaza gigante) en la Action, la CLI, la galería, los dos generadores y la OG (ahora dos especies por fila). Musgo, hongo y cactus byte a byte iguales (galería de `main` contra la rama: 180 SVG y favicon idénticos; 12 combinaciones de la CLI idénticas; huellas de v0.5.0). De `action.yml` solo cambia la `description` de `species`. El último commit lleva `release/checksums.txt` de la 1.1.0. Avisos «la calabaza llega con la 1.1.0» en README, `docs/USO.md` y el instalador de la web: los quita la rama `v1.1-tras-publicar` (que además borra `release/checksums.txt` de `main`), que se fusiona después de publicar y mover `v1`. Pasos exactos para el orquestador en el informe de la fase 6.
 
 **Tras publicar la v1.0.0 (rama `v1-tras-publicar`, se fusiona después de la release y de mover `v1`)**: sin avisos de «aún no publicada» (README, `docs/USO.md`, web), ejemplos de versión exacta `@v1.0.0` y sin `release/checksums.txt` en `main` (va en la etiqueta v1.0.0; regenerarlo con la misma versión daría SHA-256 distintos de los subidos porque la plantilla embebida cambió). `@main` compila siempre con Go.

@@ -132,8 +132,6 @@ Las cuatro especies son originales y tienen las mismas reglas, fases, ánimos y 
   </tr>
 </table>
 
-La calabaza llega con la versión 1.1.0. Si al usarla el paso falla con «especie no válida», es que `@v1` aún no apunta a la 1.1.0: vuelve a intentarlo cuando se publique.
-
 `species` también acepta `musgo`, `hongo`, `seta` y `calabaza`, sin distinguir mayúsculas.
 
 ### Tarjeta compacta
@@ -264,7 +262,7 @@ No. Es un diseño original, dibujado píxel a píxel para este proyecto.
 
 <details><summary>¿Qué versión uso?</summary>
 
-Usa `BertMarti/commitling@v1` para recibir mejoras compatibles. Si quieres fijar una versión concreta, usa una etiqueta exacta (por ejemplo `@v1.0.0`) o el SHA de un commit. Evita `@main`: es la rama de desarrollo.
+Usa `BertMarti/commitling@v1` para recibir mejoras compatibles. Si quieres fijar una versión concreta, usa una etiqueta exacta (por ejemplo `@v1.1.0`) o el SHA de un commit. Evita `@main`: es la rama de desarrollo.
 </details>
 
 ## Lo que tienes que hacer tú (mantenedor)

@@ -113,7 +113,7 @@ Qué hace este archivo, en cristiano:
 - `schedule` / `cron`: lo ejecuta solo cada día a las 05:23 UTC (07:23 en el horario de verano de la España peninsular, 06:23 en invierno). GitHub puede retrasar unos minutos las ejecuciones programadas.
 - `workflow_dispatch`: añade el botón **Run workflow** para lanzarlo a mano.
 - `permissions: contents: write`: le permite guardar la imagen en tu repositorio. Sin esto fallaría al guardar.
-- `BertMarti/commitling@v1`: es la Action de commitling, que crea el archivo `commitling.svg`. `@v1` significa «la versión 1»: recibes las mejoras compatibles sin tocar nada. Si prefieres fijar una versión exacta, usa una etiqueta exacta de las [releases](https://github.com/BertMarti/commitling/releases), por ejemplo `@v1.0.0`.
+- `BertMarti/commitling@v1`: es la Action de commitling, que crea el archivo `commitling.svg`. `@v1` significa «la versión 1»: recibes las mejoras compatibles sin tocar nada. Si prefieres fijar una versión exacta, usa una etiqueta exacta de las [releases](https://github.com/BertMarti/commitling/releases), por ejemplo `@v1.1.0`.
 - El último paso guarda `commitling.svg` en tu repositorio solo si ha cambiado, con un commit «chore: actualiza commitling».
 
 ### Paso 3. Añade la imagen a tu README
@@ -177,8 +177,6 @@ Solo cambian el dibujo y el nombre de las fases:
 | 3 | 400 XP | Retoño | Seta | Cactus | Calabacita |
 | 4 | 1.000 XP | Arbusto | Seta grande | Cactus con brazos | Calabaza |
 | 5 | 2.500 XP | Árbol ancestral | Corro de setas | Cactus centenario | Calabaza gigante |
-
-La calabaza llega con la versión 1.1.0. Si al usarla el paso falla con «especie no válida», es que `@v1` aún no apunta a la 1.1.0: vuelve a intentarlo cuando se publique.
 
 Valores que acepta `species` (sin distinguir mayúsculas ni espacios alrededor):
 
@@ -330,7 +328,7 @@ En el workflow, la línea `uses: BertMarti/commitling@...` decide qué versión 
 | Escribes | Qué significa | Cuándo usarla |
 |---|---|---|
 | `@v1` | La versión mayor 1: la etiqueta `v1` se mueve con cada versión 1.x compatible, así que recibes mejoras y correcciones sin tocar nada | Lo recomendado |
-| `@v1.0.0` (o la última de las releases) | Una versión exacta, que nunca cambia | Si quieres controlar tú cuándo actualizas |
+| `@v1.1.0` (o la última de las releases) | Una versión exacta, que nunca cambia | Si quieres controlar tú cuándo actualizas |
 | `@<sha>` (huella de un commit) | Una copia exacta del código, la opción más reproducible | Si te importa la máxima seguridad |
 | `@main` | La rama de desarrollo, que puede cambiar en cualquier momento (y romper tu workflow) | Solo para probar cambios |
 
