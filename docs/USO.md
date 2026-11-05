@@ -354,7 +354,13 @@ Si te bajas un binario a mano, a partir de la 1.2.0 puedes comprobar de dónde s
 gh attestation verify commitling_1.2.0_linux_amd64 --repo BertMarti/commitling
 ```
 
-Cambia el nombre por el del archivo que te hayas bajado (por ejemplo `commitling_1.2.0_windows_amd64.exe`). Si sale «Verification succeeded», el binario lo compiló el workflow «Release» de `BertMarti/commitling`; si sale un error, no lo uses. Para exigir además el workflow exacto, añade `--signer-workflow BertMarti/commitling/.github/workflows/release.yml`.
+Cambia el nombre por el del archivo que te hayas bajado (por ejemplo `commitling_1.2.0_windows_amd64.exe`). Si sale «Verification succeeded», el archivo no ha cambiado ni un byte desde que lo compiló y firmó un workflow de `BertMarti/commitling` (solo con `--repo`, la orden no dice cuál); si sale un error, no lo uses. Para exigir además que lo firmara el workflow «Release», el que publica los binarios:
+
+```sh
+gh attestation verify commitling_1.2.0_linux_amd64 --repo BertMarti/commitling --signer-workflow BertMarti/commitling/.github/workflows/release.yml
+```
+
+Hace falta `gh` 2.49 o posterior (`gh --version`); las versiones anteriores no tienen `gh attestation`.
 
 > La 1.2.0 aún no está publicada: hasta entonces, las releases (1.1.0 y anteriores) no tienen atestación.
 
