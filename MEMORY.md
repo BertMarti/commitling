@@ -1,7 +1,11 @@
 # MEMORY.md · commitling
-Última actualización: 2026-10-31 por Claude Code (Opus 5.5, jefe de la fase 6, rama `v1.1-2026-10-31`)
+Última actualización: 2026-11-02 por Claude Code (Opus 5.5, jefe de la fase 7, rama `v1.2-2026-11-02`)
 
 ## Estado actual
+**Tras publicar la v1.2.0 (rama `v1.2-tras-publicar`, se fusiona después de la release y de mover `v1`)**: sin los avisos «la 1.2.0 aún no está publicada» (README, `docs/USO.md`, web), ejemplos `@v1.2.0` y sin `release/checksums.txt` en `main` (va en la etiqueta v1.2.0). `@main` compila siempre con Go.
+
+**Versión 1.2.0 (fase 7, 02/11/2026, rama `v1.2-2026-11-02`, PR contra `main`)**: v1.1.0 publicada y `v1` apuntando a ella. Novedades: atestaciones de procedencia de los 6 binarios en `release.yml` (solo para verificar a mano con `gh attestation verify`; la Action sigue confiando solo en `release/checksums.txt`) y filtro «Ver en la galería» en la web. Ninguna tarjeta cambia (huellas v0.5.0 y v1.0.0 en verde). `action.yml` sin cambios. Go 1.27.3 sigue siendo el último parche. El último commit lleva `release/checksums.txt` de la 1.2.0.
+
 **Tras publicar la v1.1.0 (rama `v1.1-tras-publicar`, se fusiona después de la release y de mover `v1`)**: sin el aviso «la calabaza llega con la 1.1.0» (README, `docs/USO.md`, instalador de la web), ejemplos `@v1.1.0` y sin `release/checksums.txt` en `main` (va en la etiqueta v1.1.0). `@main` compila siempre con Go.
 
 **Versión 1.1.0 (fase 6, 31/10/2026, rama `v1.1-2026-10-31`, PR contra `main`)**: v1.0.0 publicada y `v1` apuntando a ella. Cuarta especie **calabaza** (`pumpkin`; fases Pepita, Plántula, Calabacita, Calabaza y Calabaza gigante) en la Action, la CLI, la galería, los dos generadores y la OG (ahora dos especies por fila). Musgo, hongo y cactus byte a byte iguales (galería de `main` contra la rama: 180 SVG y favicon idénticos; 12 combinaciones de la CLI idénticas; huellas de v0.5.0). De `action.yml` solo cambia la `description` de `species`. El último commit lleva `release/checksums.txt` de la 1.1.0. Avisos «la calabaza llega con la 1.1.0» en README, `docs/USO.md` y el instalador de la web: los quita la rama `v1.1-tras-publicar` (que además borra `release/checksums.txt` de `main`), que se fusiona después de publicar y mover `v1`. Pasos exactos para el orquestador en el informe de la fase 6.
@@ -182,7 +186,13 @@ Pulido de v0.4.0 (rama `agent/builder/v0.4-pulido`, un PR contra `main`, tras la
 - **OG con dos especies por fila** (`stagePos`): con cuatro filas de una especie no cabía sobre el nombre de la web; con una quinta especie habría que añadir una fila.
 - **`release/checksums.txt` en el último commit del PR** (como en la 1.0.0): antes de publicar, el paso `bin` recibe 404 y compila; tras publicar, usa el binario. La rama `v1.1-tras-publicar` lo borra de `main` junto con los avisos.
 
+### Fase 7 (02/11/2026)
+- **Atestaciones con `subject-checksums`** (no `subject-path` con un glob): se atesta exactamente lo que `--check` acaba de comparar con `release/checksums.txt`, con los mismos nombres. Va antes de subir: si la atestación fallara, la release se queda sin binarios (la Action compila con Go) en vez de tener binarios sin atestar.
+- **La Action no verifica atestaciones**: necesitaría `gh`, un token con lectura de atestaciones y red a Sigstore en cada perfil; el SHA-256 comprometido en el propio árbol ya es más fuerte para ella (no depende de nada externo). La atestación es una capa para personas.
+- **Filtro de la galería en vez de algo en el SVG**: un detalle de temporada en la tarjeta dependería de la fecha (rompe «mismos datos, mismo SVG», haría commits diarios en los perfiles y las huellas). El filtro es solo web, progresivo y sin almacenamiento (origen compartido).
+
 ## Siguiente paso
+-8. v1.2.0: fusionar el PR de `v1.2-2026-11-02`; publicar la release `v1.2.0` sobre el SHA del merge; esperar a que «Release» suba los 6 binarios, `checksums.txt` y las atestaciones; `gh attestation verify` de uno; mover `v1`; probar el perfil; PR de `v1.2-tras-publicar`. Ver `PLAN.md`.
 -7. v1.1.0: fusionar el PR de `v1.1-2026-10-31`; publicar la release `v1.1.0` sobre el SHA del merge; esperar a que «Release» suba los 6 binarios y `checksums.txt`; mover `v1`; probar el perfil; PR de `v1.1-tras-publicar`. Ver `PLAN.md`.
 -6. v1.0.0: fusionar el PR de `v1-2026-10-26`; publicar la release `v1.0.0` desde ese commit y mover `v1` (órdenes en el README); comprobar que «Release» sube 6 binarios y `checksums.txt`; abrir y fusionar el PR de `v1-tras-publicar`. Ver `PLAN.md`.
 -5. Fase 3: fusionar el PR de `fase3-2026-10-25`; tras el despliegue, abrir la web con la consola (Chromium) y comprobar 0 violaciones de CSP/Trusted Types al usar la demo, el generador y el selector de tema; después, la release `v0.8.0` (notas en `CHANGELOG.md`) y mover `v1`. Opcional: activar el binario precompilado (`docs/DESARROLLO.md`).
@@ -245,3 +255,4 @@ Pulido de v0.4.0 (rama `agent/builder/v0.4-pulido`, un PR contra `main`, tras la
 - 2026-10-26 Claude Code · Opus 5.5 (jefe) con OpenCode (GPT-5.6 Luna) (fase3-2026-10-25): especie cactus (mapas rehechos por Claude), selector de tema (Luna, revisado y corregido por Claude), Trusted Types, acciones por SHA, binario precompilado preparado (paso `bin`, `build-release.sh`, `release.yml`, job `binario`), OG para tres especies, docs.
 - 2026-10-26 Claude Code · Opus 5.5 (jefe) con OpenCode (Gemini 3 Flash) (v1-2026-10-26): versión 1.0.0 (CLI, web, docs, CHANGELOG), `release/checksums.txt` de la 1.0.0, jobs `action` y `binario` independientes del estado de la release, docs sin promesas falsas (Marketplace, «`v1` aún no existe»), rama `v1-tras-publicar`; notas de la release redactadas por Gemini y revisadas por Claude.
 - 2026-10-31 Claude Code · Opus 5.5 (jefe) con OpenCode (GPT-5.6 Luna) (v1.1-2026-10-31): cuarta especie calabaza (mapas de Claude; cableado, tests y docs de Luna, revisados), OG en dos columnas, versión 1.1.0, `release/checksums.txt` de la 1.1.0 y rama `v1.1-tras-publicar`.
+- 2026-11-02 Claude Code · Opus 5.5 (jefe) con OpenCode (GPT-5.6 Luna) (v1.2-2026-11-02): atestaciones de procedencia en `release.yml` (Claude) y docs de verificación, filtro «Ver en la galería» y sección «Binarios verificables» de la web (Luna, revisado por Claude), versión 1.2.0, `release/checksums.txt` de la 1.2.0 y rama `v1.2-tras-publicar`.

@@ -260,6 +260,21 @@ Añade `species: mushroom` (o `species: cactus` o `species: pumpkin`) o `theme: 
 No. Es un diseño original, dibujado píxel a píxel para este proyecto.
 </details>
 
+<details><summary>¿Puedo comprobar que un binario de las releases es auténtico?</summary>
+
+Sí. No te hace falta para usar la Action: antes de ejecutar su binario, la propia Action comprueba su huella SHA-256 con la lista que viaja dentro de ella y, si no coincide, lo descarta y compila el código con Go.
+
+Si te bajas un binario a mano desde las [releases](https://github.com/BertMarti/commitling/releases) (para usar la línea de órdenes sin instalar Go), a partir de la 1.2.0 cada uno lleva una **atestación de procedencia** firmada por GitHub que dice de qué commit y de qué workflow salió. Compruébala con la [CLI de GitHub](https://cli.github.com/) (con la sesión iniciada: `gh auth login`), cambiando el nombre por el del archivo que te hayas bajado:
+
+```sh
+gh attestation verify commitling_1.2.0_linux_amd64 --repo BertMarti/commitling
+```
+
+Si dice «Verification succeeded», el binario es el que compiló el workflow «Release» de este repositorio.
+
+> La 1.2.0 aún no está publicada: hasta entonces, las releases no tienen atestación.
+</details>
+
 <details><summary>¿Qué versión uso?</summary>
 
 Usa `BertMarti/commitling@v1` para recibir mejoras compatibles. Si quieres fijar una versión concreta, usa una etiqueta exacta (por ejemplo `@v1.1.0`) o el SHA de un commit. Evita `@main`: es la rama de desarrollo.

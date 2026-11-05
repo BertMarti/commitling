@@ -6,10 +6,24 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ## [Sin publicar]
 
+## [1.2.0] - 2026-11-02
+
+Binarios que se pueden verificar y una galería más fácil de recorrer. **La interfaz de `action.yml` no cambia** (mismas entradas, misma salida `path`, mismos archivos) y todas las tarjetas SVG son byte a byte las de la v1.1.0: con `@v1` no hay que hacer nada.
+
+### Añadido
+
+- **Atestaciones de procedencia de los binarios.** Al publicar una release, el workflow «Release» firma con GitHub (Sigstore) una atestación de procedencia para cada uno de los 6 binarios, que dice de qué commit y de qué workflow salió. Quien se baje un binario a mano puede comprobarlo con `gh attestation verify commitling_1.2.0_linux_amd64 --repo BertMarti/commitling`. Explicado en el README, en la guía de uso y en la web (sección «Binarios verificables»). La Action no cambia: sigue ejecutando un binario solo si su SHA-256 coincide con el `release/checksums.txt` de su propia etiqueta y, si no, compila con Go.
+- **Filtro «Ver en la galería»** en la web: con un clic se ve una sola especie (sus fases, ánimos, accesorios y tarjeta compacta) en vez de las más de 200 tarjetas seguidas; «Todas» vuelve a enseñarlas. Los enlaces «Ir a:» cambian el filtro si la especie estaba oculta. Accesible con teclado y lector de pantalla (anuncia qué se muestra), no guarda nada en el navegador y, sin JavaScript, la galería se ve entera como antes.
+
 ### Cambiado
 
-- Con la v1.1.0 publicada y `v1` apuntando a ella, el README, la guía de uso y el instalador de la web dejan de avisar de que la calabaza necesita una versión aún sin publicar, y los ejemplos de versión exacta pasan a `@v1.1.0`.
-- `release/checksums.txt` sale de `main`: describe los binarios de la v1.1.0 ya publicada (va en su etiqueta) y no los de `main`, que ha cambiado. La próxima versión lo vuelve a generar en su commit.
+- Con la v1.1.0 publicada y `v1` apuntando a ella, el README, la guía de uso y el instalador de la web dejaron de avisar de que la calabaza necesitaba una versión aún sin publicar, y los ejemplos de versión exacta pasaron a `@v1.1.0`.
+- `release/checksums.txt` vuelve con los SHA-256 de los binarios de la 1.2.0 (tras la 1.1.0 había salido de `main`).
+- Versión de la CLI: `1.2.0`.
+
+### Mantenimiento
+
+- Go 1.27.3 sigue siendo el último parche de Go 1.27 (sin cambios en `go.mod`); govulncheck sin vulnerabilidades; 0 alertas y 0 PRs abiertas de Dependabot.
 
 ## [1.1.0] - 2026-10-31
 
@@ -198,7 +212,8 @@ Primera versión: el MVP.
 
 - Las acciones de los workflows suben de versión para evitar Node 20 (`checkout@v7`, `setup-go@v7`, `configure-pages@v6`, `upload-pages-artifact@v5` y `deploy-pages@v5`) (PR #2).
 
-[Sin publicar]: https://github.com/BertMarti/commitling/compare/v1.1.0...HEAD
+[Sin publicar]: https://github.com/BertMarti/commitling/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/BertMarti/commitling/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/BertMarti/commitling/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/BertMarti/commitling/compare/v0.7.0...v1.0.0
 [0.7.0]: https://github.com/BertMarti/commitling/compare/v0.6.0...v0.7.0
