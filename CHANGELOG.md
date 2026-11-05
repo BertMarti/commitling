@@ -6,6 +6,11 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ## [Sin publicar]
 
+### Cambiado
+
+- Con la v1.2.0 publicada y `v1` apuntando a ella, el README, la guía de uso y la web dejan de avisar de que las atestaciones llegan con una versión aún sin publicar, y los ejemplos de versión exacta pasan a `@v1.2.0`.
+- `release/checksums.txt` sale de `main`: describe los binarios de la v1.2.0 ya publicada (va en su etiqueta) y no los de `main`, que ha cambiado. La próxima versión lo vuelve a generar en su commit.
+
 ## [1.2.0] - 2026-11-02
 
 Binarios que se pueden verificar y una galería más fácil de recorrer. **La interfaz de `action.yml` no cambia** (mismas entradas, misma salida `path`, mismos archivos) y todas las tarjetas SVG son byte a byte las de la v1.1.0: con `@v1` no hay que hacer nada.
