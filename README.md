@@ -271,13 +271,11 @@ gh attestation verify commitling_1.2.0_linux_amd64 --repo BertMarti/commitling
 ```
 
 Si dice «Verification succeeded», el binario es el que compiló el workflow «Release» de este repositorio.
-
-> La 1.2.0 aún no está publicada: hasta entonces, las releases no tienen atestación.
 </details>
 
 <details><summary>¿Qué versión uso?</summary>
 
-Usa `BertMarti/commitling@v1` para recibir mejoras compatibles. Si quieres fijar una versión concreta, usa una etiqueta exacta (por ejemplo `@v1.1.0`) o el SHA de un commit. Evita `@main`: es la rama de desarrollo.
+Usa `BertMarti/commitling@v1` para recibir mejoras compatibles. Si quieres fijar una versión concreta, usa una etiqueta exacta (por ejemplo `@v1.2.0`) o el SHA de un commit. Evita `@main`: es la rama de desarrollo.
 </details>
 
 ## Lo que tienes que hacer tú (mantenedor)

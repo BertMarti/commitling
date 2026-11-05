@@ -49,7 +49,7 @@ func TestGalleryHasSpeciesFilter(t *testing.T) {
 
 func TestPageExplainsAttestations(t *testing.T) {
 	page := buildPageWithVersion(t, "1.2.0-test")
-	for _, want := range []string{`id="verificar"`, `id="verificar-aviso"`, `gh attestation verify commitling_1.2.0-test_linux_amd64 --repo BertMarti/commitling`, `commitling_1.2.0-test_windows_amd64.exe`} {
+	for _, want := range []string{`id="verificar"`, `gh attestation verify commitling_1.2.0-test_linux_amd64 --repo BertMarti/commitling`, `commitling_1.2.0-test_windows_amd64.exe`} {
 		if !strings.Contains(page, want) {
 			t.Errorf("page lacks %q", want)
 		}
