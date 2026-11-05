@@ -52,4 +52,54 @@
       try { document.execCommand('copy') ? done() : failed(); } catch (e) { failed(); }
     });
   });
+
+  // Let visitors shorten the gallery without changing the no-script view.
+  var speciesPick = document.getElementById('species-pick');
+  if (speciesPick) {
+    var speciesMsg = document.getElementById('species-pick-msg');
+    var speciesRadios = speciesPick.querySelectorAll('input[name="gal-species"]');
+    var speciesBlocks = document.querySelectorAll('#galeria [data-species]');
+    var speciesNames = {};
+    speciesRadios.forEach(function (radio) {
+      var label = document.querySelector('label[for="' + radio.id + '"]');
+      speciesNames[radio.value] = label ? label.textContent : radio.value;
+    });
+    // The closed list is the values the radios had when the page loaded.
+    function validSpecies(value) {
+      return typeof value === 'string' && Object.prototype.hasOwnProperty.call(speciesNames, value) ? value : 'all';
+    }
+    function filterSpecies(value, announce) {
+      value = validSpecies(value);
+      speciesBlocks.forEach(function (block) {
+        block.hidden = value !== 'all' && block.getAttribute('data-species') !== value;
+      });
+      if (announce && speciesMsg) speciesMsg.textContent = value === 'all' ? 'Se muestran todas las especies.' : 'Se muestra solo: ' + speciesNames[value] + ' (sus fases, ánimos, accesorios y tarjeta compacta).';
+    }
+    function chooseSpecies(value) {
+      value = validSpecies(value);
+      speciesRadios.forEach(function (radio) { radio.checked = radio.value === value; });
+      filterSpecies(value, true);
+    }
+    speciesRadios.forEach(function (radio) {
+      radio.addEventListener('change', function () { chooseSpecies(radio.value); });
+    });
+    speciesPick.hidden = false;
+    if (speciesMsg) speciesMsg.hidden = false;
+    document.querySelectorAll('nav.jump a[href^="#especie-"]').forEach(function (link) {
+      link.addEventListener('click', function () {
+        var id = link.getAttribute('href').slice('#especie-'.length);
+        var block = document.getElementById('especie-' + id);
+        if (block && block.closest('.species-block').hidden) chooseSpecies(id);
+      });
+    });
+    function followHash() {
+      var hash = window.location.hash;
+      var match = /^#(?:especie|accesorios)-([A-Za-z0-9-]+)$/.exec(hash);
+      if (!match) return;
+      var target = document.getElementById(hash.slice(1));
+      var block = target && target.closest('.species-block');
+      if (block && block.hidden) chooseSpecies(match[1]);
+    }
+    window.addEventListener('hashchange', followHash);
+  }
 })();

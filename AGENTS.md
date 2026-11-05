@@ -84,6 +84,11 @@ Una mascota pixel-art **original** que vive en el README de tu perfil de GitHub.
 - **Cuarta especie `pumpkin`** (`internal/creature/pumpkin.go`, «Calabaza»). La OG coloca dos especies por fila (`stagePos` en `internal/og/og.go`).
 - Mismo ciclo que la 1.0.0: el último commit del PR lleva `release/checksums.txt`; lo que solo es cierto tras publicar (quitar «la calabaza llega con la 1.1.0», borrar `release/checksums.txt` de `main`) va en la rama `v1.1-tras-publicar`.
 
+## Versión 1.2.0 (02/11/2026)
+- **Atestaciones de procedencia**: `release.yml` llama a `actions/attest-build-provenance` (por SHA) con `subject-checksums` sobre el `checksums.txt` recién verificado con `--check`, antes de `gh release upload`; `id-token: write` y `attestations: write` solo en el job `binaries` (`TestReleaseAttestsTheBinaries`). Son para quien verifica a mano (`gh attestation verify <binario> --repo BertMarti/commitling`). **La Action no las usa** ni debe usarlas (pedirían `gh` y token en cada perfil): su única fuente de confianza es `release/checksums.txt` de su árbol; el test prohíbe `attest`/`id-token` en `action.yml`.
+- **Filtro de la galería** (`#species-pick` en la plantilla, lógica en `page.js`): bloques `.species-block[data-species]` (galería y compacta) ocultos con `hidden`; sin almacenamiento, sin tocar `location.hash`, valor validado contra las propias radios. Test en Node: `node internal/gallery/testdata/page.test.js internal/gallery/page.js`.
+- Mismo ciclo que la 1.1.0: el último commit del PR lleva `release/checksums.txt`; lo que solo es cierto tras publicar (avisos «la 1.2.0 aún no está publicada» en README, `docs/USO.md` y la web; ejemplos `@v1.2.0`; borrar `release/checksums.txt` de `main`) va en la rama `v1.2-tras-publicar`.
+
 ## Reglas de contenido
 - El personaje es **diseño propio**. Prohibido imitar criaturas de videojuegos, anime o marcas.
 - Las reglas de fase y ánimo están documentadas en el README y son deterministas (mismos datos, mismo SVG).
