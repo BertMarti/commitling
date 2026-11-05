@@ -120,6 +120,7 @@ type speciesSection struct {
 
 // badgeSection is the compact badges of one species: one per stage.
 type badgeSection struct {
+	ID      string
 	Name    string
 	Figures []Figure
 }
@@ -238,7 +239,7 @@ func Build(dir, version string) (int, error) {
 		p.Species = append(p.Species, sec)
 
 		// The compact badge of every stage, happy and with no accessories.
-		badges := badgeSection{Name: sp.Name()}
+		badges := badgeSection{ID: sp.Slug(), Name: sp.Name()}
 		for _, st := range creature.Stages {
 			f, err := card("compact-"+prefix+st.Slug(), sp, Sample(st, creature.Happy), render.Compact)
 			if err != nil {

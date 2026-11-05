@@ -37,6 +37,9 @@ nav{margin-top:14px;display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px}
 .theme-pick .opts{gap:5px}
 .theme-pick .opt label{padding:4px 8px}
 .theme-pick[hidden]{display:none}
+.species-pick{border:0;margin:18px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:6px 10px;min-width:0}
+.species-pick legend{font-weight:700;padding:0}
+.species-pick[hidden]{display:none}
 section{padding:56px 0;border-top:2px dashed var(--line)}
 .gen{display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);gap:28px 40px;align-items:start}
 .gen-form{display:grid;grid-template-columns:minmax(0,1fr);gap:20px}

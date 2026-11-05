@@ -39,6 +39,7 @@
       <a href="#galeria">Galería</a>
       <a href="#reglas">Reglas</a>
       <a href="#instalar">Instalar</a>
+      <a href="#verificar">Verificar</a>
       <a href="https://github.com/BertMarti/commitling">Código</a>
     </nav>
     <fieldset class="theme-pick" id="theme-pick" hidden>
@@ -149,7 +150,16 @@
     <h2 id="galeria-t">Galería</h2>
     <p>Todas las especies, fases y ánimos, dibujados con estadísticas de ejemplo de un usuario ficticio. La especie se elige con la entrada <code>species</code> de la Action (o <code>--species</code> en la línea de órdenes); si no la indicas, sale el brote de musgo.</p>
     <nav class="jump" aria-label="Especies">Ir a: {{range $i, $s := .Species}}{{if $i}} · {{end}}<a href="#especie-{{$s.ID}}">{{$s.Name}}</a>{{end}} · <a href="#compacta">Tarjeta compacta</a></nav>
+    <fieldset class="species-pick" id="species-pick" hidden>
+      <legend>Ver en la galería</legend>
+      <div class="opts">
+        <div class="opt"><input type="radio" name="gal-species" value="all" id="gal-sp-all" checked><label for="gal-sp-all">Todas</label></div>
+        {{range .Species}}<div class="opt"><input type="radio" name="gal-species" value="{{.ID}}" id="gal-sp-{{.ID}}"><label for="gal-sp-{{.ID}}">{{.Name}}</label></div>{{end}}
+      </div>
+    </fieldset>
+    <p class="note species-pick-msg" id="species-pick-msg" role="status"></p>
     {{range .Species}}
+    <div class="species-block" data-species="{{.ID}}">
     <h3 class="species" id="especie-{{.ID}}">{{.Name}}</h3>
     <p class="note">{{.Intro}}</p>
     {{range .Rows}}
@@ -178,10 +188,12 @@
       </figure>
       {{end}}
     </div>
+    </div>
     {{end}}
     <h3 class="species" id="compacta">Tarjeta compacta</h3>
     <p>Una insignia de 200x60 con la criatura, su fase, su ánimo y una barra de progreso, para firmas, barras laterales o la cabecera de un repositorio. Se pide con <code>size: compact</code> en la Action (o <code>--size compact</code> en la línea de órdenes); sin ella sale la tarjeta de siempre. Mismos dibujos, misma paleta y misma animación.</p>
     {{range .Badges}}
+    <div class="species-block" data-species="{{.ID}}">
     <h4>{{.Name}}</h4>
     <div class="badges">
       {{range .Figures}}
@@ -192,6 +204,7 @@
         </picture>
       </figure>
       {{end}}
+    </div>
     </div>
     {{end}}
   </section>
@@ -299,6 +312,11 @@
   <section id="privacidad" aria-labelledby="privacidad-t">
     <h2 id="privacidad-t">Privacidad</h2>
     <p>commitling solo usa la API pública de eventos de GitHub: lo mismo que cualquiera puede ver en tu perfil. No lee repositorios privados, no guarda nada fuera de tu repositorio y no necesita más permisos que el <code>GITHUB_TOKEN</code> de tu propio workflow.</p>
+    <h3 id="verificar">Binarios verificables</h3>
+    <p>La Action usa un binario ya compilado de cada versión y, antes de ejecutarlo, comprueba su huella SHA-256 con la lista que viaja dentro de la propia Action: si no coincide, lo descarta y compila el código con Go. A partir de la 1.2.0, cada binario de las <a href="https://github.com/BertMarti/commitling/releases">releases</a> lleva además una <strong>atestación de procedencia</strong> firmada por GitHub que dice de qué commit y de qué workflow salió. Si te bajas uno a mano, compruébalo con la <a href="https://cli.github.com/">CLI de GitHub</a> (con la sesión iniciada: <code>gh auth login</code>):</p>
+    <div class="code"><button class="copy" type="button" data-copy="att" aria-label="Copiar la orden de verificación" hidden>Copiar</button><pre tabindex="0" aria-label="Orden para verificar un binario"><code id="att">gh attestation verify commitling_{{.Version}}_linux_amd64 --repo BertMarti/commitling</code></pre><p class="copy-msg note" role="status" aria-live="polite"></p></div>
+    <p class="note" id="verificar-aviso">La 1.2.0 aún no está publicada: hasta entonces, las releases no tienen atestación (la Action sigue verificando la huella como siempre).</p>
+    <p class="note">Cambia el nombre del archivo por el que te hayas bajado (por ejemplo <code>commitling_{{.Version}}_windows_amd64.exe</code>). Si la orden dice «Verification succeeded», el binario es el que compiló el workflow «Release» de este repositorio.</p>
   </section>
 </main>
 <footer>
