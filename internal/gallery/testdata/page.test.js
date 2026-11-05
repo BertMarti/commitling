@@ -27,6 +27,7 @@ function run(withPicker) {
   const labels = {};
   const picker = withPicker ? node({ id: 'species-pick' }) : null;
   const message = node({ id: 'species-pick-msg' });
+  message.hidden = true; // hidden in the template until the script runs
   if (withPicker) {
     ['all', 'moss', 'mushroom', 'cactus', 'pumpkin'].forEach((value, i) => {
       const radio = node({ id: 'gal-sp-' + value, value, checked: i === 0 }, picker);
@@ -70,6 +71,7 @@ ok('sin interacción todo visible', () => {
   const r = run(true);
   assert.equal(r.picker.hidden, false);
   assert.equal(r.message.textContent, '');
+  assert.equal(r.message.hidden, false);
   assert.ok(r.blocks.every((block) => !block.hidden));
 });
 ok('elegir una especie oculta las demás', () => {

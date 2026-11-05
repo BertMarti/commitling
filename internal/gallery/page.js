@@ -84,6 +84,7 @@
       radio.addEventListener('change', function () { chooseSpecies(radio.value); });
     });
     speciesPick.hidden = false;
+    if (speciesMsg) speciesMsg.hidden = false;
     document.querySelectorAll('nav.jump a[href^="#especie-"]').forEach(function (link) {
       link.addEventListener('click', function () {
         var id = link.getAttribute('href').slice('#especie-'.length);

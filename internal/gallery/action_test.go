@@ -466,6 +466,28 @@ func TestReleaseAttestsTheBinaries(t *testing.T) {
 		!strings.Contains(yml[attest:upload], "if: steps.check.outputs.upload == 'true'") {
 		t.Error("the attestation must cover dist/checksums.txt and run only when binaries are uploaded")
 	}
+	// No other workflow may write attestations or mint OIDC tokens, except
+	// the deploy job of the Pages workflow: actions/deploy-pages needs
+	// id-token: write (with pages: write) and nothing else there has it.
+	for _, f := range []string{"ci.yml", "action-test.yml", "deploy.yml"} {
+		other := readRepoFile(t, ".github/workflows/"+f)
+		if strings.Contains(other, "attestations") {
+			t.Errorf("%s mentions attestations: only the binaries job of release.yml may write them", f)
+		}
+		want := 0
+		if f == "deploy.yml" {
+			want = 1
+			deploy := strings.Index(other, "  deploy:\n")
+			if i := strings.Index(other, "      id-token: write\n"); deploy < 0 || i < deploy ||
+				!strings.Contains(other[deploy:], "uses: actions/deploy-pages@") ||
+				!strings.Contains(other[deploy:i], "      pages: write\n") {
+				t.Error("deploy.yml: id-token: write belongs only to the deploy job, next to pages: write")
+			}
+		}
+		if n := strings.Count(other, "id-token"); n != want {
+			t.Errorf("%s mentions id-token %d times, want %d", f, n, want)
+		}
+	}
 	action := readRepoFile(t, "action.yml")
 	for _, bad := range []string{"attestation", "attest-build-provenance", "id-token"} {
 		if strings.Contains(action, bad) {

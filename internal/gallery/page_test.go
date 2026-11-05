@@ -26,8 +26,23 @@ func TestGalleryHasSpeciesFilter(t *testing.T) {
 	if !strings.Contains(page, `<fieldset class="species-pick" id="species-pick" hidden>`) {
 		t.Error("species filter must be hidden without JavaScript")
 	}
-	if !strings.Contains(page, `id="species-pick-msg" role="status"`) {
-		t.Error("species filter lacks its status message")
+	if !strings.Contains(page, `id="species-pick-msg" role="status" hidden>`) {
+		t.Error("species filter lacks its status message (hidden without JavaScript)")
+	}
+	// Each species is wrapped in a .species-block, so h3.species:first-of-type
+	// would match every species heading (and #compacta) and drop the dashed
+	// separator of all of them: only the first block of the gallery loses it.
+	css := builtCSS(t)
+	if strings.Contains(stripComments(css), "h3.species:first-of-type") {
+		t.Error("style.css uses h3.species:first-of-type: every species heading is first of its type inside its .species-block")
+	}
+	rules := pageCSS(t)
+	first := "#galeria > .species-block:first-of-type > h3.species"
+	if rules.prop(first, "border-top") != "0" || rules.prop(first, "padding-top") != "0" {
+		t.Errorf("only %q drops the separator (border-top %q, padding-top %q)", first, rules.prop(first, "border-top"), rules.prop(first, "padding-top"))
+	}
+	if !strings.Contains(rules.prop("h3.species", "border-top"), "dashed") {
+		t.Error("species headings must keep their dashed separator")
 	}
 	if !strings.Contains(page, `name="gal-species" value="all" id="gal-sp-all" checked`) {
 		t.Error("species filter lacks the default option")
