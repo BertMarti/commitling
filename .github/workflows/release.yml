@@ -6,6 +6,12 @@ name: Release
 # release/checksums.txt committed in that tag: that file is what the Action
 # trusts. Without it, nothing is uploaded and the Action keeps compiling with
 # go run.
+#
+# Each binary also gets a signed build provenance attestation (Sigstore, free
+# for public repositories), only so that people can check a binary they
+# downloaded by hand: gh attestation verify <binary> --repo BertMarti/commitling.
+# The Action does not use attestations (they would need a token and gh): it
+# still trusts only release/checksums.txt of its own tree.
 on:
   release:
     types: [published]
@@ -20,8 +26,13 @@ jobs:
   binaries:
     name: binarios
     runs-on: ubuntu-latest
+    # contents: upload the binaries to the release; id-token: the OIDC token
+    # that Sigstore turns into the short-lived signing certificate;
+    # attestations: store the attestation in this repository.
     permissions:
       contents: write
+      id-token: write
+      attestations: write
     env:
       TAG: ${{ github.event.release.tag_name }}
     steps:
@@ -55,6 +66,14 @@ jobs:
         if: steps.check.outputs.upload == 'true'
         run: scripts/build-release.sh "$RUNNER_TEMP/dist" --check
 
+      # Only after --check: what gets attested is exactly what
+      # release/checksums.txt lists (same names and SHA-256).
+      - name: Atestar la procedencia de los binarios
+        if: steps.check.outputs.upload == 'true'
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-checksums: ${{ runner.temp }}/dist/checksums.txt
+
       - name: Subir los binarios a la release
         if: steps.check.outputs.upload == 'true'
         env:
@@ -68,4 +87,5 @@ jobs:
             echo '```'
             cat "$RUNNER_TEMP/dist/checksums.txt"
             echo '```'
+            echo "Cada binario tiene una atestación de procedencia: \`gh attestation verify <binario> --repo $GH_REPO\`."
           } >> "$GITHUB_STEP_SUMMARY"

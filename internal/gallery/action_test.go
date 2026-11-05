@@ -436,3 +436,40 @@ func TestBuildReleaseResetsTheEnvironment(t *testing.T) {
 		t.Error("build-release.sh must export GOFLAGS=-p=2 GOEXPERIMENT= GOFIPS140=off right after set -euo pipefail and before go build")
 	}
 }
+
+// The release workflow attests the provenance of the binaries it uploads, so
+// that people can check a downloaded binary with gh attestation verify. Only
+// the binaries job may mint an OIDC token and write attestations, only after
+// --check (what is attested is exactly release/checksums.txt) and before the
+// upload. The Action itself keeps trusting only release/checksums.txt.
+func TestReleaseAttestsTheBinaries(t *testing.T) {
+	yml := readRepoFile(t, ".github/workflows/release.yml")
+	if !regexp.MustCompile(`(?m)^permissions: \{\}$`).MatchString(yml) {
+		t.Error("release.yml must start from permissions: {}")
+	}
+	for _, perm := range []string{"id-token: write", "attestations: write"} {
+		if n := strings.Count(yml, perm); n != 1 {
+			t.Errorf("release.yml grants %q %d times, want once (binaries job)", perm, n)
+		}
+		job := strings.Index(yml, "  binaries:\n")
+		if i := strings.Index(yml, "      "+perm+"\n"); job < 0 || i < job {
+			t.Errorf("%q must be a permission of the binaries job", perm)
+		}
+	}
+	check := strings.Index(yml, `scripts/build-release.sh "$RUNNER_TEMP/dist" --check`)
+	attest := strings.Index(yml, "uses: actions/attest-build-provenance@")
+	upload := strings.Index(yml, "gh release upload ")
+	if check < 0 || attest < check || upload < attest {
+		t.Error("release.yml must attest after build-release.sh --check and before gh release upload")
+	}
+	if !strings.Contains(yml[attest:upload], "subject-checksums: ${{ runner.temp }}/dist/checksums.txt") ||
+		!strings.Contains(yml[attest:upload], "if: steps.check.outputs.upload == 'true'") {
+		t.Error("the attestation must cover dist/checksums.txt and run only when binaries are uploaded")
+	}
+	action := readRepoFile(t, "action.yml")
+	for _, bad := range []string{"attestation", "attest-build-provenance", "id-token"} {
+		if strings.Contains(action, bad) {
+			t.Errorf("action.yml mentions %q: the Action must trust only release/checksums.txt", bad)
+		}
+	}
+}
