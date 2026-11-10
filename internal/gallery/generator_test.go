@@ -77,9 +77,9 @@ func TestGeneratorFormIsAccessible(t *testing.T) {
 	}
 	// One species, one theme and one size in the generator, the same three
 	// in the workflow generator of «Instálalo en tu perfil», and «Sistema» in
-	// the theme picker of the page.
-	if got := strings.Count(page, `checked>`); got != 7 {
-		t.Errorf("%d options checked by default, want 7 (species, theme and size, in each form, and the page theme)", got)
+	// the theme picker of the page, and «Todas» in the gallery filter.
+	if got := strings.Count(page, `checked>`); got != 8 {
+		t.Errorf("%d options checked by default, want 8 (species, theme and size, in each form, the page theme and the gallery filter)", got)
 	}
 	if !regexp.MustCompile(`<input type="radio" name="size" value="full"[^>]* checked>`).MatchString(page) {
 		t.Error("the full card must be the default size")

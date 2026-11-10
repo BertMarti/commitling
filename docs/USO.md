@@ -344,6 +344,26 @@ Si el workflow falla con «unable to find version», revisa que la línea `uses:
 
 No hace falta buscarla en ningún catálogo ni instalar nada: basta la línea `uses: BertMarti/commitling@v1` del paso 2.
 
+### Comprobar un binario descargado (atestación de procedencia)
+
+Cada release trae la línea de órdenes ya compilada para Linux, macOS y Windows (`commitling_<versión>_<sistema>_<arquitectura>`). La Action usa esos mismos binarios, pero no se fía de la descarga: antes de ejecutarlo comprueba su huella SHA-256 con la lista que viaja dentro de la propia Action (`release/checksums.txt` de la etiqueta) y, si no coincide, lo descarta y compila el código con Go. Para usar la Action no tienes que hacer nada.
+
+Si te bajas un binario a mano, a partir de la 1.2.0 puedes comprobar de dónde salió: cada uno lleva una **atestación de procedencia** firmada por GitHub (con [Sigstore](https://www.sigstore.dev/)) que dice de qué commit y de qué workflow se compiló. Con la [CLI de GitHub](https://cli.github.com/) y la sesión iniciada (`gh auth login`):
+
+```sh
+gh attestation verify commitling_1.2.0_linux_amd64 --repo BertMarti/commitling
+```
+
+Cambia el nombre por el del archivo que te hayas bajado (por ejemplo `commitling_1.2.0_windows_amd64.exe`). Si sale «Verification succeeded», el archivo no ha cambiado ni un byte desde que lo compiló y firmó un workflow de `BertMarti/commitling` (solo con `--repo`, la orden no dice cuál); si sale un error, no lo uses. Para exigir además que lo firmara el workflow «Release», el que publica los binarios:
+
+```sh
+gh attestation verify commitling_1.2.0_linux_amd64 --repo BertMarti/commitling --signer-workflow BertMarti/commitling/.github/workflows/release.yml
+```
+
+Hace falta `gh` 2.49 o posterior (`gh --version`); las versiones anteriores no tienen `gh attestation`.
+
+> La 1.2.0 aún no está publicada: hasta entonces, las releases (1.1.0 y anteriores) no tienen atestación.
+
 ## 7. Desde la línea de órdenes y la imagen de vista previa
 
 Esto es para quien quiera probar commitling en su ordenador (hace falta Go 1.27, sin dependencias externas); no hace falta para usarlo en tu perfil. Desde una copia del repositorio:

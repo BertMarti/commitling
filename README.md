@@ -260,6 +260,21 @@ Añade `species: mushroom` (o `species: cactus` o `species: pumpkin`) o `theme: 
 No. Es un diseño original, dibujado píxel a píxel para este proyecto.
 </details>
 
+<details><summary>¿Puedo comprobar que un binario de las releases es auténtico?</summary>
+
+Sí. No te hace falta para usar la Action: antes de ejecutar su binario, la propia Action comprueba su huella SHA-256 con la lista que viaja dentro de ella y, si no coincide, lo descarta y compila el código con Go.
+
+Si te bajas un binario a mano desde las [releases](https://github.com/BertMarti/commitling/releases) (para usar la línea de órdenes sin instalar Go), a partir de la 1.2.0 cada uno lleva una **atestación de procedencia** firmada por GitHub que dice de qué commit y de qué workflow salió. Compruébala con la [CLI de GitHub](https://cli.github.com/) (2.49 o posterior, con la sesión iniciada: `gh auth login`), cambiando el nombre por el del archivo que te hayas bajado:
+
+```sh
+gh attestation verify commitling_1.2.0_linux_amd64 --repo BertMarti/commitling
+```
+
+Si dice «Verification succeeded», el archivo no ha cambiado ni un byte desde que lo compiló y firmó un workflow de `BertMarti/commitling`. Para exigir además que fuera el workflow «Release» (el que publica los binarios), añade `--signer-workflow BertMarti/commitling/.github/workflows/release.yml`. Hace falta `gh` 2.49 o posterior.
+
+> La 1.2.0 aún no está publicada: hasta entonces, las releases no tienen atestación.
+</details>
+
 <details><summary>¿Qué versión uso?</summary>
 
 Usa `BertMarti/commitling@v1` para recibir mejoras compatibles. Si quieres fijar una versión concreta, usa una etiqueta exacta (por ejemplo `@v1.1.0`) o el SHA de un commit. Evita `@main`: es la rama de desarrollo.
@@ -277,6 +292,19 @@ Esto es solo para Alberto, que publica las versiones:
    ```
 
    Mueve `v1` solo si la versión es compatible (mismas entradas y salida de la Action). Si el commit de la versión lleva `release/checksums.txt`, el workflow «Release» sube los binarios precompilados ([guía de desarrollo](docs/DESARROLLO.md#binario-precompilado)).
+
+   Antes de mover `v1`, cuando «Release» termine, comprueba que los 6 binarios tienen su atestación (desde la 1.2.0). Con `gh` 2.49 o posterior, la firma completa:
+
+   ```bash
+   gh release download vX.Y.Z --repo BertMarti/commitling -p 'commitling_*' -D out/att
+   for f in out/att/commitling_*; do gh attestation verify "$f" --repo BertMarti/commitling --signer-workflow BertMarti/commitling/.github/workflows/release.yml || echo "FALLA: $f"; done
+   ```
+
+   Con un `gh` más antiguo (sin `gh attestation`), al menos que existan: cada binario debe dar 1 o más.
+
+   ```bash
+   for f in out/att/commitling_*; do echo "$f $(gh api "repos/BertMarti/commitling/attestations/sha256:$(sha256sum "$f" | cut -d' ' -f1)" -q '.attestations | length')"; done
+   ```
 2. **Opcional:** publicar la Action en el GitHub Marketplace: edita la release en GitHub, marca «Publish this Action to the GitHub Marketplace» y acepta el acuerdo (solo la primera vez).
 
 ## Privacidad

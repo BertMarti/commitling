@@ -188,8 +188,8 @@ func TestPageHeadForSharing(t *testing.T) {
 func TestCopyButtonsAreAccessible(t *testing.T) {
 	page := buildPage(t)
 	buttons := regexp.MustCompile(`<button [^>]*class="copy"[^>]*>[^<]*</button>`).FindAllString(page, -1)
-	if len(buttons) != 4 {
-		t.Fatalf("found %d copy buttons, want 4", len(buttons))
+	if len(buttons) != 5 {
+		t.Fatalf("found %d copy buttons, want 5", len(buttons))
 	}
 	labels := map[string]bool{}
 	for _, b := range buttons {
@@ -210,8 +210,8 @@ func TestCopyButtonsAreAccessible(t *testing.T) {
 			t.Errorf("copy button must be type=button: %s", b)
 		}
 	}
-	if got := strings.Count(page, `class="copy-msg note" role="status" aria-live="polite"`); got != 4 {
-		t.Errorf("found %d live regions for copy feedback, want 4", got)
+	if got := strings.Count(page, `class="copy-msg note" role="status" aria-live="polite"`); got != 5 {
+		t.Errorf("found %d live regions for copy feedback, want 5", got)
 	}
 	// If the clipboard fails the user gets a message and the text is selected.
 	for _, want := range []string{"No se pudo copiar", "navigator.clipboard", "execCommand", "selectNodeContents"} {
