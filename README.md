@@ -271,13 +271,11 @@ gh attestation verify commitling_1.2.0_linux_amd64 --repo BertMarti/commitling
 ```
 
 Si dice «Verification succeeded», el archivo no ha cambiado ni un byte desde que lo compiló y firmó un workflow de `BertMarti/commitling`. Para exigir además que fuera el workflow «Release» (el que publica los binarios), añade `--signer-workflow BertMarti/commitling/.github/workflows/release.yml`. Hace falta `gh` 2.49 o posterior.
-
-> La 1.2.0 aún no está publicada: hasta entonces, las releases no tienen atestación.
 </details>
 
 <details><summary>¿Qué versión uso?</summary>
 
-Usa `BertMarti/commitling@v1` para recibir mejoras compatibles. Si quieres fijar una versión concreta, usa una etiqueta exacta (por ejemplo `@v1.1.0`) o el SHA de un commit. Evita `@main`: es la rama de desarrollo.
+Usa `BertMarti/commitling@v1` para recibir mejoras compatibles. Si quieres fijar una versión concreta, usa una etiqueta exacta (por ejemplo `@v1.2.0`) o el SHA de un commit. Evita `@main`: es la rama de desarrollo.
 </details>
 
 ## Lo que tienes que hacer tú (mantenedor)
